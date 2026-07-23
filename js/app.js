@@ -204,18 +204,19 @@
     }
   };
 
-  /** 隐私分级配置
-   *  A = 仅家长可见
-   *  B = 家长 + 机构 + 老师
-   *  C = 家长 + 机构 + 老师 + 志愿者
-   *  D = 所有人可见（含外部演示）
+  /** 隐私分级配置（5级体系）
+   *  A = 公开（基本信息、喜好）—— 所有角色可见
+   *  B = 照护（日常照护、作息、沟通方式）—— 家长、老师、护理员
+   *  C = 敏感（情绪记录、行为问题）—— 家长、护理员
+   *  D = 私密（医疗、家庭关系）—— 仅家长
+   *  E = 科研（脱敏聚合数据）—— 特殊授权
    */
   const privacyLevels = {
-    self:      ['A', 'B', 'C', 'D'],
+    self:      ['A', 'B'],
     parent:    ['A', 'B', 'C', 'D'],
-    teacher:   ['B', 'C', 'D'],
-    caregiver: ['B', 'C', 'D'],
-    volunteer: ['C', 'D']
+    teacher:   ['A', 'B'],
+    caregiver: ['A', 'B', 'C'],
+    volunteer: ['A']
   };
 
   /** 角色名称映射（中文） */
@@ -295,13 +296,13 @@
       canAdd: ['mood', 'note'],
       description: '记录自己的心情和感受' },
     parent: { label: '家长/照护人', name: '妈妈', avatar: '👩', color: '#52C41A',
-      canAdd: ['care', 'communication', 'emotion', 'note'],
+      canAdd: ['care', 'communication', 'emotion', 'strategy', 'note'],
       description: '记录日常照护和家庭情况' },
     teacher: { label: '机构老师', name: '李老师', avatar: '👩‍🏫', color: '#FAAD14',
-      canAdd: ['activity', 'communication', 'emotion', 'note'],
+      canAdd: ['activity', 'communication', 'emotion', 'strategy', 'note'],
       description: '记录教学和活动情况' },
     caregiver: { label: '护理员', name: '张阿姨', avatar: '👵', color: '#722ED1',
-      canAdd: ['care', 'communication', 'emotion', 'note'],
+      canAdd: ['care', 'communication', 'emotion', 'strategy', 'note'],
       description: '记录日常护理和健康情况' },
     volunteer: { label: '志愿者', name: '小王', avatar: '👷', color: '#13C2C2',
       canAdd: ['accompany', 'emotion', 'note'],
@@ -323,7 +324,9 @@
     accompany: { label: '陪伴记录', icon: '🤝', color: '#13C2C2',
       fields: ['content'], description: '记录陪伴过程中的观察' },
     note: { label: '一般备注', icon: '📝', color: '#999999',
-      fields: ['title', 'content'], description: '添加其他需要记录的备注' }
+      fields: ['title', 'content'], description: '添加其他需要记录的备注' },
+    strategy: { label: '策略记录', icon: '🧩', color: '#EB2F96',
+      fields: ['emotion_type', 'title', 'content', 'effectiveness'], description: '记录情绪行为策略使用及效果' }
   };
 
   /** 心情选项 */
@@ -351,44 +354,156 @@
   const STORAGE_KEY = 'ai_dongwo_data';
   const DATA_VERSION = 5; // 数据版本，修改此值可强制重新初始化
 
-  /** 生成唯一ID */
-  function generateUUID() {
-    return Date.now().toString(36) + Math.random().toString(36).substr(2);
-  }
+  /**
+   * 工具函数模块
+   */
+  const Utils = {
+    id: {
+      generateUUID: function () {
+        return Date.now().toString(36) + Math.random().toString(36).substr(2);
+      },
+      generateUserId: function () {
+        return 'u_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 6);
+      }
+    },
+    date: {
+      today: function () {
+        var d = new Date();
+        return this.format(d);
+      },
+      now: function () {
+        var d = new Date();
+        var hours = String(d.getHours()).padStart(2, '0');
+        var minutes = String(d.getMinutes()).padStart(2, '0');
+        return hours + ':' + minutes;
+      },
+      format: function (date) {
+        var d = date instanceof Date ? date : new Date(date);
+        var year = d.getFullYear();
+        var month = String(d.getMonth() + 1).padStart(2, '0');
+        var day = String(d.getDate()).padStart(2, '0');
+        return year + '-' + month + '-' + day;
+      },
+      display: function (dateStr) {
+        var today = this.today();
+        var yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        var yestStr = this.format(yesterday);
+        if (dateStr === today) return '今天';
+        if (dateStr === yestStr) return '昨天';
+        return dateStr;
+      },
+      parse: function (dateStr, timeStr) {
+        return new Date(dateStr + 'T' + (timeStr || '00:00'));
+      },
+      isRecent: function (dateStr, days) {
+        var recordDate = this.parse(dateStr);
+        var threshold = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+        return recordDate >= threshold;
+      }
+    },
+    dom: {
+      get: function (id) {
+        return document.getElementById(id);
+      },
+      on: function (element, event, handler) {
+        element.addEventListener(event, handler);
+      },
+      off: function (element, event, handler) {
+        element.removeEventListener(event, handler);
+      },
+      html: function (element, html) {
+        if (element) element.innerHTML = html;
+      },
+      show: function (element) {
+        if (element) element.style.display = '';
+      },
+      hide: function (element) {
+        if (element) element.style.display = 'none';
+      },
+      toggle: function (element) {
+        if (element) {
+          element.style.display = element.style.display === 'none' ? '' : 'none';
+        }
+      },
+      attr: function (element, name, value) {
+        if (!element) return;
+        if (value !== undefined) {
+          element.setAttribute(name, value);
+        } else {
+          return element.getAttribute(name);
+        }
+      },
+      css: function (element, styles) {
+        if (!element || !styles) return;
+        for (var key in styles) {
+          element.style[key] = styles[key];
+        }
+      },
+      create: function (tag, className) {
+        var el = document.createElement(tag);
+        if (className) el.className = className;
+        return el;
+      },
+      append: function (parent, child) {
+        if (parent && child) parent.appendChild(child);
+      },
+      delegate: function (container, selector, event, handler) {
+        container.addEventListener(event, function (e) {
+          var target = e.target.closest(selector);
+          if (target) handler.call(target, e);
+        });
+      }
+    },
+    array: {
+      groupBy: function (arr, key) {
+        return arr.reduce(function (result, item) {
+          var groupKey = item[key];
+          (result[groupKey] = result[groupKey] || []).push(item);
+          return result;
+        }, {});
+      },
+      sumBy: function (arr, key) {
+        return arr.reduce(function (sum, item) {
+          return sum + (item[key] || 0);
+        }, 0);
+      },
+      countBy: function (arr, key) {
+        return arr.reduce(function (result, item) {
+          var groupKey = item[key];
+          result[groupKey] = (result[groupKey] || 0) + 1;
+          return result;
+        }, {});
+      }
+    },
+    string: {
+      truncate: function (str, maxLen) {
+        return str.length > maxLen ? str.substr(0, maxLen) + '...' : str;
+      },
+      escapeHtml: function (str) {
+        var div = document.createElement('div');
+        div.appendChild(document.createTextNode(str));
+        return div.innerHTML;
+      }
+    },
+    download: function (content, filename, mimeType) {
+      var blob = new Blob([content], { type: mimeType });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+  };
 
-  /** 生成用户ID */
-  function generateUserId() {
-    return 'u_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 6);
-  }
-
-  /** 获取当前日期字符串（YYYY-MM-DD） */
-  function getTodayString() {
-    var d = new Date();
-    var year = d.getFullYear();
-    var month = String(d.getMonth() + 1).padStart(2, '0');
-    var day = String(d.getDate()).padStart(2, '0');
-    return year + '-' + month + '-' + day;
-  }
-
-  /** 获取当前时间字符串（HH:MM） */
-  function getNowTimeString() {
-    var d = new Date();
-    var hours = String(d.getHours()).padStart(2, '0');
-    var minutes = String(d.getMinutes()).padStart(2, '0');
-    return hours + ':' + minutes;
-  }
-
-  /** 格式化日期显示 */
-  function formatDateDisplay(dateStr) {
-    var today = getTodayString();
-    var yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    var yestStr = yesterday.getFullYear() + '-' + String(yesterday.getMonth() + 1).padStart(2, '0') + '-' + String(yesterday.getDate()).padStart(2, '0');
-
-    if (dateStr === today) return '今天';
-    if (dateStr === yestStr) return '昨天';
-    return dateStr;
-  }
+  function generateUUID() { return Utils.id.generateUUID(); }
+  function generateUserId() { return Utils.id.generateUserId(); }
+  function getTodayString() { return Utils.date.today(); }
+  function getNowTimeString() { return Utils.date.now(); }
+  function formatDateDisplay(dateStr) { return Utils.date.display(dateStr); }
 
   /** 生成示例用户数据 */
   function generateSampleUsers() {
@@ -966,6 +1081,12 @@
     /** 获取指定日期的事件 */
     getEventsByDate: function(dateStr) {
       return this.getEvents().filter(function(e) { return e.date === dateStr; });
+    },
+
+    /** 获取所有数据（用于导出） */
+    getAllData: function() {
+      var data = this.load();
+      return data || { version: DATA_VERSION, currentUser: null, users: [], records: [], tasks: [], events: [] };
     }
   };
 
@@ -1030,8 +1151,10 @@
     'profile': 'profile',
     'charts': 'charts',
     'tasks': 'tasks',
-    'calendar': 'calendar'
-  };
+    'calendar': 'calendar',
+      'archive': 'archive',
+      'analytics': 'analytics'
+    };
 
   /**
    * 初始化路由系统
@@ -1066,6 +1189,100 @@
   }
 
   /**
+   * 侧边栏菜单配置（按核心功能分组）
+   */
+  var SIDEBAR_MENU = [
+    {
+      group: '概览',
+      items: [
+        { hash: 'home', icon: '🏠', label: '首页' }
+      ]
+    },
+    {
+      group: '档案',
+      items: [
+        { hash: 'archive', icon: '📋', label: '完整档案' },
+        { hash: 'life', icon: '💚', label: '生活' },
+        { hash: 'communication', icon: '💬', label: '沟通说明书' },
+        { hash: 'emotion', icon: '🌈', label: '情绪与行为' },
+        { hash: 'care', icon: '🩺', label: '照护与医疗' },
+        { hash: 'work', icon: '💼', label: '工作支持' },
+        { hash: 'relations', icon: '👥', label: '关系地图' }
+      ]
+    },
+    {
+      group: '日常',
+      items: [
+        { hash: 'timeline', icon: '📅', label: '时间轴' },
+        { hash: 'tasks', icon: '✅', label: '每日任务' },
+        { hash: 'calendar', icon: '📆', label: '日程日历' }
+      ]
+    },
+    {
+      group: '数据',
+      items: [
+        { hash: 'charts', icon: '📊', label: '数据可视化' },
+        { hash: 'analytics', icon: '📈', label: '数据价值' }
+      ]
+    },
+    {
+      group: 'AI助手',
+      items: [
+        { hash: 'collect', icon: '🤖', label: '对话采集' }
+      ]
+    }
+  ];
+
+  /**
+   * 渲染侧边栏菜单
+   */
+  function renderSidebar() {
+    var menuContainer = Utils.dom.get('sidebar-menu');
+    if (!menuContainer) return;
+
+    var html = '';
+    SIDEBAR_MENU.forEach(function (group) {
+      html += '<div class="sidebar-menu-group">';
+      html += '  <div class="sidebar-menu-label">' + group.group + '</div>';
+      group.items.forEach(function (item) {
+        html += '  <div class="sidebar-menu-item" data-route="' + item.hash + '">';
+        html += '    <span class="menu-icon">' + item.icon + '</span>';
+        html += '    <span>' + item.label + '</span>';
+        html += '  </div>';
+      });
+      html += '</div>';
+    });
+
+    Utils.dom.html(menuContainer, html);
+
+    // 绑定菜单点击事件
+    var menuItems = menuContainer.querySelectorAll('.sidebar-menu-item');
+    menuItems.forEach(function (item) {
+      Utils.dom.on(item, 'click', function () {
+        var route = this.getAttribute('data-route');
+        if (route) {
+          window.location.hash = route;
+          // 移动端关闭侧边栏
+          document.body.classList.remove('sidebar-open');
+        }
+      });
+    });
+  }
+
+  /**
+   * 高亮当前侧边栏菜单项
+   */
+  function highlightSidebarItem(route) {
+    var menuItems = document.querySelectorAll('.sidebar-menu-item');
+    menuItems.forEach(function (item) {
+      item.classList.remove('active');
+      if (item.getAttribute('data-route') === route) {
+        item.classList.add('active');
+      }
+    });
+  }
+
+  /**
    * 导航到指定页面
    * @param {string} pageName - 页面名称（如 'home', 'life' 等）
    */
@@ -1073,6 +1290,15 @@
     // 如果页面不存在则回到首页
     if (!routeMap[pageName]) {
       pageName = 'home';
+    }
+
+    // 切换 body 模式
+    if (pageName === 'login') {
+      document.body.classList.add('mode-login');
+      document.body.classList.remove('mode-app');
+    } else {
+      document.body.classList.add('mode-app');
+      document.body.classList.remove('mode-login');
     }
 
     // 隐藏所有页面section
@@ -1089,6 +1315,9 @@
 
     currentPage = pageName;
     appState.currentPage = pageName;
+
+    // 高亮侧边栏菜单
+    highlightSidebarItem(pageName);
 
     // 滚动到页面顶部
     window.scrollTo(0, 0);
@@ -1142,6 +1371,8 @@
       case 'charts': renderCharts(); break;
       case 'tasks': renderTasks(); break;
       case 'calendar': renderCalendar(); break;
+      case 'archive': renderArchive(); break;
+      case 'analytics': renderAnalytics(); break;
     }
   }
 
@@ -1593,6 +1824,7 @@
    */
   function renderHome() {
     var user = DataStore.getCurrentUser() || appState.currentUser;
+    var role = user ? user.role : 'parent';
 
     // 渲染Hero区域的基本信息
     var heroNameEl = document.getElementById('hero-name');
@@ -1616,25 +1848,26 @@
       heroTagsEl.innerHTML = tagsHTML;
     }
 
-    // 渲染今日重点提醒
+    // 渲染今日重点提醒 —— 根据角色定制
     if (alertBannerEl) {
-      var alertHTML = '<div class="alert-item danger">🚫 严禁海鲜（虾、蟹、贝类）</div>';
-      alertHTML += '<div class="alert-item warning">⏰ 下午15:00 支持性就业练习</div>';
-      alertHTML += '<div class="alert-item info">📋 今日活动已提前告知</div>';
+      var alertHTML = getRoleAlerts(role);
+      // 家长和护理员首页追加实时情绪预警
+      if (role === 'parent' || role === 'caregiver') {
+        var records = DataStore.getRecords();
+        var emotionAlert = analyzeEmotionTrend(records);
+        if (emotionAlert.level !== 'normal') {
+          alertHTML += '<div class="alert-item ' + (emotionAlert.level === 'warning' ? 'danger' : 'warning') + '">' + emotionAlert.message + '</div>';
+        }
+      }
       alertBannerEl.innerHTML = alertHTML;
     }
 
-    // 渲染导航卡片（首页只保留4个核心入口）
+    // 渲染导航卡片 —— 根据角色定制
     if (cardGridEl) {
-      var cards = [
-        { hash: 'tasks', icon: '✅', title: '每日任务', desc: '打卡清单、完成进度' },
-        { hash: 'calendar', icon: '📆', title: '日程日历', desc: '重要事项、日历提醒' },
-        { hash: 'timeline', icon: '📅', title: '动态档案', desc: '记录时间轴' },
-        { hash: 'charts', icon: '📊', title: '数据可视化', desc: '心情趋势、统计图表' }
-      ];
+      var cards = getRoleCards(role);
       var gridHTML = '';
       cards.forEach(function (card) {
-        gridHTML += '<div class="nav-card" data-navigate="' + card.hash + '">';
+        gridHTML += '<div class="nav-card" data-navigate="' + card.hash + '" data-action="' + (card.action || '') + '">';
         gridHTML += '  <span class="card-icon">' + card.icon + '</span>';
         gridHTML += '  <div class="card-title">' + card.title + '</div>';
         gridHTML += '  <div class="card-desc">' + card.desc + '</div>';
@@ -1646,7 +1879,12 @@
       cardGridEl.querySelectorAll('.nav-card').forEach(function (card) {
         card.addEventListener('click', function () {
           var target = this.getAttribute('data-navigate');
-          if (target === 'collect') {
+          var action = this.getAttribute('data-action');
+          if (action === 'quick-card') {
+            createQuickCardModal();
+          } else if (action === 'add-mood') {
+            createAddRecordModal(user, role, 'mood');
+          } else if (target === 'collect') {
             navigateTo('collect');
           } else {
             window.location.hash = target;
@@ -1666,6 +1904,70 @@
   }
 
   /**
+   * 获取角色定制的导航卡片配置
+   */
+  function getRoleCards(role) {
+    var roleCards = {
+      parent: [
+        { hash: 'archive', icon: '📋', title: '完整档案', desc: '六大主题档案分类查看' },
+        { hash: 'timeline', icon: '📅', title: '动态时间轴', desc: '所有记录按时间排列' },
+        { hash: 'tasks', icon: '✅', title: '每日任务', desc: '打卡清单、完成进度' },
+        { hash: 'analytics', icon: '📈', title: '数据价值', desc: '统计分析、数据导出' },
+        { hash: 'charts', icon: '📊', title: '数据可视化', desc: '心情趋势、统计图表' }
+      ],
+      teacher: [
+        { hash: 'communication', icon: '💬', title: '沟通说明书', desc: '有效话术、禁忌用语' },
+        { hash: 'tasks', icon: '✅', title: '每日任务', desc: '今日活动、打卡进度' },
+        { hash: 'calendar', icon: '📆', title: '日程日历', desc: '课程安排、重要事项' },
+        { hash: 'quick-card', icon: '📋', title: '速读卡', desc: '快速了解小雨', action: 'quick-card' }
+      ],
+      caregiver: [
+        { hash: 'care', icon: '🏥', title: '照护要点', desc: '过敏、用药、作息提醒' },
+        { hash: 'emotion', icon: '😰', title: '情绪支持', desc: '触发因素、安抚策略' },
+        { hash: 'calendar', icon: '📆', title: '日程日历', desc: '今日安排、照护提醒' },
+        { hash: 'quick-card', icon: '📋', title: '速读卡', desc: '快速参考卡片', action: 'quick-card' }
+      ],
+      volunteer: [
+        { hash: 'quick-card', icon: '📋', title: '速读卡', desc: '3分钟了解小雨', action: 'quick-card' },
+        { hash: 'communication', icon: '💬', title: '沟通方式', desc: '怎么和小雨说话' },
+        { hash: 'calendar', icon: '📆', title: '今日活动', desc: '今天的活动安排' },
+        { hash: 'life', icon: '⚠️', title: '注意事项', desc: '喜欢和不喜欢的事物' }
+      ],
+      self: [
+        { hash: 'mood', icon: '💭', title: '记录心情', desc: '今天心情怎么样？', action: 'add-mood' },
+        { hash: 'tasks', icon: '✅', title: '今日任务', desc: '今天要完成的事' },
+        { hash: 'calendar', icon: '📆', title: '日程日历', desc: '今天的安排' },
+        { hash: 'archive', icon: '📋', title: '我的档案', desc: '查看我的信息' }
+      ]
+    };
+    return roleCards[role] || roleCards.parent;
+  }
+
+  /**
+   * 获取角色定制的今日重点提醒
+   */
+  function getRoleAlerts(role) {
+    var roleAlerts = {
+      parent: '<div class="alert-item danger">🚫 严禁海鲜（虾、蟹、贝类）</div>' +
+               '<div class="alert-item warning">⏰ 下午15:00 支持性就业练习</div>' +
+               '<div class="alert-item info">📋 今日活动已提前告知</div>',
+      teacher: '<div class="alert-item danger">🚫 过敏提醒：严禁海鲜</div>' +
+               '<div class="alert-item info">💡 用"先...然后..."说明流程</div>' +
+               '<div class="alert-item warning">⚠️ 新任务需要步骤卡片辅助</div>',
+      caregiver: '<div class="alert-item danger">🚫 严禁海鲜（虾、蟹、贝类）</div>' +
+                 '<div class="alert-item warning">⏰ 下午15:00 支持性就业练习</div>' +
+                 '<div class="alert-item info">🌙 晚上10点前入睡，注意夜间情绪</div>',
+      volunteer: '<div class="alert-item danger">🚫 不要给他吃海鲜（过敏）</div>' +
+                 '<div class="alert-item warning">🚫 不要不打招呼碰他</div>' +
+                 '<div class="alert-item info">💡 说话慢一点，一次说一件事</div>',
+      self: '<div class="alert-item info">🌟 今天也要加油哦！</div>' +
+            '<div class="alert-item warning">✅ 今天有烘焙练习</div>' +
+            '<div class="alert-item info">💬 记得记录今天的心情</div>'
+    };
+    return roleAlerts[role] || roleAlerts.parent;
+  }
+
+  /**
    * 渲染欢迎语横幅
    */
   function renderWelcomeBanner(user) {
@@ -1678,7 +1980,16 @@
     var roleName = user ? (ROLES[user.role] ? ROLES[user.role].label : '访客') : '访客';
     var avatar = user ? (user.avatar || '👤') : '👤';
     var welcomeText = user ? ('欢迎回来，' + (user.name || '用户') + '！') : '欢迎使用AI懂我';
-    var subText = user ? ('您当前以「' + roleName + '」身份登录，可以为小雨添加记录。') : '请登录后开始记录。';
+
+    // 根据角色定制引导信息
+    var roleSubTexts = {
+      parent: '您可以查看完整档案、添加记录、管理所有信息。',
+      teacher: '您可以查看沟通指南、记录教学活动和观察。',
+      caregiver: '您可以查看照护要点、记录日常护理和情绪状态。',
+      volunteer: '您可以查看速读卡和沟通方式，记录陪伴观察。',
+      self: '您可以记录今天的心情和感受，查看今日任务。'
+    };
+    var subText = user ? (roleSubTexts[user.role] || '您当前以「' + roleName + '」身份登录。') : '请登录后开始记录。';
 
     var banner = document.createElement('div');
     banner.id = 'welcome-banner';
@@ -1705,6 +2016,22 @@
     if (!cardGridEl || !mainContent) return;
 
     var records = DataStore.getRecords();
+
+    // 根据角色过滤可见的记录类型
+    var role = user ? user.role : 'parent';
+    var roleRecordFilters = {
+      parent: null, // 家长看所有记录
+      teacher: ['activity', 'communication', 'emotion', 'note'],
+      caregiver: ['care', 'emotion', 'note'],
+      volunteer: ['accompany', 'activity'],
+      self: ['mood', 'note']
+    };
+    var allowedTypes = roleRecordFilters[role];
+    if (allowedTypes) {
+      records = records.filter(function (r) {
+        return allowedTypes.indexOf(r.type) !== -1;
+      });
+    }
     var latestRecords = records.slice(0, 5);
 
     var activitySection = document.createElement('div');
@@ -1781,6 +2108,14 @@
           html += '    <span style="font-size:0.8rem;padding:2px 8px;border-radius:6px;background:#f0f0f0;color:#666;">' + mOpt.emoji + ' ' + mOpt.label + '</span>';
         }
       }
+      if (record.effectiveness) {
+        var effLabels = ['', '无效', '较弱', '一般', '有效', '很有效'];
+        var effEmojis = ['', '😞', '🙁', '😐', '🙂', '😄'];
+        var effIdx = record.effectiveness;
+        if (effIdx >= 1 && effIdx <= 5) {
+          html += '    <span style="font-size:0.8rem;padding:2px 8px;border-radius:6px;background:#fff0f6;color:#EB2F96;">' + effEmojis[effIdx] + ' 效果:' + effLabels[effIdx] + '</span>';
+        }
+      }
       html += '  </div>';
       if (record.title) {
         html += '  <div style="font-weight:600;color:#333;margin-bottom:4px;font-size:0.95rem;">' + record.title + '</div>';
@@ -1793,29 +2128,109 @@
   }
 
   /**
-   * 渲染浮动添加按钮（FAB）
+   * 渲染浮动添加按钮（FAB）—— 角色感知，支持快捷操作
    */
   function renderFAB() {
     var existingFab = document.getElementById('fab-add-record');
     if (existingFab) existingFab.remove();
+    var existingMenu = document.getElementById('fab-quick-menu');
+    if (existingMenu) existingMenu.remove();
 
-    var fab = document.createElement('button');
-    fab.id = 'fab-add-record';
-    fab.textContent = '+';
-    fab.style.cssText = 'position:fixed;bottom:24px;right:24px;width:56px;height:56px;border-radius:50%;background:#4A90D9;color:#fff;font-size:28px;border:none;box-shadow:0 4px 12px rgba(74,144,217,0.4);cursor:pointer;z-index:100;display:flex;align-items:center;justify-content:center;transition:all 0.3s;';
-    fab.addEventListener('mouseenter', function () {
-      this.style.transform = 'scale(1.1)';
-      this.style.boxShadow = '0 6px 20px rgba(74,144,217,0.5)';
-    });
-    fab.addEventListener('mouseleave', function () {
-      this.style.transform = 'scale(1)';
-      this.style.boxShadow = '0 4px 12px rgba(74,144,217,0.4)';
-    });
-    fab.addEventListener('click', function () {
-      openAddRecordModal();
-    });
+    var user = DataStore.getCurrentUser() || appState.currentUser;
+    if (!user) return;
 
-    document.body.appendChild(fab);
+    var role = ROLES[user.role];
+    if (!role || !role.canAdd || role.canAdd.length === 0) return;
+
+    // 创建FAB容器
+    var fabContainer = document.createElement('div');
+    fabContainer.id = 'fab-container';
+    fabContainer.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:100;';
+
+    // 快捷菜单（展开时显示）
+    var quickMenu = document.createElement('div');
+    quickMenu.id = 'fab-quick-menu';
+    quickMenu.style.cssText = 'position:absolute;bottom:70px;right:0;display:none;flex-direction:column;gap:8px;align-items:flex-end;';
+
+    // 如果只有一种记录类型，直接打开弹窗；多种类型时显示快捷菜单
+    if (role.canAdd.length === 1) {
+      // 单一类型，FAB直接添加
+      var fab1 = document.createElement('button');
+      fab1.id = 'fab-add-record';
+      var type1 = RECORD_TYPES[role.canAdd[0]];
+      fab1.innerHTML = type1.icon + ' +';
+      fab1.style.cssText = 'width:56px;height:56px;border-radius:50%;background:' + type1.color + ';color:#fff;font-size:22px;border:none;box-shadow:0 4px 12px ' + type1.color + '66;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.3s;';
+      fab1.addEventListener('click', function () {
+        addRecordState.selectedType = role.canAdd[0];
+        var overlay = document.getElementById('add-record-modal');
+        if (!overlay) overlay = createAddRecordModal();
+        overlay.classList.add('active');
+        document.body.style.overflow = 'hidden';
+        renderAddRecordStep2(user, role, role.canAdd[0]);
+      });
+      fabContainer.appendChild(fab1);
+    } else {
+      // 多类型，FAB点击展开快捷菜单
+      var fab = document.createElement('button');
+      fab.id = 'fab-add-record';
+      fab.textContent = '+';
+      fab.style.cssText = 'width:56px;height:56px;border-radius:50%;background:#4A90D9;color:#fff;font-size:28px;border:none;box-shadow:0 4px 12px rgba(74,144,217,0.4);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.3s;';
+
+      // 构建快捷菜单项
+      role.canAdd.forEach(function (typeKey) {
+        var type = RECORD_TYPES[typeKey];
+        if (!type) return;
+        var item = document.createElement('div');
+        item.style.cssText = 'display:flex;align-items:center;gap:8px;cursor:pointer;padding:8px 14px;background:#fff;border-radius:24px;box-shadow:0 2px 8px rgba(0,0,0,0.12);transition:all 0.2s;';
+        item.innerHTML = '<span style="font-size:1.2rem;">' + type.icon + '</span><span style="font-size:0.85rem;color:#333;">' + type.label + '</span>';
+        item.addEventListener('mouseenter', function () {
+          this.style.background = type.color + '15';
+        });
+        item.addEventListener('mouseleave', function () {
+          this.style.background = '#fff';
+        });
+        item.addEventListener('click', function () {
+          quickMenu.style.display = 'none';
+          fab.textContent = '+';
+          fab.style.transform = 'rotate(0deg)';
+          addRecordState.selectedType = typeKey;
+          var overlay = document.getElementById('add-record-modal');
+          if (!overlay) overlay = createAddRecordModal();
+          overlay.classList.add('active');
+          document.body.style.overflow = 'hidden';
+          renderAddRecordStep2(user, role, typeKey);
+        });
+        quickMenu.appendChild(item);
+      });
+
+      // "更多"选项
+      var moreItem = document.createElement('div');
+      moreItem.style.cssText = 'display:flex;align-items:center;gap:8px;cursor:pointer;padding:8px 14px;background:#fff;border-radius:24px;box-shadow:0 2px 8px rgba(0,0,0,0.12);transition:all 0.2s;';
+      moreItem.innerHTML = '<span style="font-size:1.2rem;">📋</span><span style="font-size:0.85rem;color:#333;">全部类型</span>';
+      moreItem.addEventListener('click', function () {
+        quickMenu.style.display = 'none';
+        fab.textContent = '+';
+        fab.style.transform = 'rotate(0deg)';
+        openAddRecordModal();
+      });
+      quickMenu.appendChild(moreItem);
+
+      fab.addEventListener('click', function () {
+        var isVisible = quickMenu.style.display === 'flex';
+        if (isVisible) {
+          quickMenu.style.display = 'none';
+          fab.style.transform = 'rotate(0deg)';
+        } else {
+          quickMenu.style.display = 'flex';
+          fab.style.transform = 'rotate(45deg)';
+        }
+      });
+
+      fabContainer.appendChild(quickMenu);
+      fabContainer.appendChild(fab);
+    }
+
+    document.body.appendChild(fabContainer);
   }
 
   /* ==========================================================
@@ -2023,6 +2438,28 @@
           html += '  <textarea name="content" placeholder="描述情绪事件的触发原因、经过和应对方式..." rows="4" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:0.9rem;box-sizing:border-box;resize:vertical;" required></textarea>';
           html += '</div>';
           break;
+
+        case 'effectiveness':
+          html += '<div style="margin-bottom:14px;">';
+          html += '  <label style="display:block;font-size:0.85rem;color:#555;margin-bottom:8px;font-weight:500;">策略效果评分</label>';
+          html += '  <div style="display:flex;gap:8px;flex-wrap:wrap;">';
+          var effLevels = [
+            { value: 1, label: '无效', emoji: '😞' },
+            { value: 2, label: '较弱', emoji: '🙁' },
+            { value: 3, label: '一般', emoji: '😐' },
+            { value: 4, label: '有效', emoji: '🙂' },
+            { value: 5, label: '很有效', emoji: '😄' }
+          ];
+          effLevels.forEach(function (eff) {
+            html += '    <label class="effectiveness-option" style="cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 14px;border:2px solid #eee;border-radius:10px;transition:all 0.2s;background:#fff;">';
+            html += '      <input type="radio" name="effectiveness" value="' + eff.value + '" style="display:none;">';
+            html += '      <span style="font-size:1.5rem;">' + eff.emoji + '</span>';
+            html += '      <span style="font-size:0.75rem;color:#555;">' + eff.label + '</span>';
+            html += '    </label>';
+          });
+          html += '  </div>';
+          html += '</div>';
+          break;
       }
     });
 
@@ -2055,8 +2492,8 @@
       });
     }
 
-    // 绑定心情/情绪选项点击样式
-    bodyEl.querySelectorAll('.mood-option, .emotion-option').forEach(function (opt) {
+    // 绑定心情/情绪/效果选项点击样式
+    bodyEl.querySelectorAll('.mood-option, .emotion-option, .effectiveness-option').forEach(function (opt) {
       opt.addEventListener('click', function () {
         var name = this.querySelector('input').name;
         bodyEl.querySelectorAll('input[name="' + name + '"]').forEach(function (input) {
@@ -2090,6 +2527,7 @@
     if (formData.get('title')) record.title = formData.get('title');
     if (formData.get('mood')) record.mood = formData.get('mood');
     if (formData.get('emotion_type')) record.emotion_type = formData.get('emotion_type');
+    if (formData.get('effectiveness')) record.effectiveness = parseInt(formData.get('effectiveness'), 10);
 
     // 验证必填
     var typeInfo = RECORD_TYPES[type];
@@ -2262,6 +2700,35 @@
 
     var html = '';
 
+    // === AI情绪预警分析 ===
+    var records = DataStore.getRecords();
+    var emotionAlert = analyzeEmotionTrend(records);
+    html += renderEmotionAlert(emotionAlert);
+
+    // === AI策略推荐 ===
+    html += '<h2 class="section-title">🧩 智能策略推荐</h2>';
+    html += '<div style="background:#fff;border-radius:12px;padding:16px;margin-bottom:20px;box-shadow:0 1px 6px rgba(0,0,0,0.06);">';
+    html += '  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">';
+    html += '    <select id="strategy-emotion-select" style="padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:0.85rem;background:#fff;">';
+    html += '      <option value="">选择情绪状态...</option>';
+    EMOTION_OPTIONS.forEach(function (e) {
+      if (e.value !== 'happy' && e.value !== 'calm') {
+        html += '      <option value="' + e.value + '">' + e.emoji + ' ' + e.value + '</option>';
+      }
+    });
+    html += '    </select>';
+    html += '    <select id="strategy-severity-select" style="padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:0.85rem;background:#fff;">';
+    html += '      <option value="mild">轻度</option>';
+    html += '      <option value="moderate">中度</option>';
+    html += '      <option value="severe">重度</option>';
+    html += '    </select>';
+    html += '    <button id="btn-get-strategy" style="padding:8px 20px;background:#4A90D9;color:#fff;border:none;border-radius:8px;font-size:0.85rem;cursor:pointer;">获取策略</button>';
+    html += '  </div>';
+    html += '  <div id="strategy-recommendation-area" style="min-height:60px;">';
+    html += '    <div style="padding:16px;text-align:center;color:#999;font-size:0.9rem;">选择情绪状态和严重程度，获取个性化策略推荐</div>';
+    html += '  </div>';
+    html += '</div>';
+
     // 流程图：触发 → 预警 → 安抚 → 危机
     html += '<h2 class="section-title">情绪支持流程</h2>';
     html += '<div class="flow-indicator">';
@@ -2354,6 +2821,54 @@
     if (firstStep) {
       firstStep.classList.add('active');
     }
+
+    // 绑定策略推荐按钮
+    var strategyBtn = document.getElementById('btn-get-strategy');
+    if (strategyBtn) {
+      strategyBtn.addEventListener('click', function () {
+        var emotionSelect = document.getElementById('strategy-emotion-select');
+        var severitySelect = document.getElementById('strategy-severity-select');
+        var emotionValue = emotionSelect ? emotionSelect.value : '';
+        var severity = severitySelect ? severitySelect.value : 'mild';
+
+        if (!emotionValue) {
+          showToast('请先选择情绪状态');
+          return;
+        }
+
+        var recentStrategies = getRecentStrategyRecords();
+        var recommendation = recommendStrategies(emotionValue, severity, recentStrategies);
+        var area = document.getElementById('strategy-recommendation-area');
+        if (area) {
+          area.innerHTML = renderStrategyRecommendation(recommendation);
+        }
+
+        // 绑定"记录使用此策略"按钮
+        contentArea.querySelectorAll('.btn-use-strategy').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            var strategyName = this.getAttribute('data-strategy');
+            var emotionLabel = this.getAttribute('data-emotion');
+            var user = DataStore.getCurrentUser() || appState.currentUser;
+            if (!user) {
+              showToast('请先登录');
+              return;
+            }
+            // 预填策略记录弹窗
+            addRecordState.selectedType = 'strategy';
+            var overlay = document.getElementById('add-record-modal');
+            if (!overlay) overlay = createAddRecordModal();
+            overlay.classList.add('active');
+            document.body.style.overflow = 'hidden';
+            renderAddRecordStep2(user, ROLES[user.role], 'strategy');
+            // 预填标题
+            setTimeout(function () {
+              var titleInput = document.querySelector('#add-record-form input[name="title"]');
+              if (titleInput) titleInput.value = strategyName;
+            }, 50);
+          });
+        });
+      });
+    }
   }
 
   /* ==========================================================
@@ -2369,8 +2884,8 @@
 
     var html = '';
 
-    // 过敏警告（置顶醒目）
-    html += '<div class="allergy-warning" data-privacy="C">';
+    // 过敏警告（置顶醒目）—— A级公开，所有角色可见
+    html += '<div class="allergy-warning" data-privacy="A">';
     html += '  <div class="allergy-icon">🚨</div>';
     html += '  <div class="allergy-text">严重过敏警告</div>';
     html += '  <div class="allergy-detail">' + careInfo.allergy.items + ' — ' + careInfo.allergy.level + '</div>';
@@ -2379,38 +2894,38 @@
     // 照护信息卡片
     html += '<div class="privacy-grid">';
 
-    // 过敏详情
-    html += '<div class="privacy-item" data-privacy="C">';
+    // 过敏详情 —— A级公开
+    html += '<div class="privacy-item" data-privacy="A">';
     html += '  <div class="privacy-label">过敏食物</div>';
     html += '  <div class="privacy-value" style="color:#F5222D;font-weight:700;">' + careInfo.allergy.items + '</div>';
     html += '</div>';
 
-    // 过敏等级
-    html += '<div class="privacy-item" data-privacy="C">';
+    // 过敏等级 —— A级公开
+    html += '<div class="privacy-item" data-privacy="A">';
     html += '  <div class="privacy-label">过敏等级</div>';
     html += '  <div class="privacy-value" style="color:#F5222D;font-weight:700;">' + careInfo.allergy.level + '</div>';
     html += '</div>';
 
-    // 用药
-    html += '<div class="privacy-item" data-privacy="B">';
+    // 用药 —— D级私密，仅家长可见
+    html += '<div class="privacy-item" data-privacy="D">';
     html += '  <div class="privacy-label">日常用药</div>';
     html += '  <div class="privacy-value">' + careInfo.medicine + '</div>';
     html += '</div>';
 
-    // 体检
-    html += '<div class="privacy-item" data-privacy="B">';
+    // 体检 —— D级私密，仅家长可见
+    html += '<div class="privacy-item" data-privacy="D">';
     html += '  <div class="privacy-label">体检安排</div>';
     html += '  <div class="privacy-value">' + careInfo.checkup + '</div>';
     html += '</div>';
 
-    // 特殊事项
+    // 特殊事项 —— B级照护
     html += '<div class="privacy-item" data-privacy="B">';
     html += '  <div class="privacy-label">特别注意事项</div>';
     html += '  <div class="privacy-value">' + careInfo.special + '</div>';
     html += '</div>';
 
-    // 睡眠
-    html += '<div class="privacy-item" data-privacy="C">';
+    // 睡眠 —— B级照护
+    html += '<div class="privacy-item" data-privacy="B">';
     html += '  <div class="privacy-label">作息要求</div>';
     html += '  <div class="privacy-value">' + careInfo.sleep + '</div>';
     html += '</div>';
@@ -2541,9 +3056,9 @@
     // 详细列表
     html += '<div class="container" style="padding:0 24px;">';
 
-    // 核心圈列表
-    html += '<h2 class="section-title">核心支持圈</h2>';
-    html += '<div class="content-card blue" style="margin-bottom:24px;">';
+    // 核心圈列表 —— B级照护
+    html += '<h2 class="section-title" data-privacy="B">核心支持圈</h2>';
+    html += '<div class="content-card blue" style="margin-bottom:24px;" data-privacy="B">';
     html += '<ul class="card-list">';
     relationsInfo.core.forEach(function (person) {
       html += '<li>' + person.emoji + ' <strong>' + person.name + '</strong> — ' + person.role + '</li>';
@@ -2551,9 +3066,9 @@
     html += '</ul>';
     html += '</div>';
 
-    // 日常圈列表
-    html += '<h2 class="section-title">日常接触圈</h2>';
-    html += '<div class="content-card green" style="margin-bottom:24px;">';
+    // 日常圈列表 —— B级照护
+    html += '<h2 class="section-title" data-privacy="B">日常接触圈</h2>';
+    html += '<div class="content-card green" style="margin-bottom:24px;" data-privacy="B">';
     html += '<ul class="card-list">';
     relationsInfo.daily.forEach(function (person) {
       html += '<li>' + person.emoji + ' <strong>' + person.name + '</strong> — ' + person.role + '</li>';
@@ -2561,7 +3076,7 @@
     html += '</ul>';
     html += '</div>';
 
-    // 避免场景
+    // 避免场景 —— A级公开，所有角色应知
     html += '<h2 class="section-title">避免的场景与接触</h2>';
     html += '<div class="content-card red">';
     html += '<ul class="card-list">';
@@ -2577,7 +3092,356 @@
   }
 
   /* ==========================================================
-   * 十六、动态记录时间轴页面渲染（改造后）
+   * 十六、完整档案页面渲染
+   * ========================================================== */
+
+  /**
+   * 渲染完整档案页面 —— 六大主题分类入口
+   */
+  function renderArchive() {
+    var contentArea = document.getElementById('archive-content');
+    if (!contentArea) return;
+
+    var user = DataStore.getCurrentUser() || appState.currentUser;
+    var role = user ? user.role : 'parent';
+
+    var html = '';
+
+    // 档案概览说明
+    html += '<div style="background:linear-gradient(135deg,#4A90D9,#5B9BD5);border-radius:16px;padding:20px;margin-bottom:20px;color:#fff;">';
+    html += '  <div style="font-size:1.2rem;font-weight:600;margin-bottom:6px;">📋 小雨的完整档案</div>';
+    html += '  <div style="font-size:0.88rem;opacity:0.9;">六大主题分类，全面了解小雨的 support profile</div>';
+    html += '</div>';
+
+    // 六大主题档案卡片
+    var archiveThemes = [
+      { hash: 'life', icon: '❤️', title: '喜好档案', desc: '喜欢和不喜欢的事物、活动偏好', color: '#4A90D9', privacy: 'A' },
+      { hash: 'communication', icon: '💬', title: '沟通档案', desc: '沟通指南、有效话术、禁忌用语', color: '#722ED1', privacy: 'B' },
+      { hash: 'emotion', icon: '😰', title: '情绪档案', desc: '情绪触发因素、安抚策略、预警信号', color: '#F5222D', privacy: 'C' },
+      { hash: 'care', icon: '🏥', title: '照护档案', desc: '过敏、用药、作息、医疗提醒', color: '#52C41A', privacy: 'B' },
+      { hash: 'work', icon: '💼', title: '支持档案', desc: '工作能力、社交关系、支持网络', color: '#FAAD14', privacy: 'B' },
+      { hash: 'relations', icon: '👥', title: '关系档案', desc: '核心支持圈、日常接触、避免场景', color: '#13C2C2', privacy: 'B' }
+    ];
+
+    html += '<div class="card-grid">';
+    archiveThemes.forEach(function (theme) {
+      html += '<div class="nav-card archive-card" data-navigate="' + theme.hash + '" data-privacy="' + theme.privacy + '">';
+      html += '  <span class="card-icon" style="background:' + theme.color + '15;color:' + theme.color + ';">' + theme.icon + '</span>';
+      html += '  <div class="card-title">' + theme.title + '</div>';
+      html += '  <div class="card-desc">' + theme.desc + '</div>';
+      html += '</div>';
+    });
+    html += '</div>';
+
+    // 快捷操作区
+    html += '<div style="margin-top:24px;">';
+    html += '  <h2 style="font-size:1rem;color:#333;margin-bottom:12px;">🔗 快捷操作</h2>';
+    html += '  <div style="display:flex;gap:12px;flex-wrap:wrap;">';
+    html += '    <button class="btn btn-outline" onclick="location.hash=\'timeline\'">📅 查看动态时间轴</button>';
+    html += '    <button class="btn btn-outline" onclick="location.hash=\'charts\'">📊 数据可视化</button>';
+    html += '    <button class="btn btn-outline" id="btn-archive-quickcard">📋 打开速读卡</button>';
+    html += '  </div>';
+    html += '</div>';
+
+    contentArea.innerHTML = html;
+
+    // 绑定档案卡片点击事件
+    contentArea.querySelectorAll('.archive-card').forEach(function (card) {
+      card.addEventListener('click', function () {
+        var target = this.getAttribute('data-navigate');
+        if (target) window.location.hash = target;
+      });
+    });
+
+    // 绑定速读卡按钮
+    var quickCardBtn = document.getElementById('btn-archive-quickcard');
+    if (quickCardBtn) {
+      quickCardBtn.addEventListener('click', function () {
+        createQuickCardModal();
+      });
+    }
+  }
+
+  /* ==========================================================
+   * 十七、数据价值层 - 统计分析与数据导出
+   * ========================================================== */
+
+  /**
+   * 数据统计分析工具函数
+   */
+  function getAnalyticsData() {
+    var records = DataStore.getRecords();
+    var now = new Date();
+    var thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+    // 近30天记录
+    var recentRecords = records.filter(function (r) {
+      return Utils.date.isRecent(r.date, 30);
+    });
+
+    // 按类型统计
+    var typeStats = Utils.array.countBy(recentRecords, 'type');
+
+    // 按角色统计
+    var roleStats = Utils.array.countBy(recentRecords, 'authorRole');
+
+    // 情绪统计（兼容中英文值）
+    var emotionStats = { happy: 0, calm: 0, anxious: 0, angry: 0, sad: 0, excited: 0 };
+    var emotionMapping = {
+      'happy': 'happy', '开心': 'happy',
+      'calm': 'calm', '平静': 'calm',
+      'anxious': 'anxious', '焦虑': 'anxious',
+      'angry': 'angry', '生气': 'angry',
+      'sad': 'sad', '难过': 'sad',
+      'excited': 'excited', '兴奋': 'excited'
+    };
+    recentRecords.forEach(function (r) {
+      var mood = r.mood || r.emotion_type;
+      var normalized = emotionMapping[mood];
+      if (normalized && emotionStats[normalized] !== undefined) {
+        emotionStats[normalized]++;
+      }
+    });
+
+    // 策略效果统计
+    var strategyRecords = records.filter(function (r) {
+      return r.type === 'strategy' && r.effectiveness;
+    });
+    var avgEffectiveness = 0;
+    if (strategyRecords.length > 0) {
+      avgEffectiveness = Utils.array.sumBy(strategyRecords, 'effectiveness') / strategyRecords.length;
+    }
+
+    return {
+      totalRecords: records.length,
+      recentRecords: recentRecords.length,
+      typeStats: typeStats,
+      roleStats: roleStats,
+      emotionStats: emotionStats,
+      strategyRecords: strategyRecords.length,
+      avgEffectiveness: avgEffectiveness.toFixed(1),
+      dataDate: new Date().toLocaleDateString('zh-CN')
+    };
+  }
+
+  /**
+   * 数据脱敏处理 —— 移除所有身份信息
+   */
+  function anonymizeData(data) {
+    var result = JSON.parse(JSON.stringify(data));
+
+    // 移除身份信息
+    if (result.users) {
+      result.users.forEach(function (u) {
+        u.name = '用户' + Math.floor(Math.random() * 1000);
+        u.avatar = '👤';
+        delete u.id;
+        delete u.pin;
+      });
+    }
+
+    // 移除记录中的身份信息
+    if (result.records) {
+      result.records.forEach(function (r) {
+        r.author = '记录者';
+        delete r.authorId;
+        delete r.authorAvatar;
+        // 保留角色类型用于统计，但不暴露具体人员
+      });
+    }
+
+    // 移除基本信息中的姓名
+    if (result.profile) {
+      result.profile.name = '匿名用户';
+    }
+
+    return result;
+  }
+
+  /**
+   * 导出CSV
+   */
+  function exportCSV(data, filename) {
+    var records = data.records || [];
+    var headers = ['日期', '时间', '类型', '标题', '内容', '作者角色', '心情', '策略效果'];
+    var rows = [headers.join(',')];
+
+    records.forEach(function (r) {
+      var row = [
+        r.date || '',
+        r.time || '',
+        RECORD_TYPES[r.type] ? RECORD_TYPES[r.type].label : r.type,
+        r.title || '',
+        r.content ? r.content.replace(/,/g, '，') : '',
+        ROLES[r.authorRole] ? ROLES[r.authorRole].label : r.authorRole,
+        r.mood || r.emotion_type || '',
+        r.effectiveness || ''
+      ];
+      rows.push(row.join(','));
+    });
+
+    Utils.download(rows.join('\n'), filename + '.csv', 'text/csv');
+  }
+
+  /**
+   * 导出JSON
+   */
+  function exportJSON(data, filename, anonymize) {
+    var exportData = anonymize ? anonymizeData(data) : data;
+    Utils.download(JSON.stringify(exportData, null, 2), filename + '.json', 'application/json');
+  }
+
+  /**
+   * 渲染数据价值页面
+   */
+  function renderAnalytics() {
+    var contentArea = Utils.dom.get('analytics-content');
+    if (!contentArea) return;
+
+    var stats = getAnalyticsData();
+    var html = '';
+
+    html += '<div class="analytics-hero">';
+    html += '  <div class="analytics-hero-title">📊 数据价值中心</div>';
+    html += '  <div class="analytics-hero-desc">基于记录数据生成统计分析，支持导出用于科研和政策参考</div>';
+    html += '</div>';
+
+    html += '<div class="stats-grid">';
+    html += '  <div class="stat-card"><div class="stat-icon">📝</div><div class="stat-value">' + stats.totalRecords + '</div><div class="stat-label">总记录数</div></div>';
+    html += '  <div class="stat-card"><div class="stat-icon">📅</div><div class="stat-value" style="color:#52C41A;">' + stats.recentRecords + '</div><div class="stat-label">近30天记录</div></div>';
+    html += '  <div class="stat-card"><div class="stat-icon">🧩</div><div class="stat-value" style="color:#EB2F96;">' + stats.strategyRecords + '</div><div class="stat-label">策略记录数</div></div>';
+    html += '  <div class="stat-card"><div class="stat-icon">⭐</div><div class="stat-value" style="color:#FAAD14;">' + stats.avgEffectiveness + '/5</div><div class="stat-label">平均策略效果</div></div>';
+    html += '</div>';
+
+    html += '<h2 class="section-title">😰 情绪分布（近30天）</h2>';
+    html += '<div class="card">';
+    var emotionOptions = [
+      { key: 'happy', label: '开心', emoji: '😄', color: '#52C41A' },
+      { key: 'calm', label: '平静', emoji: '😌', color: '#1890FF' },
+      { key: 'anxious', label: '焦虑', emoji: '😰', color: '#FAAD14' },
+      { key: 'angry', label: '生气', emoji: '😠', color: '#F5222D' },
+      { key: 'sad', label: '难过', emoji: '😢', color: '#722ED1' },
+      { key: 'excited', label: '兴奋', emoji: '🤩', color: '#EB2F96' }
+    ];
+    var totalEmotions = emotionOptions.reduce(function (sum, e) {
+      return sum + (stats.emotionStats[e.key] || 0);
+    }, 0);
+    emotionOptions.forEach(function (e) {
+      var count = stats.emotionStats[e.key] || 0;
+      var percent = totalEmotions > 0 ? Math.round((count / totalEmotions) * 100) : 0;
+      html += '<div style="margin-bottom:12px;">';
+      html += '  <div class="flex justify-between" style="margin-bottom:4px;">';
+      html += '    <span style="display:flex;align-items:center;gap:6px;">';
+      html += '      <span>' + e.emoji + '</span><span style="font-size:0.88rem;color:#555;">' + e.label + '</span>';
+      html += '    </span>';
+      html += '    <span style="font-size:0.88rem;color:#888;">' + count + '次 (' + percent + '%)</span>';
+      html += '  </div>';
+      html += '  <div class="progress-bar-container"><div class="progress-bar" style="width:' + percent + '%;background:' + e.color + ';"></div></div>';
+      html += '</div>';
+    });
+    html += '</div>';
+
+    html += '<h2 class="section-title">📋 记录类型分布（近30天）</h2>';
+    html += '<div class="card">';
+    var typeKeys = Object.keys(stats.typeStats);
+    var totalTypes = typeKeys.reduce(function (sum, k) {
+      return sum + stats.typeStats[k];
+    }, 0);
+    typeKeys.forEach(function (typeKey) {
+      var typeInfo = RECORD_TYPES[typeKey] || { label: typeKey, color: '#999' };
+      var count = stats.typeStats[typeKey];
+      var percent = totalTypes > 0 ? Math.round((count / totalTypes) * 100) : 0;
+      html += '<div style="margin-bottom:10px;">';
+      html += '  <div class="flex justify-between" style="margin-bottom:3px;">';
+      html += '    <span style="display:flex;align-items:center;gap:6px;">';
+      html += '      <span>' + typeInfo.icon + '</span><span style="font-size:0.88rem;color:#555;">' + typeInfo.label + '</span>';
+      html += '    </span>';
+      html += '    <span style="font-size:0.88rem;color:#888;">' + count + '次 (' + percent + '%)</span>';
+      html += '  </div>';
+      html += '  <div class="progress-bar-container" style="height:6px;"><div class="progress-bar progress-bar-sm" style="width:' + percent + '%;background:' + typeInfo.color + ';"></div></div>';
+      html += '</div>';
+    });
+    if (typeKeys.length === 0) {
+      html += '<div style="text-align:center;color:#999;padding:16px;">暂无记录数据</div>';
+    }
+    html += '</div>';
+
+    html += '<h2 class="section-title">👥 角色贡献分布（近30天）</h2>';
+    html += '<div class="card">';
+    var roleKeys = Object.keys(stats.roleStats);
+    var totalRoles = roleKeys.reduce(function (sum, k) {
+      return sum + stats.roleStats[k];
+    }, 0);
+    roleKeys.forEach(function (roleKey) {
+      var roleInfo = ROLES[roleKey] || { label: roleKey, color: '#999' };
+      var count = stats.roleStats[roleKey];
+      var percent = totalRoles > 0 ? Math.round((count / totalRoles) * 100) : 0;
+      html += '<div style="margin-bottom:10px;">';
+      html += '  <div class="flex justify-between" style="margin-bottom:3px;">';
+      html += '    <span style="display:flex;align-items:center;gap:6px;">';
+      html += '      <span>' + roleInfo.avatar + '</span><span style="font-size:0.88rem;color:#555;">' + roleInfo.label + '</span>';
+      html += '    </span>';
+      html += '    <span style="font-size:0.88rem;color:#888;">' + count + '次 (' + percent + '%)</span>';
+      html += '  </div>';
+      html += '  <div class="progress-bar-container" style="height:6px;"><div class="progress-bar progress-bar-sm" style="width:' + percent + '%;background:' + roleInfo.color + ';"></div></div>';
+      html += '</div>';
+    });
+    if (roleKeys.length === 0) {
+      html += '<div style="text-align:center;color:#999;padding:16px;">暂无记录数据</div>';
+    }
+    html += '</div>';
+
+    html += '<h2 class="section-title">📥 数据导出</h2>';
+    html += '<div class="card">';
+    html += '  <div style="font-size:0.88rem;color:#888;margin-bottom:16px;">';
+    html += '    支持导出原始数据（含身份信息）或脱敏数据（适合科研共享）。脱敏数据将自动移除所有个人身份信息，仅保留统计分析所需的结构化数据。';
+    html += '  </div>';
+    html += '  <div class="export-buttons">';
+    html += '    <button id="btn-export-csv" class="export-btn export-btn-primary"><span>📄</span>导出CSV（原始）</button>';
+    html += '    <button id="btn-export-json" class="export-btn export-btn-success"><span>📊</span>导出JSON（原始）</button>';
+    html += '    <button id="btn-export-anon-csv" class="export-btn export-btn-warning"><span>🔒</span>导出CSV（脱敏）</button>';
+    html += '    <button id="btn-export-anon-json" class="export-btn export-btn-danger"><span>🔑</span>导出JSON（脱敏）</button>';
+    html += '  </div>';
+    html += '</div>';
+
+    html += '<div class="info-box">';
+    html += '  <div class="info-box-title">💡 数据价值说明</div>';
+    html += '  <ul>';
+    html += '    <li><strong>个体层面：</strong>通过统计分析了解心青年的情绪模式和照护效果，优化照护策略</li>';
+    html += '    <li><strong>机构层面：</strong>汇总多个心青年的数据，分析群体特征和干预效果</li>';
+    html += '    <li><strong>政策层面：</strong>脱敏数据可用于科研和政策制定，为孤独症群体争取更多支持</li>';
+    html += '    <li><strong>隐私保护：</strong>脱敏导出功能确保个人身份信息不被泄露</li>';
+    html += '  </ul>';
+    html += '</div>';
+
+    Utils.dom.html(contentArea, html);
+
+    var baseData = DataStore.getAllData();
+
+    Utils.dom.on(Utils.dom.get('btn-export-csv'), 'click', function () {
+      exportCSV(baseData, 'ai-dongwo-data');
+      showToast('✅ CSV导出成功！');
+    });
+
+    Utils.dom.on(Utils.dom.get('btn-export-json'), 'click', function () {
+      exportJSON(baseData, 'ai-dongwo-data', false);
+      showToast('✅ JSON导出成功！');
+    });
+
+    Utils.dom.on(Utils.dom.get('btn-export-anon-csv'), 'click', function () {
+      var anonData = anonymizeData(baseData);
+      exportCSV(anonData, 'ai-dongwo-data-anon');
+      showToast('✅ 脱敏CSV导出成功！');
+    });
+
+    Utils.dom.on(Utils.dom.get('btn-export-anon-json'), 'click', function () {
+      exportJSON(baseData, 'ai-dongwo-data-anon', true);
+      showToast('✅ 脱敏JSON导出成功！');
+    });
+  }
+
+  /* ==========================================================
+   * 十八、动态记录时间轴页面渲染（改造后）
    * ========================================================== */
 
   /** 时间轴筛选状态 */
@@ -2779,6 +3643,24 @@
     html += '</h2>';
 
     var records = DataStore.getRecords();
+
+    // 根据当前角色过滤可见的记录类型
+    var currentUser = DataStore.getCurrentUser() || appState.currentUser;
+    var currentRole = currentUser ? currentUser.role : 'parent';
+    var roleRecordFilters = {
+      parent: null,
+      teacher: ['activity', 'communication', 'emotion', 'strategy', 'note'],
+      caregiver: ['care', 'communication', 'emotion', 'strategy', 'note'],
+      volunteer: ['accompany', 'activity', 'emotion', 'note'],
+      self: ['mood', 'note']
+    };
+    var allowedTypes = roleRecordFilters[currentRole];
+    if (allowedTypes) {
+      records = records.filter(function (r) {
+        return allowedTypes.indexOf(r.type) !== -1;
+      });
+    }
+
     // 应用筛选
     var filteredRecords = records.filter(function (r) {
       if (timelineFilters.role !== 'all' && r.authorRole !== timelineFilters.role) return false;
@@ -3158,23 +4040,631 @@
         // 当前角色可见此级别
         el.classList.remove('hidden-info');
         el.style.display = '';
-        // 移除blur效果
-        if (el.classList.contains('privacy-item')) {
-          el.classList.remove('hidden-info');
-        }
       } else {
-        // 当前角色不可见此级别
-        if (el.classList.contains('privacy-item')) {
-          el.classList.add('hidden-info');
-        } else {
-          el.style.display = 'none';
-        }
+        // 当前角色不可见此级别 —— 完全隐藏
+        el.style.display = 'none';
       }
     });
   }
 
   /* ==========================================================
-   * 二十、对话式采集
+   * 二十、策略知识库与规则引擎（AI情绪行为支持）
+   * ========================================================== */
+
+  /**
+   * 策略知识库 —— 覆盖10类情绪行为 + 感官支持
+   * 结构：emotionType → severity → [strategies]
+   */
+  var STRATEGY_KB = {
+    anxiety: {
+      label: '焦虑/紧张',
+      emoji: '😰',
+      levels: {
+        mild: [
+          {
+            name: '深呼吸引导',
+            steps: ['降低环境刺激（关灯/降噪音）', '示范深呼吸', '陪伴数息3-5次'],
+            caution: '不强迫模仿，允许自我调节节奏',
+            expected: '5-10分钟内情绪平稳'
+          },
+          {
+            name: '感官安抚',
+            steps: ['提供感官玩具（压力球/触觉板）', '引导到安静角落', '播放白噪音'],
+            caution: '提前了解个人偏好感官物品',
+            expected: '10-15分钟情绪缓解'
+          },
+          {
+            name: '转移注意力',
+            steps: ['观察兴趣点', '自然引入喜欢的话题/活动', '逐步引导脱离焦虑源'],
+            caution: '转移要自然，不要说"别焦虑"',
+            expected: '注意力成功转移'
+          }
+        ],
+        moderate: [
+          {
+            name: '安静空间隔离',
+            steps: ['引导至预设安全空间', '降低光线和声音', '提供安抚物品', '保持陪伴但保持距离'],
+            caution: '空间需提前布置，有安全感；不锁门',
+            expected: '15-30分钟情绪稳定'
+          },
+          {
+            name: '压力释放',
+            steps: ['提供深压力背心/重力毯', '引导做推墙/深蹲等本体觉活动', '允许摇晃身体'],
+            caution: '提前确认个人接受度',
+            expected: '20分钟内紧张感降低'
+          },
+          {
+            name: '音乐疗法',
+            steps: ['播放个人偏好音乐', '允许戴耳机隔绝环境音', '陪伴静默'],
+            caution: '音乐库需提前建立',
+            expected: '10-20分钟情绪改善'
+          }
+        ],
+        severe: [
+          {
+            name: '专业介入',
+            steps: ['确保环境安全', '通知专业人员/家长', '记录详细情况', '维持安全距离'],
+            caution: '不可独自处理；保留现场记录',
+            expected: '专业人员接手处理'
+          },
+          {
+            name: '安全保护',
+            steps: ['清理危险物品', '用软垫保护', '避免身体接触', '持续观察呼吸和状态'],
+            caution: '不强行约束；保护头部',
+            expected: '确保人身安全'
+          }
+        ]
+      }
+    },
+    aggression: {
+      label: '暴躁/攻击行为',
+      emoji: '😠',
+      levels: {
+        mild: [
+          {
+            name: '运动释放',
+            steps: ['引导到开放空间', '做跳跃/跑步等大运动', '逐渐引导到替代行为'],
+            caution: '提前规划安全运动空间',
+            expected: '能量释放，情绪缓和'
+          },
+          {
+            name: '替代行为引导',
+            steps: ['识别攻击需求（击打？推？）', '提供替代物（枕头/沙袋）', '引导力量释放到替代物'],
+            caution: '不说"不能打"，给替代方案',
+            expected: '攻击行为转为安全释放'
+          },
+          {
+            name: '情绪命名',
+            steps: ['平静状态下帮助命名情绪', '"你现在是不是很生气？"', '等待回应，不急于解决'],
+            caution: '部分心青年语言能力有限，可用图片卡',
+            expected: '情绪被识别和接纳'
+          }
+        ],
+        moderate: [
+          {
+            name: '环境隔离',
+            steps: ['引导/协助到安全空间', '移除可伤害物品', '降低环境刺激', '保持安全距离观察'],
+            caution: '确保有安全出口；至少两人配合',
+            expected: '30分钟内情绪逐步降级'
+          },
+          {
+            name: '感官降级',
+            steps: ['关灯/拉窗帘', '降低声音', '提供深压力输入', '减少语言指令'],
+            caution: '感官过载是常见触发因素',
+            expected: '感官负荷降低，情绪缓和'
+          }
+        ],
+        severe: [
+          {
+            name: '紧急保护',
+            steps: ['确保所有人安全', '呼叫支援', '通知家长/专业人员', '保护心青年头部和身体'],
+            caution: '不可独自处理；记录时间线',
+            expected: '安全度过危机'
+          },
+          {
+            name: '紧急联系人通知',
+            steps: ['按预设顺序通知', '提供现场情况', '等待专业指导'],
+            caution: '紧急联系人需提前设定',
+            expected: '专业支援到位'
+          }
+        ]
+      }
+    },
+    selfInjury: {
+      label: '自伤行为',
+      emoji: '🤕',
+      levels: {
+        mild: [
+          {
+            name: '替代感官输入',
+            steps: ['识别自伤部位和功能', '提供等价感官刺激（如手部按压代替拍头）', '引导使用'],
+            caution: '替代物需满足相同感官需求',
+            expected: '自伤行为减少'
+          },
+          {
+            name: '情绪Redirect',
+            steps: ['不惊呼制止', '平静提供替代物', '引导到手部活动'],
+            caution: '大反应会强化行为',
+            expected: '行为转移'
+          }
+        ],
+        moderate: [
+          {
+            name: '安全保护',
+            steps: ['佩戴护具（头盔/护腕）', '移除尖锐物品', '提供安全自伤替代（捏压力球）'],
+            caution: '保护为主，不强制止',
+            expected: '减少伤害程度'
+          },
+          {
+            name: '感官降级',
+            steps: ['降低环境刺激', '深压力输入', '减少语言指令'],
+            caution: '感官过载常引发自伤',
+            expected: '15-20分钟缓和'
+          }
+        ],
+        severe: [
+          {
+            name: '紧急保护',
+            steps: ['保护关键部位（头/眼）', '呼叫支援', '记录持续时间和频率', '通知专业人员'],
+            caution: '频繁或严重自伤需专业评估',
+            expected: '安全度过'
+          },
+          {
+            name: '医疗评估',
+            steps: ['检查是否有身体不适（牙痛/胃痛）', '记录行为模式', '预约专业评估'],
+            caution: '排除身体疼痛引发的自伤',
+            expected: '明确原因'
+          }
+        ]
+      }
+    },
+    fear: {
+      label: '恐惧/恐怖反应',
+      emoji: '😨',
+      levels: {
+        mild: [
+          {
+            name: '社交故事预演',
+            steps: ['提前编写社交故事', '反复阅读', '角色扮演', '实地尝试'],
+            caution: '故事需个性化，用第一人称',
+            expected: '心理准备充分'
+          },
+          {
+            name: '感官保护',
+            steps: ['降噪耳机', '遮光眼罩', '携带安全感物品'],
+            caution: '提前准备感官保护工具',
+            expected: '感官负荷降低'
+          }
+        ],
+        moderate: [
+          {
+            name: '系统脱敏',
+            steps: ['制作恐惧物品/场景图片', '从图片→视频→远距离观察→近距离', '每步给予奖励', '逐步延长接触时间'],
+            caution: '每步停留时间足够长再进阶',
+            expected: '恐惧反应降低'
+          }
+        ],
+        severe: [
+          {
+            name: '紧急撤离+专业评估',
+            steps: ['立即撤离恐惧源', '到安全空间安抚', '记录触发因素', '预约专业评估'],
+            caution: '严重恐惧反应需心理专业介入',
+            expected: '情绪稳定，制定后续计划'
+          }
+        ]
+      }
+    },
+    stereotypy: {
+      label: '刻板/重复行为',
+      emoji: '🔄',
+      levels: {
+        mild: [
+          {
+            name: '理解行为功能',
+            steps: ['观察行为功能（自我调节？沟通？）', '若无害则允许', '若影响参与则提供替代'],
+            caution: '刻板行为有其功能，理解再干预',
+            expected: '不影响日常功能'
+          }
+        ],
+        moderate: [
+          {
+            name: '替代行为',
+            steps: ['识别行为功能', '设计功能等价的替代行为', '逐步引导'],
+            caution: '替代行为需满足相同感官需求',
+            expected: '刻板行为减少'
+          }
+        ],
+        severe: [
+          {
+            name: '渐进适应',
+            steps: ['提前预告环境变化', '提供感官工具', '缩短暴露时间逐步延长'],
+            caution: '不强迫完全抑制',
+            expected: '适应能力提升'
+          }
+        ]
+      }
+    },
+    withdrawal: {
+      label: '社交退缩/拒绝',
+      emoji: '🫥',
+      levels: {
+        mild: [
+          {
+            name: '渐进式参与',
+            steps: ['允许观察不参与', '小任务开始', '同伴配对', '逐步增加参与度'],
+            caution: '不强迫社交；尊重个人节奏',
+            expected: '逐步融入活动'
+          }
+        ],
+        moderate: [
+          {
+            name: '提前准备',
+            steps: ['提前介绍环境照片', '角色扮演', '携带安抚物品', '缩短首次时间'],
+            caution: '新环境是主要触发因素',
+            expected: '适应新环境'
+          }
+        ],
+        severe: [
+          {
+            name: '社交故事',
+            steps: ['编写社交故事', '提前阅读', '情境中提醒', '事后回顾'],
+            caution: '社交故事需个性化',
+            expected: '社交理解提升'
+          }
+        ]
+      }
+    },
+    hyperactivity: {
+      label: '多动/冲动行为',
+      emoji: '⚡',
+      levels: {
+        mild: [
+          {
+            name: '本体觉输入',
+            steps: ['课间做跳跃/推墙活动', '使用坐垫/弹力带', '允许小动作'],
+            caution: '提供合法的活动方式',
+            expected: '注意力提升'
+          }
+        ],
+        moderate: [
+          {
+            name: '自我调节训练',
+            steps: ['使用"停-想-做"卡片', '练习等待', '逐步延长等待时间'],
+            caution: '从短时间开始',
+            expected: '冲动行为减少'
+          }
+        ],
+        severe: [
+          {
+            name: '任务分解',
+            steps: ['大任务拆小步', '每步计时', '完成即奖励', '逐步延长任务时长'],
+            caution: '任务难度逐步提升',
+            expected: '注意力持续时间延长'
+          }
+        ]
+      }
+    },
+    sleep: {
+      label: '睡眠问题',
+      emoji: '😴',
+      levels: {
+        mild: [
+          {
+            name: '睡前仪式',
+            steps: ['固定睡前流程（洗澡→阅读→关灯）', '降低环境刺激', '白噪音辅助'],
+            caution: '流程需固定一致',
+            expected: '入睡时间缩短'
+          }
+        ],
+        moderate: [
+          {
+            name: '检查触发因素',
+            steps: ['排除身体不适', '检查环境（温度/噪音）', '轻安抚不互动', '记录频率'],
+            caution: '频繁醒来需专业评估',
+            expected: '夜间醒来减少'
+          }
+        ],
+        severe: [
+          {
+            name: '专业评估',
+            steps: ['记录睡眠日志', '预约睡眠专科', '排除医学原因'],
+            caution: '长期严重睡眠问题需医疗介入',
+            expected: '明确原因并制定方案'
+          }
+        ]
+      }
+    },
+    eating: {
+      label: '饮食问题',
+      emoji: '🍽️',
+      levels: {
+        mild: [
+          {
+            name: '渐进暴露',
+            steps: ['新食物放桌上不要求吃', '逐步接触（看→闻→舔→咬）', '搭配偏好食物'],
+            caution: '不强迫进食；记录营养摄入',
+            expected: '食物接受度扩大'
+          }
+        ],
+        moderate: [
+          {
+            name: '灵活调整',
+            steps: ['记录仪式行为', '微调一个变量', '逐步增加灵活性'],
+            caution: '突然改变会引发焦虑',
+            expected: '进食仪式减少'
+          }
+        ],
+        severe: [
+          {
+            name: '营养评估',
+            steps: ['记录每日摄入', '咨询营养师', '必要时补充营养剂'],
+            caution: '严重偏食影响健康需专业介入',
+            expected: '营养均衡改善'
+          }
+        ]
+      }
+    },
+    sensory: {
+      label: '感官过载',
+      emoji: '🌀',
+      levels: {
+        mild: [
+          {
+            name: '感官饮食',
+            steps: ['安排定时感官活动（推墙/跳跃）', '提供感官工具箱', '记录有效活动'],
+            caution: '感官饮食需个性化定制',
+            expected: '感官需求得到满足'
+          }
+        ],
+        moderate: [
+          {
+            name: '感官过载应对',
+            steps: ['识别预警信号（捂耳/闭眼/烦躁）', '立即降低环境刺激', '提供深压力输入', '允许自我调节'],
+            caution: '恢复后不急于恢复正常',
+            expected: '15-20分钟情绪恢复'
+          }
+        ],
+        severe: [
+          {
+            name: '环境重构',
+            steps: ['评估环境感官负荷', '改造空间（灯光/隔音）', '建立专属安静空间', '制定应急方案'],
+            caution: '环境改造需多方协作',
+            expected: '感官过载频率降低'
+          }
+        ]
+      }
+    }
+  };
+
+  /**
+   * 情绪类型映射 —— 将EMOTION_OPTIONS的value映射到策略知识库的key
+   */
+  var EMOTION_TO_STRATEGY = {
+    '开心': null,       // 开心不需要策略
+    '平静': null,       // 平静不需要策略
+    '焦虑': 'anxiety',
+    '生气': 'aggression',
+    '难过': 'withdrawal'
+  };
+
+  /**
+   * 规则引擎 —— 根据情绪记录匹配策略
+   * @param {string} emotionValue - 情绪值（对应EMOTION_OPTIONS）
+   * @param {string} severity - 严重程度 mild/moderate/severe
+   * @param {Array} recentStrategyRecords - 近期策略记录（用于效果优化）
+   * @returns {Object} 推荐结果
+   */
+  function recommendStrategies(emotionValue, severity, recentStrategyRecords) {
+    var strategyKey = EMOTION_TO_STRATEGY[emotionValue];
+    if (!strategyKey || !STRATEGY_KB[strategyKey]) {
+      return { strategies: [], message: '当前情绪状态暂不需要策略干预' };
+    }
+
+    var category = STRATEGY_KB[strategyKey];
+    var level = severity || 'mild';
+    var strategies = category.levels[level] || category.levels.mild;
+
+    // 如果有历史策略记录，按效果排序
+    var rankedStrategies = strategies.map(function (s) {
+      var effectivenessScore = 0;
+      var usageCount = 0;
+      if (recentStrategyRecords && recentStrategyRecords.length > 0) {
+        recentStrategyRecords.forEach(function (r) {
+          if (r.title && r.title.indexOf(s.name) !== -1) {
+            usageCount++;
+            effectivenessScore += (r.effectiveness || 3);
+          }
+        });
+      }
+      return {
+        strategy: s,
+        avgEffectiveness: usageCount > 0 ? (effectivenessScore / usageCount) : 0,
+        usageCount: usageCount
+      };
+    });
+
+    // 按平均效果排序（有历史数据的有效策略排前面）
+    rankedStrategies.sort(function (a, b) {
+      return b.avgEffectiveness - a.avgEffectiveness;
+    });
+
+    return {
+      emotionLabel: category.label,
+      emotionEmoji: category.emoji,
+      severity: level,
+      strategies: rankedStrategies,
+      message: rankedStrategies[0].usageCount > 0
+        ? '基于历史效果推荐，"' + rankedStrategies[0].strategy.name + '"之前效果最好'
+        : '根据当前情绪状态推荐以下策略'
+    };
+  }
+
+  /**
+   * 情绪预警分析 —— 基于近期情绪记录检测趋势
+   * @param {Array} records - 所有记录
+   * @returns {Object} 预警结果
+   */
+  function analyzeEmotionTrend(records) {
+    var now = new Date();
+    var sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+    // 筛选近7天的情绪记录
+    var recentEmotions = records.filter(function (r) {
+      if (r.type !== 'emotion' && r.type !== 'mood') return false;
+      var recordDate = new Date(r.date + 'T' + (r.time || '00:00'));
+      return recordDate >= sevenDaysAgo;
+    });
+
+    if (recentEmotions.length === 0) {
+      return { level: 'normal', message: '近期无情绪记录', data: [] };
+    }
+
+    // 负面情绪判断（兼容mood英文值和emotion中文值）
+    var negativeValues = ['anxious', 'angry', 'sad', '焦虑', '生气', '难过'];
+
+    // 统计负面情绪比例
+    var negativeEmotions = recentEmotions.filter(function (r) {
+      var mood = r.mood || r.emotion_type;
+      return negativeValues.indexOf(mood) !== -1;
+    });
+
+    var negativeRatio = negativeEmotions.length / recentEmotions.length;
+
+    // 检测近3天是否恶化
+    var threeDaysAgo = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
+    var last3Days = recentEmotions.filter(function (r) {
+      var recordDate = new Date(r.date + 'T' + (r.time || '00:00'));
+      return recordDate >= threeDaysAgo;
+    });
+    var last3DaysNegative = last3Days.filter(function (r) {
+      var mood = r.mood || r.emotion_type;
+      return negativeValues.indexOf(mood) !== -1;
+    });
+    var recent3DayRatio = last3Days.length > 0 ? last3DaysNegative.length / last3Days.length : 0;
+
+    // 之前4天的负面比例
+    var before3Days = recentEmotions.filter(function (r) {
+      var recordDate = new Date(r.date + 'T' + (r.time || '00:00'));
+      return recordDate < threeDaysAgo;
+    });
+    var beforeNegative = before3Days.filter(function (r) {
+      var mood = r.mood || r.emotion_type;
+      return negativeValues.indexOf(mood) !== -1;
+    });
+    var beforeRatio = before3Days.length > 0 ? beforeNegative.length / before3Days.length : 0;
+
+    // 预警等级判定
+    var level, message;
+    if (negativeRatio > 0.6 && recent3DayRatio > beforeRatio) {
+      level = 'warning';
+      message = '⚠️ 近7天负面情绪占比' + Math.round(negativeRatio * 100) + '%，且近3天呈上升趋势，建议密切关注';
+    } else if (negativeRatio > 0.4) {
+      level = 'attention';
+      message = '🔔 近7天负面情绪占比' + Math.round(negativeRatio * 100) + '%，建议关注情绪状态';
+    } else {
+      level = 'normal';
+      message = '✅ 近7天情绪状态总体平稳';
+    }
+
+    return {
+      level: level,
+      message: message,
+      totalRecords: recentEmotions.length,
+      negativeCount: negativeEmotions.length,
+      negativeRatio: Math.round(negativeRatio * 100),
+      recent3DayRatio: Math.round(recent3DayRatio * 100),
+      trendUp: recent3DayRatio > beforeRatio
+    };
+  }
+
+  /**
+   * 获取近期策略记录
+   */
+  function getRecentStrategyRecords() {
+    var records = DataStore.getRecords();
+    return records.filter(function (r) {
+      return r.type === 'strategy';
+    }).slice(0, 20);
+  }
+
+  /**
+   * 渲染策略推荐卡片
+   * @param {Object} recommendation - recommendStrategies的返回值
+   * @returns {string} HTML
+   */
+  function renderStrategyRecommendation(recommendation) {
+    if (!recommendation || recommendation.strategies.length === 0) {
+      return '<div style="padding:16px;text-align:center;color:#999;font-size:0.9rem;">' +
+             recommendation.message + '</div>';
+    }
+
+    var html = '';
+    html += '<div style="margin-bottom:12px;padding:10px 14px;background:#f0f7ff;border-radius:8px;font-size:0.85rem;color:#4A90D9;">';
+    html += '  💡 ' + recommendation.message;
+    html += '</div>';
+
+    recommendation.strategies.forEach(function (item, idx) {
+      var s = item.strategy;
+      var badge = idx === 0 ? '<span style="background:#52C41A;color:#fff;font-size:0.7rem;padding:1px 6px;border-radius:8px;margin-left:6px;">推荐</span>' : '';
+      var effectBadge = '';
+      if (item.usageCount > 0) {
+        effectBadge = '<span style="background:#fff0f6;color:#EB2F96;font-size:0.7rem;padding:1px 6px;border-radius:8px;margin-left:4px;">' +
+                       '历史效果 ' + item.avgEffectiveness.toFixed(1) + '/5 (' + item.usageCount + '次)</span>';
+      }
+
+      html += '<div class="strategy-card" style="background:#fff;border-radius:12px;padding:16px;margin-bottom:12px;box-shadow:0 1px 6px rgba(0,0,0,0.06);border-left:4px solid ' + (idx === 0 ? '#52C41A' : '#ddd') + ';">';
+      html += '  <div style="font-weight:600;color:#333;font-size:0.95rem;margin-bottom:8px;">' + s.name + badge + effectBadge + '</div>';
+      html += '  <div style="margin-bottom:8px;">';
+      html += '    <div style="font-size:0.8rem;color:#888;margin-bottom:4px;">实施步骤：</div>';
+      html += '    <ol style="margin:0;padding-left:20px;font-size:0.85rem;color:#555;line-height:1.6;">';
+      s.steps.forEach(function (step) {
+        html += '      <li>' + step + '</li>';
+      });
+      html += '    </ol>';
+      html += '  </div>';
+      html += '  <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:0.8rem;">';
+      html += '    <span style="color:#FAAD14;">⚠️ ' + s.caution + '</span>';
+      html += '    <span style="color:#52C41A;">✅ ' + s.expected + '</span>';
+      html += '  </div>';
+      html += '  <button class="btn-use-strategy" data-strategy="' + s.name + '" data-emotion="' + recommendation.emotionLabel + '" style="margin-top:10px;padding:6px 16px;background:#4A90D9;color:#fff;border:none;border-radius:6px;font-size:0.8rem;cursor:pointer;">记录使用此策略</button>';
+      html += '</div>';
+    });
+
+    return html;
+  }
+
+  /**
+   * 渲染情绪预警卡片
+   * @param {Object} alert - analyzeEmotionTrend的返回值
+   * @returns {string} HTML
+   */
+  function renderEmotionAlert(alert) {
+    var colors = {
+      normal: { bg: '#f6ffed', border: '#52C41A', icon: '✅' },
+      attention: { bg: '#fffbe6', border: '#FAAD14', icon: '🔔' },
+      warning: { bg: '#fff2f0', border: '#F5222D', icon: '⚠️' }
+    };
+    var c = colors[alert.level] || colors.normal;
+
+    var html = '';
+    html += '<div style="background:' + c.bg + ';border:1px solid ' + c.border + ';border-radius:12px;padding:16px;margin-bottom:16px;">';
+    html += '  <div style="font-size:0.95rem;color:' + c.border + ';font-weight:600;margin-bottom:6px;">' + c.icon + ' 情绪预警分析</div>';
+    html += '  <div style="font-size:0.88rem;color:#555;margin-bottom:8px;">' + alert.message + '</div>';
+    if (alert.totalRecords) {
+      html += '  <div style="display:flex;gap:16px;font-size:0.8rem;color:#888;">';
+      html += '    <span>近7天记录：' + alert.totalRecords + '条</span>';
+      html += '    <span>负面情绪：' + alert.negativeCount + '条 (' + alert.negativeRatio + '%)</span>';
+      if (alert.trendUp && alert.level !== 'normal') {
+        html += '    <span style="color:#F5222D;">📈 近3天上升趋势</span>';
+      }
+      html += '  </div>';
+    }
+    html += '</div>';
+    return html;
+  }
+
+  /* ==========================================================
+   * 二十一、对话式采集
    * ========================================================== */
 
   /**
@@ -3548,11 +5038,28 @@
       currentRole = user.role;
     }
 
-    // 更新导航栏
+    // 渲染侧边栏菜单
+    renderSidebar();
+
+    // 更新导航栏（侧边栏用户信息）
     updateNavBar();
 
     // 绑定全局事件
     bindGlobalEvents();
+
+    // 绑定移动端侧边栏开关
+    var toggleBtn = Utils.dom.get('sidebar-toggle-mobile');
+    if (toggleBtn) {
+      Utils.dom.on(toggleBtn, 'click', function () {
+        document.body.classList.toggle('sidebar-open');
+      });
+    }
+    var overlay = Utils.dom.get('sidebar-overlay');
+    if (overlay) {
+      Utils.dom.on(overlay, 'click', function () {
+        document.body.classList.remove('sidebar-open');
+      });
+    }
 
     // 初始化路由系统
     initRouter();
