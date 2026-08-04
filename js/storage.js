@@ -6,7 +6,14 @@
   'use strict';
 
   var STORAGE_KEY = 'ai_dongwo_data';
-  var DATA_VERSION = 7;
+  var INSTANCE_KEY_PREFIX = 'ai_dongwo_task_instances_';
+  var DATA_VERSION = 9;
+
+  // 协作网络存储键
+  var GRANTS_KEY = 'ai_dongwo_grants';
+  var INVITATIONS_KEY = 'ai_dongwo_invitations';
+  var JOIN_REQUESTS_KEY = 'ai_dongwo_join_requests';
+  var FAMILY_RELATIONS_KEY = 'ai_dongwo_family_relations';
 
   var C = window.Constants;
   var ROLES = C.ROLES;
@@ -224,18 +231,109 @@
     return records;
   }
 
-  /** 生成示例任务数据 */
+  /** 生成示例任务数据（routine + adhoc 双模式） */
   function generateSampleTasks() {
-    return [
-      { id: 'task_1', title: '起床洗漱', icon: '🪥', category: 'daily', time: '08:30', difficulty: 'easy', supportTip: '提醒时间即可，不需催促', isActive: true, createdAt: window.getTodayString(), checkins: [] },
-      { id: 'task_2', title: '吃早餐', icon: '🍞', category: 'daily', time: '09:00', difficulty: 'easy', supportTip: '检查食物无海鲜成分', isActive: true, createdAt: window.getTodayString(), checkins: [] },
-      { id: 'task_3', title: '机构活动', icon: '🎨', category: 'therapy', time: '10:00', difficulty: 'medium', supportTip: '提前说明今天做什么活动', isActive: true, createdAt: window.getTodayString(), checkins: [] },
-      { id: 'task_4', title: '午餐', icon: '🍱', category: 'daily', time: '11:30', difficulty: 'easy', supportTip: '避免突然更换菜单', isActive: true, createdAt: window.getTodayString(), checkins: [] },
-      { id: 'task_5', title: '午休', icon: '😴', category: 'daily', time: '12:30', difficulty: 'easy', supportTip: '保持环境安静', isActive: true, createdAt: window.getTodayString(), checkins: [] },
-      { id: 'task_6', title: '烘焙练习', icon: '🍪', category: 'work', time: '14:00', difficulty: 'medium', supportTip: '鼓励参与但允许不参加', isActive: true, createdAt: window.getTodayString(), checkins: [] },
-      { id: 'task_7', title: '社区散步', icon: '🚶', category: 'social', time: '15:30', difficulty: 'easy', supportTip: '避开嘈杂场所', isActive: true, createdAt: window.getTodayString(), checkins: [] },
-      { id: 'task_8', title: '电子琴练习', icon: '🎹', category: 'therapy', time: '16:00', difficulty: 'medium', supportTip: '按步骤练习，不要催促', isActive: true, createdAt: window.getTodayString(), checkins: [] }
+    var today = window.getTodayString();
+    var tasks = [];
+
+    // ======== 规律任务 routine ========
+
+    // 每日例行
+    var dailyRoutines = [
+      { id: 'task_1', title: '起床洗漱', icon: '🪥', category: 'hygiene', time: '08:30', assignee: 'youth' },
+      { id: 'task_2', title: '早餐', icon: '🍞', category: 'meal', time: '09:00', assignee: 'parent' },
+      { id: 'task_3', title: '机构活动', icon: '🎨', category: 'activity', time: '10:00', assignee: 'teacher' },
+      { id: 'task_4', title: '午餐', icon: '🍱', category: 'meal', time: '11:30', assignee: 'caregiver' },
+      { id: 'task_5', title: '午休', icon: '😴', category: 'hygiene', time: '12:30', assignee: 'youth' },
+      { id: 'task_6', title: '下午活动', icon: '🧩', category: 'activity', time: '13:30', assignee: 'teacher' },
+      { id: 'task_7', title: '晚餐', icon: '🍽️', category: 'meal', time: '17:30', assignee: 'parent' },
+      { id: 'task_8', title: '晚间放松', icon: '📺', category: 'other', time: '18:30', assignee: 'youth' },
+      { id: 'task_9', title: '洗漱准备', icon: '🚿', category: 'hygiene', time: '20:00', assignee: 'youth' },
+      { id: 'task_10', title: '睡前安静时间', icon: '📖', category: 'other', time: '20:30', assignee: 'parent' },
+      { id: 'task_11', title: '入睡', icon: '🌙', category: 'hygiene', time: '21:00', assignee: 'youth' },
+      { id: 'task_12', title: '夜班照护', icon: '🏠', category: 'other', time: '21:30', assignee: 'parent' }
     ];
+
+    dailyRoutines.forEach(function (t) {
+      tasks.push({
+        id: t.id, title: t.title, icon: t.icon, category: t.category,
+        type: 'routine', pattern: 'daily', weekdays: [],
+        time: t.time, dueDate: null, dueTime: null,
+        assignee: t.assignee, isActive: true,
+        createdAt: today, createdBy: 'parent'
+      });
+    });
+
+    // 每周规律
+    var weeklyRoutines = [
+      { id: 'task_w1', title: '烘焙练习', icon: '🍪', category: 'activity', time: '14:00', weekdays: [1, 3, 5], assignee: 'teacher' },
+      { id: 'task_w2', title: '电子琴练习', icon: '🎹', category: 'learning', time: '16:00', weekdays: [2, 4], assignee: 'teacher' },
+      { id: 'task_w3', title: '社区散步', icon: '🚶', category: 'activity', time: '15:30', weekdays: [1, 3, 6], assignee: 'caregiver' },
+      { id: 'task_w4', title: '感统训练', icon: '🧘', category: 'activity', time: '10:00', weekdays: [2, 4], assignee: 'teacher' },
+      { id: 'task_w5', title: '支持性就业模拟', icon: '💼', category: 'learning', time: '16:00', weekdays: [1, 3, 5], assignee: 'teacher' }
+    ];
+
+    weeklyRoutines.forEach(function (t) {
+      tasks.push({
+        id: t.id, title: t.title, icon: t.icon, category: t.category,
+        type: 'routine', pattern: 'weekly', weekdays: t.weekdays,
+        time: t.time, dueDate: null, dueTime: null,
+        assignee: t.assignee, isActive: true,
+        createdAt: today, createdBy: 'parent'
+      });
+    });
+
+    // ======== 临时任务 adhoc ========
+    var adhocTasks = [
+      { id: 'task_a1', title: '年度体检', icon: '🏥', category: 'medication', dueDate: (function () { var d = new Date(); d.setDate(d.getDate() + 5); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); })(), dueTime: '09:00', assignee: 'parent' },
+      { id: 'task_a2', title: 'IEP季度评估', icon: '📋', category: 'learning', dueDate: (function () { var d = new Date(); d.setDate(d.getDate() + 3); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); })(), dueTime: '10:00', assignee: 'teacher' },
+      { id: 'task_a3', title: '购买新画材', icon: '🎨', category: 'other', dueDate: (function () { var d = new Date(); d.setDate(d.getDate() + 1); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); })(), dueTime: '14:00', assignee: 'parent' },
+      { id: 'task_a4', title: '预约牙科检查', icon: '🦷', category: 'medication', dueDate: (function () { var d = new Date(); d.setDate(d.getDate() + 7); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); })(), dueTime: null, assignee: 'parent' }
+    ];
+
+    adhocTasks.forEach(function (t) {
+      tasks.push({
+        id: t.id, title: t.title, icon: t.icon, category: t.category,
+        type: 'adhoc', pattern: null, weekdays: [],
+        time: null, dueDate: t.dueDate, dueTime: t.dueTime,
+        assignee: t.assignee, isActive: true,
+        createdAt: today, createdBy: 'parent'
+      });
+    });
+
+    return tasks;
+  }
+
+  /** 生成示例每日任务实例（供今日使用） */
+  function generateSampleTaskInstances(dateStr) {
+    dateStr = dateStr || window.getTodayString();
+    var tasks = generateSampleTasks();
+    var routines = tasks.filter(function (t) { return t.type === 'routine' && t.isActive; });
+    var jsDay = new Date(dateStr + 'T00:00:00').getDay();
+    var weekday = jsDay === 0 ? 7 : jsDay; // 1=Mon ... 7=Sun
+
+    var instances = [];
+
+    routines.forEach(function (task) {
+      var shouldGenerate = false;
+      if (task.pattern === 'daily') {
+        shouldGenerate = true;
+      } else if (task.pattern === 'weekly') {
+        shouldGenerate = task.weekdays && task.weekdays.indexOf(weekday) !== -1;
+      }
+      if (!shouldGenerate) return;
+
+      instances.push({
+        id: 'inst_' + task.id + '_' + dateStr,
+        taskId: task.id,
+        date: dateStr,
+        status: 'todo',
+        completedAt: null,
+        note: ''
+      });
+    });
+
+    return instances;
   }
 
   /** 生成示例日程数据 */
@@ -373,6 +471,15 @@
       if (needReset) {
         this.save(data);
       }
+
+      // 自动生成今日任务实例（幂等）
+      var todayStr = window.getTodayString();
+      var todayInstances = this._loadByKey(INSTANCE_KEY_PREFIX + todayStr);
+      if (!todayInstances || todayInstances.length === 0) {
+        var sampleInsts = generateSampleTaskInstances(todayStr);
+        this._saveByKey(INSTANCE_KEY_PREFIX + todayStr, sampleInsts);
+      }
+
       return data;
     },
 
@@ -489,49 +596,168 @@
       return data.users.find(function (u) { return u.id === id; }) || null;
     },
 
-    getTasks: function() {
-      var data = this.load();
-      return data && data.tasks ? data.tasks : [];
-    },
+    // ========== 辅助：按任意 key 读写 localStorage ==========
 
-    updateTaskCheckin: function(taskId, date, status, note) {
-      var data = this.load();
-      if (!data || !data.tasks) return false;
-      var task = data.tasks.find(function(t) { return t.id === taskId; });
-      if (!task) return false;
-      var existing = task.checkins.find(function(c) { return c.date === date; });
-      if (existing) {
-        existing.status = status;
-        existing.time = new Date().toTimeString().slice(0,5);
-        if (note !== undefined) existing.note = note;
-      } else {
-        task.checkins.push({ date: date, time: new Date().toTimeString().slice(0,5), status: status, note: note || '' });
+    _loadByKey: function(key) {
+      try {
+        var raw = localStorage.getItem(key);
+        return raw ? JSON.parse(raw) : null;
+      } catch (e) {
+        console.error('_loadByKey失败:', e);
+        return null;
       }
-      this.save(data);
-      return true;
     },
 
+    _saveByKey: function(key, value) {
+      try {
+        localStorage.setItem(key, JSON.stringify(value));
+      } catch (e) {
+        console.error('_saveByKey失败:', e);
+      }
+    },
+
+    // ========== 任务 CRUD ==========
+
+    /** 获取所有任务（含软删除的） */
+    getTasks: function(includeInactive) {
+      var data = this.load();
+      var tasks = (data && data.tasks) ? data.tasks : [];
+      if (!includeInactive) {
+        tasks = tasks.filter(function (t) { return t.isActive !== false; });
+      }
+      return tasks;
+    },
+
+    /** 新增任务 */
     addTask: function(task) {
       var data = this.load();
       if (!data.tasks) data.tasks = [];
-      var newTask = Object.assign({}, task, { id: 'task_' + window.generateUUID(), createdAt: window.getTodayString(), checkins: [] });
+      var newTask = Object.assign({}, task, {
+        id: 'task_' + window.generateUUID(),
+        isActive: true,
+        createdAt: window.getTodayString()
+      });
+      // 补全 routine 默认字段
+      if (newTask.type === 'routine') {
+        newTask.pattern = newTask.pattern || 'daily';
+        newTask.weekdays = newTask.weekdays || [];
+        newTask.time = newTask.time || '09:00';
+        newTask.dueDate = null;
+        newTask.dueTime = null;
+      }
+      // 补全 adhoc 默认字段
+      if (newTask.type === 'adhoc') {
+        newTask.pattern = null;
+        newTask.weekdays = [];
+        newTask.time = null;
+      }
       data.tasks.push(newTask);
       this.save(data);
       return newTask;
     },
 
-    toggleTaskActive: function(taskId) {
+    /** 更新任务字段 */
+    updateTask: function(taskId, updates) {
       var data = this.load();
-      if (!data || !data.tasks) return;
-      var task = data.tasks.find(function(t) { return t.id === taskId; });
-      if (task) { task.isActive = !task.isActive; this.save(data); }
+      if (!data || !data.tasks) return null;
+      var task = data.tasks.find(function (t) { return t.id === taskId; });
+      if (!task) return null;
+      Object.keys(updates).forEach(function (k) {
+        task[k] = updates[k];
+      });
+      this.save(data);
+      return task;
     },
 
+    /** 软删除任务（isActive = false），不可恢复 */
     deleteTask: function(taskId) {
       var data = this.load();
-      if (!data || !data.tasks) return;
-      data.tasks = data.tasks.filter(function(t) { return t.id !== taskId; });
+      if (!data || !data.tasks) return false;
+      var task = data.tasks.find(function (t) { return t.id === taskId; });
+      if (!task) return false;
+      task.isActive = false;
       this.save(data);
+      return true;
+    },
+
+    // ========== 每日任务实例 ==========
+
+    /** 获取指定日期的任务实例 */
+    getTaskInstances: function(dateStr) {
+      dateStr = dateStr || window.getTodayString();
+      return this._loadByKey(INSTANCE_KEY_PREFIX + dateStr) || [];
+    },
+
+    /** 更新单个任务实例（状态/备注/完成时间） */
+    updateTaskInstance: function(instanceId, dateStr, updates) {
+      dateStr = dateStr || window.getTodayString();
+      var instances = this._loadByKey(INSTANCE_KEY_PREFIX + dateStr) || [];
+      var inst = instances.find(function (i) { return i.id === instanceId; });
+      if (!inst) return null;
+      Object.keys(updates).forEach(function (k) {
+        inst[k] = updates[k];
+      });
+      // 如果状态变为 done，自动记录完成时间
+      if (updates.status === 'done' && !inst.completedAt) {
+        inst.completedAt = new Date().toISOString();
+      }
+      // 如果状态从 done 改回其他，清除完成时间
+      if (updates.status && updates.status !== 'done') {
+        inst.completedAt = null;
+      }
+      this._saveByKey(INSTANCE_KEY_PREFIX + dateStr, instances);
+      return inst;
+    },
+
+    // ========== 规律任务引擎 ==========
+
+    /**
+     * 为指定日期生成任务实例（幂等）
+     * 读取所有 active 的 routine 任务，根据 pattern 和 weekdays 判断是否生成
+     * 已有实例则跳过
+     */
+    generateDailyInstances: function(dateStr) {
+      dateStr = dateStr || window.getTodayString();
+      var tasks = this.getTasks();
+      var routines = tasks.filter(function (t) { return t.type === 'routine' && t.isActive; });
+      var jsDay = new Date(dateStr + 'T00:00:00').getDay();
+      var weekday = jsDay === 0 ? 7 : jsDay; // 1=Mon ... 7=Sun
+
+      var existingInstances = this._loadByKey(INSTANCE_KEY_PREFIX + dateStr) || [];
+      var newInstances = [];
+
+      routines.forEach(function (task) {
+        var shouldGenerate = false;
+
+        if (task.pattern === 'daily') {
+          shouldGenerate = true;
+        } else if (task.pattern === 'weekly') {
+          shouldGenerate = task.weekdays && task.weekdays.indexOf(weekday) !== -1;
+        }
+        // custom 暂时不处理
+
+        if (!shouldGenerate) return;
+
+        // 幂等检查：该任务今日是否已有实例
+        var exists = existingInstances.some(function (inst) { return inst.taskId === task.id; });
+        if (exists) return;
+
+        newInstances.push({
+          id: 'inst_' + task.id + '_' + dateStr,
+          taskId: task.id,
+          date: dateStr,
+          status: 'todo',
+          completedAt: null,
+          note: ''
+        });
+      });
+
+      if (newInstances.length > 0) {
+        var merged = existingInstances.concat(newInstances);
+        this._saveByKey(INSTANCE_KEY_PREFIX + dateStr, merged);
+      }
+
+      return this._loadByKey(INSTANCE_KEY_PREFIX + dateStr) || [];
     },
 
     getEvents: function() {
@@ -562,6 +788,175 @@
     getAllData: function() {
       var data = this.load();
       return data || { version: DATA_VERSION, currentUser: null, users: [], records: [], tasks: [], events: [] };
+    },
+
+    /* ---- 内部辅助 ---- */
+    _loadByKey: function (key) {
+      try {
+        var raw = localStorage.getItem(key);
+        return raw ? JSON.parse(raw) : null;
+      } catch (e) { return null; }
+    },
+    _saveByKey: function (key, data) {
+      try { localStorage.setItem(key, JSON.stringify(data)); } catch (e) {}
+    },
+
+    /* ==========================================================
+     * 协作网络 — 授权关系
+     * grants: [{id, youthId, userId, role, relation, status:'active', createdAt}]
+     * ========================================================== */
+    getGrants: function () {
+      return this._loadByKey(GRANTS_KEY) || [];
+    },
+    saveGrants: function (grants) {
+      this._saveByKey(GRANTS_KEY, grants);
+    },
+    addGrant: function (grant) {
+      var grants = this.getGrants();
+      grant.id = grant.id || 'grant_' + window.generateUUID();
+      grant.createdAt = grant.createdAt || window.getTodayString();
+      grant.status = grant.status || 'active';
+      grants.push(grant);
+      this.saveGrants(grants);
+      return grant;
+    },
+    /** 获取某个 youth 的所有授权用户 */
+    getGrantsByYouth: function (youthId) {
+      return this.getGrants().filter(function (g) { return g.youthId === youthId && g.status === 'active'; });
+    },
+    /** 获取某个用户被授权访问哪些 youth */
+    getGrantsByUser: function (userId) {
+      return this.getGrants().filter(function (g) { return g.userId === userId && g.status === 'active'; });
+    },
+    removeGrant: function (grantId) {
+      var grants = this.getGrants().map(function (g) {
+        if (g.id === grantId) { g.status = 'revoked'; }
+        return g;
+      });
+      this.saveGrants(grants);
+    },
+
+    /* ==========================================================
+     * 协作网络 — 邀请码
+     * invitations: [{code, youthId, createdBy, role, relation, expiresAt, used:false}]
+     * ========================================================== */
+    getInvitations: function () {
+      return this._loadByKey(INVITATIONS_KEY) || [];
+    },
+    saveInvitations: function (invitations) {
+      this._saveByKey(INVITATIONS_KEY, invitations);
+    },
+    /** 生成一个 6 位字母数字混合邀请码 */
+    generateInviteCode: function () {
+      var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      var code = '';
+      for (var i = 0; i < 6; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return code;
+    },
+    createInvitation: function (opts) {
+      var invitations = this.getInvitations();
+      var code = this.generateInviteCode();
+      // 确保唯一
+      while (invitations.some(function (inv) { return inv.code === code && !inv.used; })) {
+        code = this.generateInviteCode();
+      }
+      var exp = new Date();
+      exp.setDate(exp.getDate() + 7); // 7天过期
+      var invitation = {
+        code: code,
+        youthId: opts.youthId,
+        createdBy: opts.createdBy,
+        role: opts.role,
+        relation: opts.relation,
+        expiresAt: exp.toISOString().split('T')[0],
+        used: false,
+        createdAt: window.getTodayString()
+      };
+      invitations.push(invitation);
+      this.saveInvitations(invitations);
+      return invitation;
+    },
+    findInvitation: function (code) {
+      var invitations = this.getInvitations();
+      var today = window.getTodayString();
+      return invitations.find(function (inv) {
+        return inv.code === code && !inv.used && inv.expiresAt >= today;
+      }) || null;
+    },
+    markInvitationUsed: function (code) {
+      var invitations = this.getInvitations();
+      invitations.forEach(function (inv) {
+        if (inv.code === code) { inv.used = true; }
+      });
+      this.saveInvitations(invitations);
+    },
+
+    /* ==========================================================
+     * 协作网络 — 加入申请
+     * join_requests: [{id, userId, userName, userRole, invitationCode, relation, youthId, status, createdAt}]
+     * ========================================================== */
+    getJoinRequests: function () {
+      return this._loadByKey(JOIN_REQUESTS_KEY) || [];
+    },
+    saveJoinRequests: function (requests) {
+      this._saveByKey(JOIN_REQUESTS_KEY, requests);
+    },
+    addJoinRequest: function (req) {
+      var requests = this.getJoinRequests();
+      req.id = req.id || 'jr_' + window.generateUUID();
+      req.createdAt = req.createdAt || window.getTodayString();
+      req.status = req.status || 'pending';
+      requests.push(req);
+      this.saveJoinRequests(requests);
+      return req;
+    },
+    /** 获取某个 youth 的待审批申请 */
+    getPendingRequestsByYouth: function (youthId) {
+      return this.getJoinRequests().filter(function (r) {
+        return r.youthId === youthId && r.status === 'pending';
+      });
+    },
+    updateJoinRequestStatus: function (requestId, status) {
+      var requests = this.getJoinRequests();
+      requests.forEach(function (r) {
+        if (r.id === requestId) { r.status = status; }
+      });
+      this.saveJoinRequests(requests);
+    },
+
+    /* ==========================================================
+     * 协作网络 — 家庭关系
+     * family_relations: {youthId: [{userId, relation}]}
+     * ========================================================== */
+    getFamilyRelations: function () {
+      return this._loadByKey(FAMILY_RELATIONS_KEY) || {};
+    },
+    saveFamilyRelations: function (relations) {
+      this._saveByKey(FAMILY_RELATIONS_KEY, relations);
+    },
+    /** 为某个 youth 添加家庭成员 */
+    addFamilyMember: function (youthId, userId, relation) {
+      var relations = this.getFamilyRelations();
+      if (!relations[youthId]) { relations[youthId] = []; }
+      // 避免重复
+      var exists = relations[youthId].some(function (m) { return m.userId === userId; });
+      if (!exists) {
+        relations[youthId].push({ userId: userId, relation: relation });
+      }
+      this.saveFamilyRelations(relations);
+    },
+    /** 建议每个用户绑定一个主 youth（家长首次创建档案时使用） */
+    setPrimaryYouth: function (userId, youthId) {
+      var data = this.load();
+      if (!data.primaryYouthMap) { data.primaryYouthMap = {}; }
+      data.primaryYouthMap[userId] = youthId;
+      this.save(data);
+    },
+    getPrimaryYouth: function (userId) {
+      var data = this.load();
+      return (data && data.primaryYouthMap) ? data.primaryYouthMap[userId] : null;
     }
   };
 
