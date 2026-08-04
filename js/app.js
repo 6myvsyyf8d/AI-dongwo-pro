@@ -48,6 +48,8 @@
   var chatScript = C.chatScript;
   var routeMap = C.routeMap;
   var SIDEBAR_MENU = C.SIDEBAR_MENU;
+  var GOVERNMENT_NAV_ITEMS = C.GOVERNMENT_NAV_ITEMS;
+  var ADMIN_NAV_ITEMS = C.ADMIN_NAV_ITEMS;
   var STRATEGY_KB = C.STRATEGY_KB;
   var EMOTION_TO_STRATEGY = C.EMOTION_TO_STRATEGY;
   var DataStore = window.DataStore;
@@ -109,8 +111,21 @@
     var menuContainer = Utils.dom.get('sidebar-menu');
     if (!menuContainer) return;
 
+    var user = DataStore.getCurrentUser() || appState.currentUser;
+    var role = user ? user.role : 'parent';
+
+    // 根据角色选择不同的导航菜单
+    var navItems;
+    if (role === 'government') {
+      navItems = GOVERNMENT_NAV_ITEMS;
+    } else if (role === 'admin') {
+      navItems = ADMIN_NAV_ITEMS;
+    } else {
+      navItems = SIDEBAR_MENU;
+    }
+
     var html = '';
-    SIDEBAR_MENU.forEach(function (group) {
+    navItems.forEach(function (group) {
       html += '<div class="sidebar-menu-group">';
       html += '  <div class="sidebar-menu-label">' + group.group + '</div>';
       group.items.forEach(function (item) {
@@ -347,28 +362,31 @@
         { hash: 'charts', icon: '📊', title: '数据可视化', desc: '心情趋势、统计图表' }
       ],
       teacher: [
-        { hash: 'communication', icon: '💬', title: '沟通说明书', desc: '有效话术、禁忌用语' },
+        { hash: 'communication', icon: '💬', title: '沟通与表达', desc: '有效话术、禁忌用语' },
         { hash: 'tasks', icon: '✅', title: '每日任务', desc: '今日活动、打卡进度' },
         { hash: 'calendar', icon: '📆', title: '日程日历', desc: '课程安排、重要事项' },
         { hash: 'quick-card', icon: '📋', title: '速读卡', desc: '快速了解小雨', action: 'quick-card' }
       ],
       caregiver: [
-        { hash: 'care', icon: '🏥', title: '照护要点', desc: '过敏、用药、作息提醒' },
-        { hash: 'emotion', icon: '😰', title: '情绪支持', desc: '触发因素、安抚策略' },
+        { hash: 'care', icon: '💊', title: '照护要点', desc: '过敏、用药、作息提醒' },
+        { hash: 'emotion', icon: '🌊', title: '情绪支持', desc: '触发因素、安抚策略' },
         { hash: 'calendar', icon: '📆', title: '日程日历', desc: '今日安排、照护提醒' },
         { hash: 'quick-card', icon: '📋', title: '速读卡', desc: '快速参考卡片', action: 'quick-card' }
       ],
-      volunteer: [
-        { hash: 'quick-card', icon: '📋', title: '速读卡', desc: '3分钟了解小雨', action: 'quick-card' },
-        { hash: 'communication', icon: '💬', title: '沟通方式', desc: '怎么和小雨说话' },
-        { hash: 'calendar', icon: '📆', title: '今日活动', desc: '今天的活动安排' },
-        { hash: 'life', icon: '⚠️', title: '注意事项', desc: '喜欢和不喜欢的事物' }
-      ],
-      self: [
+      youth: [
         { hash: 'mood', icon: '💭', title: '记录心情', desc: '今天心情怎么样？', action: 'add-mood' },
         { hash: 'tasks', icon: '✅', title: '今日任务', desc: '今天要完成的事' },
         { hash: 'calendar', icon: '📆', title: '日程日历', desc: '今天的安排' },
         { hash: 'archive', icon: '📋', title: '我的档案', desc: '查看我的信息' }
+      ],
+      government: [
+        { hash: 'charts', icon: '📊', title: '宏观数据', desc: '区域数据统计分析' },
+        { hash: 'analytics', icon: '📈', title: '数据价值', desc: '数据导出与报告' }
+      ],
+      admin: [
+        { hash: 'archive', icon: '📋', title: '用户管理', desc: '管理系统用户账号' },
+        { hash: 'analytics', icon: '📈', title: '系统数据', desc: '系统运行数据看板' },
+        { hash: 'charts', icon: '📊', title: '数据可视化', desc: '统计图表概览' }
       ]
     };
     return roleCards[role] || roleCards.parent;
@@ -388,12 +406,13 @@
       caregiver: '<div class="alert-item danger">🚫 严禁海鲜（虾、蟹、贝类）</div>' +
                  '<div class="alert-item warning">⏰ 下午15:00 支持性就业练习</div>' +
                  '<div class="alert-item info">🌙 晚上10点前入睡，注意夜间情绪</div>',
-      volunteer: '<div class="alert-item danger">🚫 不要给他吃海鲜（过敏）</div>' +
-                 '<div class="alert-item warning">🚫 不要不打招呼碰他</div>' +
-                 '<div class="alert-item info">💡 说话慢一点，一次说一件事</div>',
-      self: '<div class="alert-item info">🌟 今天也要加油哦！</div>' +
+      youth: '<div class="alert-item info">🌟 今天也要加油哦！</div>' +
             '<div class="alert-item warning">✅ 今天有烘焙练习</div>' +
-            '<div class="alert-item info">💬 记得记录今天的心情</div>'
+            '<div class="alert-item info">💬 记得记录今天的心情</div>',
+      government: '<div class="alert-item info">📊 欢迎查看区域宏观数据</div>' +
+                  '<div class="alert-item info">🔒 数据已脱敏处理</div>',
+      admin: '<div class="alert-item info">🛡️ 系统管理面板</div>' +
+             '<div class="alert-item info">📋 可管理用户和数据</div>'
     };
     return roleAlerts[role] || roleAlerts.parent;
   }
@@ -416,9 +435,10 @@
     var roleSubTexts = {
       parent: '您可以查看完整档案、添加记录、管理所有信息。',
       teacher: '您可以查看沟通指南、记录教学活动和观察。',
-      caregiver: '您可以查看照护要点、记录日常护理和情绪状态。',
-      volunteer: '您可以查看速读卡和沟通方式，记录陪伴观察。',
-      self: '您可以记录今天的心情和感受，查看今日任务。'
+      caregiver: '您可以查看照护要点、记录日常照护和情绪状态。',
+      youth: '您可以记录今天的心情和感受，查看今日任务。',
+      government: '您可以查看宏观数据统计，数据已脱敏处理。',
+      admin: '您可以管理用户账号和系统配置。'
     };
     var subText = user ? (roleSubTexts[user.role] || '您当前以「' + roleName + '」身份登录。') : '请登录后开始记录。';
 
@@ -454,8 +474,9 @@
       parent: null, // 家长看所有记录
       teacher: ['activity', 'communication', 'emotion', 'note'],
       caregiver: ['care', 'emotion', 'note'],
-      volunteer: ['accompany', 'activity'],
-      self: ['mood', 'note']
+      youth: ['mood', 'note'],
+      government: null,
+      admin: null
     };
     var allowedTypes = roleRecordFilters[role];
     if (allowedTypes) {
@@ -2338,5 +2359,6 @@
   window.renderProfile = window.ProfilePage.renderProfile;
   window.renderLatestActivity = renderLatestActivity;
   window.renderRecordCard = renderRecordCard;
+  window.renderSidebar = renderSidebar;
 
 })();

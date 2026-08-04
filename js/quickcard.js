@@ -112,7 +112,7 @@
 
   /**
    * 切换速读卡版本
-   * @param {string} versionName - 版本名称（standard/teacher/volunteer/institution）
+   * @param {string} versionName - 版本名称（standard/teacher/institution）
    */
   function switchVersion(versionName) {
     window.AppState.currentQuickCardVersion = versionName;

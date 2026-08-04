@@ -6,7 +6,7 @@
   'use strict';
 
   var STORAGE_KEY = 'ai_dongwo_data';
-  var DATA_VERSION = 5;
+  var DATA_VERSION = 6;
 
   var C = window.Constants;
   var ROLES = C.ROLES;
@@ -14,11 +14,12 @@
   /** 生成示例用户数据 */
   function generateSampleUsers() {
     return [
-      { id: 'u_sample_self', name: '小雨', role: 'self', pin: '1111', avatar: '👦', createdAt: window.getTodayString() },
-      { id: 'u_sample_parent', name: '妈妈', role: 'parent', pin: '2222', avatar: '👩', createdAt: window.getTodayString() },
-      { id: 'u_sample_teacher', name: '李老师', role: 'teacher', pin: '3333', avatar: '👩\u200d🏫', createdAt: window.getTodayString() },
-      { id: 'u_sample_caregiver', name: '张阿姨', role: 'caregiver', pin: '4444', avatar: '👵', createdAt: window.getTodayString() },
-      { id: 'u_sample_volunteer', name: '小王', role: 'volunteer', pin: '5555', avatar: '👷', createdAt: window.getTodayString() }
+      { id: 'u_sample_youth', name: '小雨', role: 'youth', pin: '1111', avatar: '🌻', createdAt: window.getTodayString() },
+      { id: 'u_sample_parent', name: '妈妈', role: 'parent', pin: '2222', avatar: '👨\u200d👩\u200d👧', createdAt: window.getTodayString() },
+      { id: 'u_sample_teacher', name: '李老师', role: 'teacher', pin: '3333', avatar: '📚', createdAt: window.getTodayString() },
+      { id: 'u_sample_caregiver', name: '张阿姨', role: 'caregiver', pin: '4444', avatar: '🤝', createdAt: window.getTodayString() },
+      { id: 'u_gov_admin', name: '政府管理员', role: 'government', pin: '6666', avatar: '🏛️', createdAt: window.getTodayString() },
+      { id: 'u_sys_admin', name: '系统管理员', role: 'admin', pin: '9999', avatar: '🛡️', createdAt: window.getTodayString() }
     ];
   }
 
@@ -26,11 +27,10 @@
   function generateSampleRecords() {
     var records = [];
     var authors = {
-      self: { name: '小雨', role: 'self', id: 'u_sample_self', avatar: '👦' },
-      parent: { name: '妈妈', role: 'parent', id: 'u_sample_parent', avatar: '👩' },
-      teacher: { name: '李老师', role: 'teacher', id: 'u_sample_teacher', avatar: '👩\u200d🏫' },
-      caregiver: { name: '张阿姨', role: 'caregiver', id: 'u_sample_caregiver', avatar: '👵' },
-      volunteer: { name: '小王', role: 'volunteer', id: 'u_sample_volunteer', avatar: '👷' }
+      youth: { name: '小雨', role: 'youth', id: 'u_sample_youth', avatar: '🌻' },
+      parent: { name: '妈妈', role: 'parent', id: 'u_sample_parent', avatar: '👨\u200d👩\u200d👧' },
+      teacher: { name: '李老师', role: 'teacher', id: 'u_sample_teacher', avatar: '📚' },
+      caregiver: { name: '张阿姨', role: 'caregiver', id: 'u_sample_caregiver', avatar: '🤝' }
     };
 
     function dateStr(offset) {
@@ -84,8 +84,8 @@
     moodData.forEach(function(item) {
       addRecord('mood', {
         mood: item.m, content: item.c,
-        author: authors.self.name, authorRole: authors.self.role,
-        authorId: authors.self.id, authorAvatar: authors.self.avatar,
+        author: authors.youth.name, authorRole: authors.youth.role,
+        authorId: authors.youth.id, authorAvatar: authors.youth.avatar,
         date: dateStr(item.d), time: timeStr(9 + Math.floor(Math.random() * 6), Math.floor(Math.random() * 60))
       });
     });
@@ -102,7 +102,7 @@
       { d: -21, t: '开心', c: '弹新曲子给妈妈听，得到夸奖后开心地笑了，还主动要求再弹一首。', a: 'parent' },
       { d: -23, t: '兴奋', c: '得知有烘焙比赛，一晚上都在念叨要做饼干，很晚才睡着。', a: 'parent' },
       { d: -26, t: '焦虑', c: '今天机构人多嘈杂，出现捂耳朵行为。带他到安静房间待了15分钟后恢复。', a: 'caregiver' },
-      { d: -27, t: '开心', c: '去新公园看到了很多流浪猫，主动走近观察，心情特别好。', a: 'volunteer' },
+      { d: -27, t: '开心', c: '去新公园看到了很多流浪猫，主动走近观察，心情特别好。', a: 'caregiver' },
       { d: -29, t: '开心', c: '收到电子琴曲谱集礼物，迫不及待地翻看了每一页。', a: 'parent' }
     ];
 
@@ -118,11 +118,11 @@
     // === 活动记录 ===
     var activityData = [
       { d: 0, t: '烘焙课表现', c: '主动帮忙分发材料，做了一个杯子蛋糕，装饰得很漂亮。', a: 'teacher' },
-      { d: -2, t: '社区散步', c: '在社区里散步40分钟，对路过的公交车很感兴趣，能准确说出线路号。', a: 'volunteer' },
+      { d: -2, t: '社区散步', c: '在社区里散步40分钟，对路过的公交车很感兴趣，能准确说出线路号。', a: 'caregiver' },
       { d: -5, t: '电子琴练习', c: '练习了新曲子《小星星》，手指协调性有进步，能完整弹奏。', a: 'teacher' },
       { d: -7, t: '绘画活动', c: '画了一幅公交车主题的画，用了蓝色和黄色，配色很好看。', a: 'teacher' },
       { d: -12, t: '烘焙课', c: '做了巧克力曲奇，学会了控制烤箱温度，成品不错。', a: 'teacher' },
-      { d: -16, t: '公园观察', c: '在公园观察公交车进出站，能说出大部分线路的终点站。', a: 'volunteer' },
+      { d: -16, t: '公园观察', c: '在公园观察公交车进出站，能说出大部分线路的终点站。', a: 'caregiver' },
       { d: -21, t: '音乐分享', c: '给妈妈弹了新学的曲子，还尝试即兴改编了几个小节。', a: 'parent' },
       { d: -24, t: '烘焙作品', c: '独立完成了小饼干的制作，从配料到出炉全程参与。', a: 'teacher' }
     ];
@@ -171,17 +171,17 @@
       });
     });
 
-    // === 陪伴记录 ===
+    // === 陪伴记录（已转为note类型，volunteer角色已移除） ===
     var accompData = [
-      { d: -1, c: '陪小雨去公园散步，对公交车经过很感兴趣，能准确说出线路号。', a: 'volunteer' },
-      { d: -9, c: '一起拼公交车模型，小雨很专注，能按步骤完成，还主动帮忙整理零件。', a: 'volunteer' },
-      { d: -27, c: '去新公园看到了很多流浪猫，小雨主动走近观察，还轻声跟猫说话。', a: 'volunteer' }
+      { d: -1, t: '陪伴散步', c: '陪小雨去公园散步，对公交车经过很感兴趣，能准确说出线路号。', a: 'caregiver' },
+      { d: -9, t: '陪伴拼模型', c: '一起拼公交车模型，小雨很专注，能按步骤完成，还主动帮忙整理零件。', a: 'caregiver' },
+      { d: -27, t: '陪伴看猫', c: '去新公园看到了很多流浪猫，小雨主动走近观察，还轻声跟猫说话。', a: 'caregiver' }
     ];
 
     accompData.forEach(function(item) {
       var au = authors[item.a];
-      addRecord('accompany', {
-        content: item.c,
+      addRecord('note', {
+        title: item.t, content: item.c,
         author: au.name, authorRole: au.role, authorId: au.id, authorAvatar: au.avatar,
         date: dateStr(item.d), time: timeStr(15, Math.floor(Math.random() * 60))
       });
@@ -254,10 +254,10 @@
       var friday = new Date(y, m - 1, d + diff);
       return friday.getFullYear() + '-' + String(friday.getMonth() + 1).padStart(2, '0') + '-' + String(friday.getDate()).padStart(2, '0');
     }
-    events.push({ id: 'evt_vol_1', title: '志愿者陪伴', type: 'activity', icon: '🤝', date: getFriday(0), time: '15:00', endTime: '16:30', description: '志愿者小王下午来陪伴散步', recurring: 'weekly', priority: 'low', color: '#13C2C2', author: '妈妈', authorRole: 'parent', createdAt: today });
-    events.push({ id: 'evt_vol_2', title: '志愿者陪伴', type: 'activity', icon: '🤝', date: getFriday(-1), time: '15:00', endTime: '16:30', description: '志愿者小王下午来陪伴散步', recurring: 'weekly', priority: 'low', color: '#13C2C2', author: '妈妈', authorRole: 'parent', createdAt: today });
+    events.push({ id: 'evt_vol_1', title: '影子老师陪伴', type: 'activity', icon: '🤝', date: getFriday(0), time: '15:00', endTime: '16:30', description: '影子老师张阿姨下午来陪伴散步', recurring: 'weekly', priority: 'low', color: '#13C2C2', author: '妈妈', authorRole: 'parent', createdAt: today });
+    events.push({ id: 'evt_vol_2', title: '影子老师陪伴', type: 'activity', icon: '🤝', date: getFriday(-1), time: '15:00', endTime: '16:30', description: '影子老师张阿姨下午来陪伴散步', recurring: 'weekly', priority: 'low', color: '#13C2C2', author: '妈妈', authorRole: 'parent', createdAt: today });
     if (dayOffset >= 7) {
-      events.push({ id: 'evt_vol_3', title: '志愿者陪伴', type: 'activity', icon: '🤝', date: getFriday(-2), time: '15:00', endTime: '16:30', description: '志愿者小王下午来陪伴散步', recurring: 'weekly', priority: 'low', color: '#13C2C2', author: '妈妈', authorRole: 'parent', createdAt: today });
+      events.push({ id: 'evt_vol_3', title: '影子老师陪伴', type: 'activity', icon: '🤝', date: getFriday(-2), time: '15:00', endTime: '16:30', description: '影子老师张阿姨下午来陪伴散步', recurring: 'weekly', priority: 'low', color: '#13C2C2', author: '妈妈', authorRole: 'parent', createdAt: today });
     }
 
     // 本月散布的单次事件

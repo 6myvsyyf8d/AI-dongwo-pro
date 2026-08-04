@@ -131,6 +131,12 @@
     var role = window.Constants.ROLES[roleKey];
     if (!role) return;
 
+    // government 和 admin 不能自助注册，只能用预设账号登录
+    if (roleKey === 'government' || roleKey === 'admin') {
+      window.showToast('该角色不支持自助注册，请使用预设账号登录');
+      return;
+    }
+
     regRole = roleKey; // 暂存选择的角色
 
     // 更新显示
@@ -196,6 +202,8 @@
       window.showToast('登录成功！欢迎 ' + name);
     }
     updateNavBar();
+    // 重新渲染侧边栏以匹配新角色
+    if (window.renderSidebar) window.renderSidebar();
     window.location.hash = 'home';
   }
 
@@ -235,6 +243,8 @@
 
     window.showToast('登录成功！欢迎 ' + name);
     updateNavBar();
+    // 重新渲染侧边栏以匹配新角色
+    if (window.renderSidebar) window.renderSidebar();
     window.location.hash = 'home';
   }
 

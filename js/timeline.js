@@ -216,8 +216,9 @@
       parent: null,
       teacher: ['activity', 'communication', 'emotion', 'strategy', 'note'],
       caregiver: ['care', 'communication', 'emotion', 'strategy', 'note'],
-      volunteer: ['accompany', 'activity', 'emotion', 'note'],
-      self: ['mood', 'note']
+      youth: ['mood', 'note'],
+      government: null,
+      admin: null
     };
     var allowedTypes = roleRecordFilters[currentRole];
     if (allowedTypes) {

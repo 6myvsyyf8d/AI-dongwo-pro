@@ -166,16 +166,6 @@
         { title: '预警信号', type: 'yellow', items: ['说话重复、捂耳朵、来回踱步', '突然沉默、找借口离开'] }
       ]
     },
-    volunteer: {
-      label: '志愿者版',
-      target: '新接触小雨的志愿者',
-      sections: [
-        { title: '认识小雨', type: 'blue', items: ['24岁，安静的男孩', '喜欢猫、音乐、烘焙'] },
-        { title: '最重要的三条', type: 'red', items: ['不碰海鲜（他过敏）', '不要催他"快点"', '不要不打招呼碰他'] },
-        { title: '和他相处', type: 'green', items: ['说话慢一点、一次说一件事', '给他反应时间', '安静陪伴就好'] },
-        { title: '如果他紧张', type: 'yellow', items: ['不要追问"怎么了"', '保持安静，给他空间', '告诉附近的老师或家长'] }
-      ]
-    },
     institution: {
       label: '机构概览版',
       target: '机构管理人员',
@@ -190,20 +180,22 @@
 
   /** 隐私分级配置（5级体系） */
   var privacyLevels = {
-    self:      ['A', 'B'],
-    parent:    ['A', 'B', 'C', 'D'],
-    teacher:   ['A', 'B'],
-    caregiver: ['A', 'B', 'C'],
-    volunteer: ['A']
+    youth:      ['A', 'B'],
+    parent:     ['A', 'B', 'C', 'D'],
+    teacher:    ['A', 'B'],
+    caregiver:  ['A', 'B', 'C'],
+    government: ['A'],
+    admin:      ['A', 'B', 'C', 'D']
   };
 
   /** 角色名称映射（中文） */
   var roleLabels = {
-    self: '心青年本人',
+    youth: '心青年',
     parent: '家长',
     teacher: '老师',
-    caregiver: '护理员',
-    volunteer: '志愿者'
+    caregiver: '影子老师',
+    government: '政府',
+    admin: '管理员'
   };
 
   /** 对话式采集预设脚本 */
@@ -270,21 +262,24 @@
 
   /** 多角色配置 */
   var ROLES = {
-    self: { label: '心青年本人', name: '小雨', avatar: '👦', color: '#4A90D9',
+    youth: { label: '心青年', name: '小雨', avatar: '🌻', color: '#4A90D9',
       canAdd: ['mood', 'note'],
       description: '记录自己的心情和感受' },
-    parent: { label: '家长/照护人', name: '妈妈', avatar: '👩', color: '#52C41A',
+    parent: { label: '家长', name: '妈妈', avatar: '👨\u200d👩\u200d👧', color: '#52C41A',
       canAdd: ['care', 'communication', 'emotion', 'strategy', 'note'],
       description: '记录日常照护和家庭情况' },
-    teacher: { label: '机构老师', name: '李老师', avatar: '👩\u200d🏫', color: '#FAAD14',
+    teacher: { label: '老师', name: '李老师', avatar: '📚', color: '#FAAD14',
       canAdd: ['activity', 'communication', 'emotion', 'strategy', 'note'],
       description: '记录教学和活动情况' },
-    caregiver: { label: '护理员', name: '张阿姨', avatar: '👵', color: '#722ED1',
+    caregiver: { label: '影子老师', name: '张阿姨', avatar: '🤝', color: '#722ED1',
       canAdd: ['care', 'communication', 'emotion', 'strategy', 'note'],
-      description: '记录日常护理和健康情况' },
-    volunteer: { label: '志愿者', name: '小王', avatar: '👷', color: '#13C2C2',
-      canAdd: ['accompany', 'emotion', 'note'],
-      description: '记录陪伴和观察情况' }
+      description: '记录日常照护和陪伴情况' },
+    government: { label: '政府', name: '政府管理员', avatar: '🏛️', color: '#EB2F96',
+      canAdd: [],
+      description: '查看宏观数据看板' },
+    admin: { label: '管理员', name: '系统管理员', avatar: '🛡️', color: '#13C2C2',
+      canAdd: [],
+      description: '系统配置与用户管理' }
   };
 
   /** 记录类型配置 */
@@ -299,8 +294,6 @@
       fields: ['content'], description: '记录沟通中的观察发现' },
     emotion: { label: '情绪事件', icon: '😊', color: '#F5222D',
       fields: ['emotion_type', 'content'], description: '记录情绪波动的触发和应对' },
-    accompany: { label: '陪伴记录', icon: '🤝', color: '#13C2C2',
-      fields: ['content'], description: '记录陪伴过程中的观察' },
     note: { label: '一般备注', icon: '📝', color: '#999999',
       fields: ['title', 'content'], description: '添加其他需要记录的备注' },
     strategy: { label: '策略记录', icon: '🧩', color: '#EB2F96',
@@ -345,7 +338,7 @@
     'analytics': 'analytics'
   };
 
-  /** 侧边栏菜单配置 */
+  /** 侧边栏菜单配置（普通角色：youth/parent/teacher/caregiver） */
   var SIDEBAR_MENU = [
     { group: '概览', items: [{ hash: 'home', icon: '🏠', label: '首页' }] },
     {
@@ -353,10 +346,10 @@
       items: [
         { hash: 'archive', icon: '📋', label: '完整档案' },
         { hash: 'life', icon: '💚', label: '生活' },
-        { hash: 'communication', icon: '💬', label: '沟通说明书' },
-        { hash: 'emotion', icon: '🌈', label: '情绪与行为' },
-        { hash: 'care', icon: '🩺', label: '照护与医疗' },
-        { hash: 'work', icon: '💼', label: '工作支持' },
+        { hash: 'communication', icon: '💬', label: '沟通与表达' },
+        { hash: 'emotion', icon: '🌊', label: '情绪与行为' },
+        { hash: 'care', icon: '💊', label: '照护与医疗' },
+        { hash: 'work', icon: '💼', label: '工作与生活' },
         { hash: 'relations', icon: '👥', label: '关系地图' }
       ]
     },
@@ -379,6 +372,25 @@
       group: 'AI助手',
       items: [{ hash: 'collect', icon: '🤖', label: '对话采集' }]
     }
+  ];
+
+  /** 政府角色侧边栏菜单 */
+  var GOVERNMENT_NAV_ITEMS = [
+    { group: '概览', items: [{ hash: 'home', icon: '🏠', label: '政府看板' }] },
+    { group: '数据', items: [
+      { hash: 'charts', icon: '📊', label: '宏观数据' },
+      { hash: 'analytics', icon: '📈', label: '数据价值' }
+    ]}
+  ];
+
+  /** 管理员角色侧边栏菜单 */
+  var ADMIN_NAV_ITEMS = [
+    { group: '概览', items: [{ hash: 'home', icon: '🏠', label: '管理首页' }] },
+    { group: '管理', items: [
+      { hash: 'archive', icon: '📋', label: '用户管理' },
+      { hash: 'analytics', icon: '📈', label: '系统数据' },
+      { hash: 'charts', icon: '📊', label: '数据可视化' }
+    ]}
   ];
 
   /* ==========================================================
@@ -534,6 +546,8 @@
     EMOTION_OPTIONS: EMOTION_OPTIONS,
     routeMap: routeMap,
     SIDEBAR_MENU: SIDEBAR_MENU,
+    GOVERNMENT_NAV_ITEMS: GOVERNMENT_NAV_ITEMS,
+    ADMIN_NAV_ITEMS: ADMIN_NAV_ITEMS,
     STRATEGY_KB: STRATEGY_KB,
     EMOTION_TO_STRATEGY: EMOTION_TO_STRATEGY
   };
