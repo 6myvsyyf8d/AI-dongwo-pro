@@ -274,6 +274,36 @@
       </div>
     </section>
 
+    <!-- ===== 欢迎页 #welcome ===== -->
+    <section id="welcome" class="page-section">
+      <div class="page-header"><span class="page-title">欢迎</span></div>
+      <div id="welcome-content" style="padding-top:12px;"></div>
+    </section>
+
+    <!-- ===== 授权管理 #grants ===== -->
+    <section id="grants" class="page-section">
+      <div class="page-header"><span class="page-title">授权管理</span></div>
+      <div id="grants-content" style="padding-top:12px;"></div>
+    </section>
+
+    <!-- ===== 加入家庭 #join ===== -->
+    <section id="join" class="page-section">
+      <div class="page-header"><span class="page-title">加入家庭</span></div>
+      <div id="join-content" style="padding-top:12px;"></div>
+    </section>
+
+    <!-- ===== 审批 #approvals ===== -->
+    <section id="approvals" class="page-section">
+      <div class="page-header"><span class="page-title">加入申请审批</span></div>
+      <div id="approvals-content" style="padding-top:12px;"></div>
+    </section>
+
+    <!-- ===== 档案码 #archive-code ===== -->
+    <section id="archive-code" class="page-section">
+      <div class="page-header"><span class="page-title">档案码</span></div>
+      <div id="archive-code-content" style="padding-top:12px;"></div>
+    </section>
+
   </main>
 
   <!-- ========== 底部导航 TabBar ========== -->
@@ -306,6 +336,10 @@
   <!-- 图表库 -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
+  <!-- Markdown 解析 & XSS 防护 -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
+
   <!-- 模块脚本（按依赖顺序加载） -->
   <script src="js/utils.js"></script>
   <script src="js/constants.js"></script>
@@ -318,8 +352,18 @@
   <script src="js/records.js"></script>
   <script src="js/quickcard.js"></script>
   <script src="js/timeline.js"></script>
+  <!-- 新版对话引擎（chatbot-templates → classifier → providers → markdown → chatbot） -->
+  <script src="js/chatbot-templates.js"></script>
+  <script src="js/chatbot-classifier.js"></script>
+  <script src="js/chatbot-providers.js"></script>
+  <script src="js/chat-markdown.js"></script>
   <script src="js/chatbot.js"></script>
   <script src="js/charts.js"></script>
+  <script src="js/welcome.js"></script>
+  <script src="js/grants.js"></script>
+  <script src="js/join-request.js"></script>
+  <script src="js/approvals.js"></script>
+  <script src="js/archive-code.js"></script>
 
   <!-- 主入口（最后加载） -->
   <script src="js/app.js"></script>
