@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>AI聊聊 · 整理确认</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Noto Sans SC', -apple-system, sans-serif;
+  background: #F7F4FB;
+  color: #3D3327;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ===== Phone Frame ===== */
+.phone-frame {
+  width: 375px;
+  min-height: 100vh;
+  background: #F7F4FB;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ===== Top Bar ===== */
+.top-bar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 16px;
+  background: rgba(250,248,253,0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(119,98,168,0.08);
+  min-height: 50px;
+}
+
+.btn-back {
+  position: absolute;
+  left: 16px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #3D3327;
+  font-size: 22px;
+  line-height: 1;
+  transition: background 200ms ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn-back:active {
+  background: rgba(94,106,210,0.08);
+}
+
+.top-bar-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #3D3327;
+  margin-right: 32px;
+}
+
+/* ===== Instruction Bar ===== */
+.instruction-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: #EEEDFB;
+  border-bottom: 1px solid rgba(94,106,210,0.1);
+}
+
+.instruction-count {
+  font-size: 13px;
+  font-weight: 700;
+  color: #5E6AD2;
+}
+
+.instruction-legend {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  color: #A39588;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.legend-dot.orange { background: #E8A547; }
+.legend-dot.green { background: #5B9B6F; }
+
+/* ===== Card List ===== */
+.card-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-bottom: 110px;
+}
+
+/* ===== Card ===== */
+.card {
+  background: #FFFFFF;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(82,63,113,0.08);
+  overflow: hidden;
+  transition: box-shadow 200ms ease;
+}
+
+.card:active {
+  box-shadow: 0 4px 16px rgba(82,63,113,0.12);
+}
+
+.card.pending {
+  border-left: 4px solid #E8A547;
+}
+
+.card.confirmed {
+  border-left: 4px solid #5B9B6F;
+}
+
+/* Card Inner */
+.card-inner {
+  padding: 14px 14px 10px;
+}
+
+/* Card Header */
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.card-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.card-badge.pending {
+  background: #FDF5E6;
+  color: #8C6A00;
+}
+
+.card-badge.confirmed {
+  background: #F0F7F2;
+  color: #2E7D0F;
+}
+
+.btn-menu {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: #A39588;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 200ms ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn-menu:active {
+  background: rgba(0,0,0,0.04);
+}
+
+/* Card Body */
+.card-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #3D3327;
+  margin-bottom: 6px;
+}
+
+.card-summary {
+  font-size: 10.5px;
+  color: #A39588;
+  line-height: 1.6;
+  margin-bottom: 4px;
+}
+
+.card-confirmed-text {
+  font-size: 12px;
+  font-weight: 500;
+  color: #5B9B6F;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Expandable Fields */
+.expandable-fields {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 350ms cubic-bezier(0.16,1,0.3,1), margin 350ms ease, opacity 350ms ease;
+  opacity: 0;
+  margin-top: 0;
+}
+
+.expandable-fields.expanded {
+  max-height: 500px;
+  opacity: 1;
+  margin-top: 10px;
+}
+
+.field-group {
+  margin-bottom: 8px;
+}
+
+.field-group:last-child {
+  margin-bottom: 0;
+}
+
+.field-label {
+  font-size: 11px;
+  color: #A39588;
+  margin-bottom: 4px;
+  display: block;
+}
+
+.field-textarea {
+  width: 100%;
+  min-height: 56px;
+  padding: 8px 10px;
+  font-size: 13px;
+  font-family: 'Noto Sans SC', -apple-system, sans-serif;
+  color: #3D3327;
+  background: #F7F4FB;
+  border: 1.5px solid rgba(0,0,0,0.1);
+  border-radius: 8px;
+  resize: vertical;
+  outline: none;
+  transition: border-color 200ms ease;
+}
+
+.field-textarea:focus {
+  border-color: #5E6AD2;
+}
+
+/* Card Actions */
+.card-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.btn-action {
+  font-size: 12.5px;
+  font-weight: 500;
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1.5px solid rgba(0,0,0,0.08);
+  background: transparent;
+  color: #5E6AD2;
+  cursor: pointer;
+  transition: all 200ms cubic-bezier(0.16,1,0.3,1);
+  -webkit-tap-highlight-color: transparent;
+  white-space: nowrap;
+}
+
+.btn-action:active {
+  background: rgba(94,106,210,0.06);
+}
+
+.btn-action.confirm-save {
+  background: linear-gradient(135deg, #7562a6, #5E6AD2);
+  color: #FFFFFF;
+  border: none;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(94,106,210,0.2);
+}
+
+.btn-action.confirm-save:active {
+  opacity: 0.9;
+  transform: scale(0.97);
+}
+
+.btn-action.muted {
+  color: #A39588;
+  border-color: rgba(0,0,0,0.05);
+}
+
+.btn-action.muted:active {
+  background: rgba(0,0,0,0.03);
+}
+
+/* ===== Bottom Bar ===== */
+.bottom-bar {
+  position: sticky;
+  bottom: 0;
+  background: rgba(255,255,255,0.95);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid rgba(119,98,168,0.08);
+  padding: 12px 16px;
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.btn-primary-full {
+  width: 100%;
+  padding: 14px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #FFFFFF;
+  background: linear-gradient(135deg, #7562a6, #5E6AD2);
+  border: none;
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(94,106,210,0.3);
+  cursor: pointer;
+  transition: all 200ms cubic-bezier(0.16,1,0.3,1);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn-primary-full:active {
+  opacity: 0.92;
+  transform: scale(0.98);
+}
+
+.btn-secondary-full {
+  width: 100%;
+  padding: 10px;
+  font-size: 14px;
+  color: #A39588;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: color 200ms ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn-secondary-full:active {
+  color: #3D3327;
+}
+
+/* ===== Success Overlay ===== */
+.success-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.5);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  animation: fadeIn 250ms ease;
+}
+
+.success-overlay.visible {
+  display: flex;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.success-dialog {
+  background: #FFFFFF;
+  border-radius: 20px;
+  padding: 32px 24px 24px;
+  max-width: 300px;
+  width: calc(100% - 48px);
+  box-shadow: 0 8px 32px rgba(82,63,113,0.14);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  animation: dialogIn 350ms cubic-bezier(0.16,1,0.3,1);
+}
+
+@keyframes dialogIn {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.success-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #F0F7F2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.success-check {
+  font-size: 28px;
+  line-height: 1;
+  color: #5B9B6F;
+}
+
+.success-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #3D3327;
+  margin-bottom: 8px;
+}
+
+.success-desc {
+  font-size: 14px;
+  color: #A39588;
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+
+.btn-success-close {
+  width: 100%;
+  padding: 12px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #FFFFFF;
+  background: #5E6AD2;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: opacity 200ms ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn-success-close:active {
+  opacity: 0.9;
+}
+
+/* ===== Expand Button ===== */
+.expand-toggle {
+  font-size: 11px;
+  color: #5E6AD2;
+  background: none;
+  border: none;
+  padding: 2px 0;
+  cursor: pointer;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  -webkit-tap-highlight-color: transparent;
+  margin-top: 4px;
+}
+
+.expand-arrow {
+  display: inline-block;
+  transition: transform 250ms cubic-bezier(0.16,1,0.3,1);
+  font-size: 10px;
+}
+
+.expand-arrow.rotated {
+  transform: rotate(180deg);
+}
+
+/* ===== Menu Dropdown (hidden by default) ===== */
+.menu-dropdown {
+  position: absolute;
+  top: 38px;
+  right: 10px;
+  background: #FFFFFF;
+  border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(82,63,113,0.14);
+  border: 1px solid rgba(0,0,0,0.06);
+  z-index: 20;
+  min-width: 120px;
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+  animation: menuIn 200ms cubic-bezier(0.16,1,0.3,1);
+}
+
+.menu-dropdown.visible {
+  display: flex;
+}
+
+@keyframes menuIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.menu-item {
+  padding: 10px 16px;
+  font-size: 13px;
+  color: #3D3327;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  transition: background 150ms ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.menu-item:hover, .menu-item:active {
+  background: #F7F4FB;
+}
+
+.menu-item:not(:last-child) {
+  border-bottom: 1px solid rgba(0,0,0,0.04);
+}
+
+.card-content-wrapper {
+  position: relative;
+}
+</style>
+</head>
+<body>
+
+<div class="phone-frame">
+
+  <!-- Top Bar -->
+  <div class="top-bar">
+    <button class="btn-back" data-dom-id="btn-review-back" aria-label="返回">&#8249;</button>
+    <span class="top-bar-title">本次整理</span>
+  </div>
+
+  <!-- Instruction Bar -->
+  <div class="instruction-bar">
+    <span class="instruction-count">共3条记录</span>
+    <div class="instruction-legend">
+      <span class="legend-item"><span class="legend-dot orange"></span>待确认</span>
+      <span class="legend-item"><span class="legend-dot green"></span>已确认</span>
+    </div>
+  </div>
+
+  <!-- Card List -->
+  <div class="card-list">
+
+    <!-- Card 1: Pending - 沟通观察 -->
+    <div class="card pending">
+      <div class="card-content-wrapper">
+        <div class="card-inner">
+          <div class="card-header">
+            <span class="card-badge pending">待确认</span>
+            <button class="btn-menu" data-card-menu="1" aria-label="更多操作">···</button>
+          </div>
+          <div class="card-body">
+            <div class="card-title">沟通观察</div>
+            <div class="card-summary">小雨最近喜欢用短句表达需求，能主动说出"要喝水"和"出去玩"</div>
+            <button class="expand-toggle" data-expand="1">
+              展开编辑 <span class="expand-arrow" data-arrow="1">▾</span>
+            </button>
+            <div class="expandable-fields" data-fields="1">
+              <div class="field-group">
+                <label class="field-label">具体表现</label>
+                <textarea class="field-textarea" placeholder="记录具体表现...">小雨最近喜欢用短句表达需求，能主动说出"要喝水"和"出去玩"</textarea>
+              </div>
+              <div class="field-group">
+                <label class="field-label">触发情境</label>
+                <textarea class="field-textarea" placeholder="记录触发情境...">在口渴时或想要外出时主动表达</textarea>
+              </div>
+              <div class="field-group">
+                <label class="field-label">建议策略</label>
+                <textarea class="field-textarea" placeholder="记录建议策略...">持续鼓励短句表达，逐步引导扩展句式</textarea>
+              </div>
+            </div>
+          </div>
+          <div class="card-actions">
+            <button class="btn-action">修改</button>
+            <button class="btn-action confirm-save">确认保存</button>
+            <button class="btn-action muted">查看详情</button>
+          </div>
+        </div>
+        <!-- Menu Dropdown -->
+        <div class="menu-dropdown" data-menu="1">
+          <button class="menu-item">删除记录</button>
+          <button class="menu-item">标记忽略</button>
+          <button class="menu-item">复制内容</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 2: Confirmed - 活动记录 -->
+    <div class="card confirmed">
+      <div class="card-content-wrapper">
+        <div class="card-inner">
+          <div class="card-header">
+            <span class="card-badge confirmed">已确认</span>
+            <button class="btn-menu" data-card-menu="2" aria-label="更多操作">···</button>
+          </div>
+          <div class="card-body">
+            <div class="card-title">活动记录</div>
+            <div class="card-confirmed-text">&#10003; 已确认等待统一保存</div>
+          </div>
+          <div class="card-actions">
+            <button class="btn-action">修改</button>
+            <button class="btn-action muted">查看详情</button>
+          </div>
+        </div>
+        <div class="menu-dropdown" data-menu="2">
+          <button class="menu-item">撤销确认</button>
+          <button class="menu-item">复制内容</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 3: Pending - 情绪事件 -->
+    <div class="card pending">
+      <div class="card-content-wrapper">
+        <div class="card-inner">
+          <div class="card-header">
+            <span class="card-badge pending">待确认</span>
+            <button class="btn-menu" data-card-menu="3" aria-label="更多操作">···</button>
+          </div>
+          <div class="card-body">
+            <div class="card-title">情绪事件</div>
+            <div class="card-summary">小雨今天情绪稳定，在烘焙课上表现积极</div>
+          </div>
+          <div class="card-actions">
+            <button class="btn-action">修改</button>
+            <button class="btn-action confirm-save">确认保存</button>
+            <button class="btn-action muted">查看详情</button>
+          </div>
+        </div>
+        <div class="menu-dropdown" data-menu="3">
+          <button class="menu-item">删除记录</button>
+          <button class="menu-item">标记忽略</button>
+          <button class="menu-item">复制内容</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Bottom Bar -->
+  <div class="bottom-bar">
+    <button class="btn-primary-full" data-dom-id="btn-confirm-all">确认全部待确认记录</button>
+    <button class="btn-secondary-full" data-dom-id="btn-later">稍后处理</button>
+  </div>
+
+  <!-- Success Overlay -->
+  <div class="success-overlay" data-dom-id="success-dialog">
+    <div class="success-dialog">
+      <div class="success-icon">
+        <span class="success-check">&#10003;</span>
+      </div>
+      <div class="success-title">保存成功</div>
+      <div class="success-desc">2条记录已保存到小宇的支持档案中</div>
+      <button class="btn-success-close" data-dom-id="btn-success-close">知道了</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function() {
+  // Expand/Collapse toggle
+  document.querySelectorAll('.expand-toggle').forEach(function(btn) {
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      var expandId = btn.getAttribute('data-expand');
+      var fields = document.querySelector('[data-fields="' + expandId + '"]');
+      var arrow = document.querySelector('[data-arrow="' + expandId + '"]');
+      var isExpanded = fields.classList.contains('expanded');
+      if (isExpanded) {
+        fields.classList.remove('expanded');
+        arrow.classList.remove('rotated');
+        btn.querySelector('.expand-arrow').outerHTML = '<span class="expand-arrow" data-arrow="' + expandId + '">▾</span>';
+      } else {
+        fields.classList.add('expanded');
+        arrow.classList.add('rotated');
+        btn.querySelector('.expand-arrow').outerHTML = '<span class="expand-arrow rotated" data-arrow="' + expandId + '">▾</span>';
+      }
+    });
+  });
+
+  // Menu toggle
+  document.querySelectorAll('[data-card-menu]').forEach(function(btn) {
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      var cardId = btn.getAttribute('data-card-menu');
+      var dropdown = document.querySelector('[data-menu="' + cardId + '"]');
+      var isVisible = dropdown.classList.contains('visible');
+      // Close all dropdowns first
+      document.querySelectorAll('.menu-dropdown.visible').forEach(function(d) {
+        d.classList.remove('visible');
+      });
+      if (!isVisible) {
+        dropdown.classList.add('visible');
+      }
+    });
+  });
+
+  // Close dropdowns when clicking outside
+  document.addEventListener('click', function() {
+    document.querySelectorAll('.menu-dropdown.visible').forEach(function(d) {
+      d.classList.remove('visible');
+    });
+  });
+
+  // Confirm all button -> show success dialog
+  document.querySelector('[data-dom-id="btn-confirm-all"]').addEventListener('click', function() {
+    document.querySelector('[data-dom-id="success-dialog"]').classList.add('visible');
+  });
+
+  // Close success dialog
+  document.querySelector('[data-dom-id="btn-success-close"]').addEventListener('click', function() {
+    document.querySelector('[data-dom-id="success-dialog"]').classList.remove('visible');
+  });
+
+  // Close success dialog on overlay click
+  document.querySelector('[data-dom-id="success-dialog"]').addEventListener('click', function(e) {
+    if (e.target === this) {
+      this.classList.remove('visible');
+    }
+  });
+
+  // "稍后处理" - just a placeholder action
+  document.querySelector('[data-dom-id="btn-later"]').addEventListener('click', function() {
+    // Placeholder - could navigate back
+  });
+
+  // Back button
+  document.querySelector('[data-dom-id="btn-review-back"]').addEventListener('click', function() {
+    // Placeholder - could navigate back
+  });
+
+  // Individual confirm-save buttons
+  document.querySelectorAll('.confirm-save').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      // Mark this card as confirmed, then show success or update UI
+      document.querySelector('[data-dom-id="success-dialog"]').classList.add('visible');
+    });
+  });
+})();
+</script>
+
+</body>
+</html>

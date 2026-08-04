@@ -1,0 +1,78 @@
+{
+  "project": {
+    "resolvedLane": "free_exploration",
+    "selectedIntentWorkflowRead": true,
+    "contextRequirementsLoaded": [
+      {"path": "shared-runtime/runtime-boundaries/lane-runtime-contracts.md", "readStatus": "loaded", "bodyRead": true},
+      {"path": "shared-runtime/agent-dispatch-runtime/lane-dispatch-index.md", "readStatus": "loaded", "bodyRead": true},
+      {"path": "delivery-quality/page-rendering-quality-gate.md", "readStatus": "loaded", "bodyRead": true},
+      {"path": "delivery-quality/design-artifact-validation.md", "readStatus": "loaded", "bodyRead": true},
+      {"path": "delivery-quality/delivery-evidence-contract.md", "readStatus": "loaded", "bodyRead": true},
+      {"path": "visual-experience/visual-experience-guidelines.md", "readStatus": "loaded", "bodyRead": true}
+    ],
+    "contextReadScope": {
+      "mainAgent": {
+        "forbiddenReads": ["other intent-workflows/**", "Sub-Agent implementation files before dispatch"]
+      },
+      "pageSubAgent": {
+        "allowedReads": ["current lane page runtime guide", "current lane dispatch contract excerpt", "current Page Packet", "supplementaryReads[] only"],
+        "forbiddenReads": ["SKILL.md full re-read", "other intent-workflows/**", "full runtime-orchestration-summary.json unless explicitly sliced"]
+      }
+    },
+    "validationRunDiscipline": {
+      "maxFullValidationRuns": 2,
+      "softWarningsTriggerRepair": false,
+      "blockingRepairMode": "targeted-once",
+      "forbiddenRepairTriggers": ["soft-warning-only", "provenance-warning-only", "style-warning-only"]
+    },
+    "lowValueCallWatchdog": {
+      "applies": true,
+      "noProgressSignals": ["no_tool_call", "no_artifact_diff", "no_structured_decision"],
+      "noProgressNextAction": "enter_readiness_or_blocked_summary"
+    },
+    "intentProfile": {
+      "routingReason": "free_exploration: no Library, no restore target, open-ended kanban page creation with stateful interactions",
+      "caseFamily": "free_exploration",
+      "operatingMode": "free-explore",
+      "complexity": "stateful-free-fast"
+    },
+    "cssPreflightEvidence": {
+      "applies": true,
+      "status": "passed",
+      "brandPrefix": "kanban",
+      "checks": {
+        "themeVars": "present",
+        "semanticTokenFallback": "present",
+        "themeInline": "present",
+        "tailwindCdn": "present",
+        "htmlClass": "present",
+        "semanticMappings": "resolved"
+      },
+      "retryCount": 0,
+      "blockingReason": null
+    },
+    "styleContinuityAnchors": {
+      "colorSystem": "iOS-style neutral palette (#f5f5f7 bg, #ffffff cards, #1d1d1f text). Status dots: orange #e7ad51, purple #9ba5ff, green #4fc083. Primary accent #5e6ad2.",
+      "shapeSystem": "Rounded rectangles: sm 8px, md 12px, lg 16px, xl 22px. Full pill for buttons and tags.",
+      "typographySystem": "System sans-serif. 19px bold for greeting, 13-14px body. Apple-style UI typography.",
+      "spacingSystem": "Apple HIG: 8px base grid, 16px section padding, 12px card gaps.",
+      "componentLanguage": "iOS-like: pill buttons, sheet modals, segmented controls, table-row cards with status indicators.",
+      "surfaceAndDepth": "Flat design with subtle shadows. Cards have 0_1px_3px shadow. Sheet has 0_-4px_24px shadow.",
+      "imageryAndIconography": "Emoji + Lucide icons. Column headers use emoji (📋🔄✅) per user spec.",
+      "interactionTone": "Swift and responsive. Sheet slides up from bottom. Toast appears 1.5s. Cards move between columns."
+    },
+    "pages": {
+      "page-kanban": {
+        "nodeId": "page-kanban",
+        "slug": "kanban",
+        "title": "看板",
+        "htmlSrc": "pages/kanban.html",
+        "pageType": "task-driven",
+        "businessScenario": "任务看板管理",
+        "qualityRisks": ["dense-kanban-grid", "sheet-form-complexity"],
+        "componentPlan": [],
+        "imagePlan": []
+      }
+    }
+  }
+}

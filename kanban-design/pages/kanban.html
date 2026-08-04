@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI懂我 · 看板</title>
+    <style id="theme-vars">
+/* ==========================================
+   AI懂我 · 看板 UI — Design Tokens
+   Dark / Light Theme v1.0
+   ========================================== */
+
+/* --- CSS Variables: Light Theme (Default) --- */
+:root,
+[data-theme="light"] {
+  /* Backgrounds */
+  --kanban-bg-page: #f5f5f7;
+  --kanban-bg-card: #ffffff;
+  --kanban-bg-header: #ffffff;
+  --kanban-bg-input: #f5f5f7;
+  --kanban-bg-hover: rgba(0, 0, 0, 0.04);
+
+  /* Text */
+  --kanban-text-primary: #1d1d1f;
+  --kanban-text-secondary: #6e6e73;
+  --kanban-text-muted: #aeaeb2;
+  --kanban-text-inverse: #ffffff;
+
+  /* Borders */
+  --kanban-border: #e5e5ea;
+  --kanban-border-light: rgba(0, 0, 0, 0.06);
+
+  /* Accent / Status */
+  --kanban-accent-orange: #e7ad51;
+  --kanban-accent-purple: #9ba5ff;
+  --kanban-accent-green: #4fc083;
+  --kanban-primary: #5e6ad2;
+  --kanban-primary-hover: #4f5bc4;
+  --kanban-primary-light: rgba(94, 106, 210, 0.08);
+
+  /* Sheet / Overlay */
+  --kanban-overlay: rgba(0, 0, 0, 0.5);
+  --kanban-sheet-bg: #ffffff;
+  --kanban-sheet-handle: #d1d1d6;
+
+  /* Form */
+  --kanban-input-border: #e5e5ea;
+  --kanban-input-focus: #5e6ad2;
+
+  /* Feedback */
+  --kanban-error: #e34d4d;
+  --kanban-error-bg: rgba(227, 77, 77, 0.06);
+  --kanban-success: #4fc083;
+  --kanban-toast-bg: rgba(0, 0, 0, 0.85);
+
+  /* Shadows */
+  --kanban-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
+  --kanban-shadow-md: 0 2px 12px rgba(0, 0, 0, 0.08);
+  --kanban-shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.16);
+  --kanban-shadow-sheet: 0 -4px 24px rgba(0, 0, 0, 0.12);
+
+  /* Radius */
+  --kanban-radius-sm: 8px;
+  --kanban-radius-md: 12px;
+  --kanban-radius-lg: 16px;
+  --kanban-radius-xl: 22px;
+  --kanban-radius-full: 9999px;
+
+  /* Column header dots */
+  --kanban-dot-size: 8px;
+}
+
+/* --- CSS Variables: Dark Theme --- */
+[data-theme="dark"] {
+  --kanban-bg-page: #1c1c1e;
+  --kanban-bg-card: #2c2c2e;
+  --kanban-bg-header: #2c2c2e;
+  --kanban-bg-input: #3a3a3c;
+  --kanban-bg-hover: rgba(255, 255, 255, 0.06);
+
+  --kanban-text-primary: #f5f5f7;
+  --kanban-text-secondary: #aeaeb2;
+  --kanban-text-muted: #636366;
+  --kanban-text-inverse: #1d1d1f;
+
+  --kanban-border: #3a3a3c;
+  --kanban-border-light: rgba(255, 255, 255, 0.06);
+
+  --kanban-accent-orange: #e7ad51;
+  --kanban-accent-purple: #9ba5ff;
+  --kanban-accent-green: #4fc083;
+  --kanban-primary: #7b83e8;
+  --kanban-primary-hover: #969df0;
+  --kanban-primary-light: rgba(123, 131, 232, 0.12);
+
+  --kanban-overlay: rgba(0, 0, 0, 0.7);
+  --kanban-sheet-bg: #2c2c2e;
+  --kanban-sheet-handle: #48484a;
+
+  --kanban-input-border: #48484a;
+  --kanban-input-focus: #7b83e8;
+
+  --kanban-error: #e34d4d;
+  --kanban-error-bg: rgba(227, 77, 77, 0.08);
+  --kanban-success: #4fc083;
+  --kanban-toast-bg: rgba(255, 255, 255, 0.9);
+
+  --kanban-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --kanban-shadow-md: 0 2px 12px rgba(0, 0, 0, 0.35);
+  --kanban-shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.5);
+  --kanban-shadow-sheet: 0 -4px 24px rgba(0, 0, 0, 0.4);
+}
+
+/* Brand-prefixed semantic aliases for validation */
+:root,
+[data-theme="light"] {
+  --kanban-background: #f5f5f7;
+  --kanban-foreground: #1d1d1f;
+  --kanban-card: #ffffff;
+  --kanban-card-foreground: #1d1d1f;
+  --kanban-primary: #5e6ad2;
+  --kanban-primary-foreground: #ffffff;
+  --kanban-muted: #f5f5f7;
+  --kanban-muted-foreground: #6e6e73;
+  --kanban-border: #e5e5ea;
+  --kanban-ring: #5e6ad2;
+  --kanban-radius-md: 12px;
+  --kanban-radius-sm: 8px;
+  --kanban-radius-lg: 16px;
+}
+
+[data-theme="dark"] {
+  --kanban-background: #1c1c1e;
+  --kanban-foreground: #f5f5f7;
+  --kanban-card: #2c2c2e;
+  --kanban-card-foreground: #f5f5f7;
+  --kanban-primary: #7b83e8;
+  --kanban-primary-foreground: #ffffff;
+  --kanban-muted: #3a3a3c;
+  --kanban-muted-foreground: #aeaeb2;
+  --kanban-border: #3a3a3c;
+  --kanban-ring: #7b83e8;
+  --kanban-radius-md: 12px;
+  --kanban-radius-sm: 8px;
+  --kanban-radius-lg: 16px;
+}
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-background: var(--kanban-background);
+    --color-foreground: var(--kanban-foreground);
+    --color-card: var(--kanban-card);
+    --color-card-foreground: var(--kanban-card-foreground);
+    --color-primary: var(--kanban-primary);
+    --color-primary-foreground: var(--kanban-primary-foreground);
+    --color-muted: var(--kanban-muted);
+    --color-muted-foreground: var(--kanban-muted-foreground);
+    --color-border: var(--kanban-border);
+    --color-ring: var(--kanban-ring);
+    --radius-sm: var(--kanban-radius-sm);
+    --radius-md: var(--kanban-radius-md);
+    --radius-lg: var(--kanban-radius-lg);
+    --radius-xl: var(--kanban-radius-xl);
+  }
+  @layer base {
+    body { background: var(--kanban-background); color: var(--kanban-foreground); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style id="semantic-token-fallback">
+      .bg-background { background-color: var(--kanban-background); }
+      .text-background { color: var(--kanban-background); }
+      .border-background { border-color: var(--kanban-background); }
+      .ring-background { --tw-ring-color: var(--kanban-background); }
+      .bg-foreground { background-color: var(--kanban-foreground); }
+      .text-foreground { color: var(--kanban-foreground); }
+      .border-foreground { border-color: var(--kanban-foreground); }
+      .ring-foreground { --tw-ring-color: var(--kanban-foreground); }
+      .bg-card { background-color: var(--kanban-card); }
+      .text-card { color: var(--kanban-card); }
+      .border-card { border-color: var(--kanban-card); }
+      .ring-card { --tw-ring-color: var(--kanban-card); }
+      .bg-card-foreground { background-color: var(--kanban-card-foreground); }
+      .text-card-foreground { color: var(--kanban-card-foreground); }
+      .border-card-foreground { border-color: var(--kanban-card-foreground); }
+      .ring-card-foreground { --tw-ring-color: var(--kanban-card-foreground); }
+      .bg-primary { background-color: var(--kanban-primary); }
+      .text-primary { color: var(--kanban-primary); }
+      .border-primary { border-color: var(--kanban-primary); }
+      .ring-primary { --tw-ring-color: var(--kanban-primary); }
+      .bg-primary-foreground { background-color: var(--kanban-primary-foreground); }
+      .text-primary-foreground { color: var(--kanban-primary-foreground); }
+      .border-primary-foreground { border-color: var(--kanban-primary-foreground); }
+      .ring-primary-foreground { --tw-ring-color: var(--kanban-primary-foreground); }
+      .bg-muted { background-color: var(--kanban-muted); }
+      .text-muted { color: var(--kanban-muted); }
+      .border-muted { border-color: var(--kanban-muted); }
+      .ring-muted { --tw-ring-color: var(--kanban-muted); }
+      .bg-muted-foreground { background-color: var(--kanban-muted-foreground); }
+      .text-muted-foreground { color: var(--kanban-muted-foreground); }
+      .border-muted-foreground { border-color: var(--kanban-muted-foreground); }
+      .ring-muted-foreground { --tw-ring-color: var(--kanban-muted-foreground); }
+      .bg-border { background-color: var(--kanban-border); }
+      .text-border { color: var(--kanban-border); }
+      .border-border { border-color: var(--kanban-border); }
+      .ring-border { --tw-ring-color: var(--kanban-border); }
+      .bg-ring { background-color: var(--kanban-ring); }
+      .text-ring { color: var(--kanban-ring); }
+      .border-ring { border-color: var(--kanban-ring); }
+      .ring-ring { --tw-ring-color: var(--kanban-ring); }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body class="min-h-screen font-sans antialiased">
+    <main>
+    <style id="critical-layout">
+/* ==========================================
+   Kanban Page — Critical Layout Styles
+   ========================================== */
+
+/* Reset & Base */
+.kanban-page { background: var(--kanban-bg-page); min-height: 100vh; padding-bottom: 32px; }
+
+/* Header */
+.kanban-header {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 40;
+  height: 54px; background: var(--kanban-bg-header);
+  border-bottom: 1px solid var(--kanban-border);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 16px;
+}
+.kanban-header-left { display: flex; align-items: center; gap: 8px; }
+.kanban-header-title { font-size: 17px; font-weight: 600; color: var(--kanban-text-primary); }
+.kanban-header-version { font-size: 12px; color: var(--kanban-text-muted); }
+.kanban-header-right { display: flex; align-items: center; gap: 16px; }
+.kanban-theme-toggle {
+  font-size: 18px; cursor: pointer; color: var(--kanban-text-primary);
+  background: none; border: none; padding: 0; line-height: 1;
+  transition: transform 0.2s ease;
+}
+.kanban-theme-toggle:active { transform: scale(0.9); }
+.kanban-header-exit { font-size: 14px; color: var(--kanban-text-secondary); text-decoration: none; cursor: pointer; }
+
+/* Greeting */
+.kanban-greeting { padding: 70px 16px 16px; display: flex; align-items: flex-start; justify-content: space-between; }
+.kanban-greeting-left { display: flex; flex-direction: column; gap: 4px; }
+.kanban-greeting-date { font-size: 13px; color: var(--kanban-text-muted); }
+.kanban-greeting-name { font-size: 19px; font-weight: 700; color: var(--kanban-text-primary); }
+.kanban-btn-new {
+  background: var(--kanban-primary); color: var(--kanban-text-inverse);
+  border: none; border-radius: 20px; padding: 8px 18px;
+  font-size: 14px; font-weight: 500; cursor: pointer;
+  white-space: nowrap; display: flex; align-items: center; gap: 4px;
+  transition: background 0.2s ease, transform 0.15s ease;
+}
+.kanban-btn-new:active { transform: scale(0.97); }
+
+/* Kanban Board Container */
+.kanban-board {
+  background: var(--kanban-bg-card); border-radius: var(--kanban-radius-lg);
+  padding: 16px; margin: 0 16px;
+  box-shadow: var(--kanban-shadow-sm);
+  display: grid; grid-template-columns: 1fr; gap: 16px;
+}
+@media (min-width: 768px) {
+  .kanban-board { grid-template-columns: 1fr 1fr 1fr; }
+}
+
+/* Column */
+.kanban-column { display: flex; flex-direction: column; gap: 10px; }
+.kanban-column-header { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.kanban-column-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.kanban-column-dot--todo { background: var(--kanban-accent-orange); }
+.kanban-column-dot--progress { background: var(--kanban-accent-purple); }
+.kanban-column-dot--done { background: var(--kanban-accent-green); }
+.kanban-column-title { font-size: 14px; font-weight: 600; color: var(--kanban-text-primary); }
+.kanban-column-count {
+  background: var(--kanban-bg-input); font-size: 12px; color: var(--kanban-text-secondary);
+  border-radius: 10px; padding: 2px 8px; font-weight: 500;
+}
+
+/* Task Card */
+.kanban-card {
+  background: var(--kanban-bg-input); border-radius: var(--kanban-radius-md);
+  padding: 12px; transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.kanban-card-content { font-size: 14px; color: var(--kanban-text-primary); margin-bottom: 6px; line-height: 1.4; }
+.kanban-card-meta { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.kanban-card-assignee { font-size: 12px; color: var(--kanban-text-muted); }
+.kanban-card-time { font-size: 12px; color: var(--kanban-text-muted); }
+.kanban-card-btn {
+  width: 100%; height: 29px; font-size: 12px; border-radius: var(--kanban-radius-sm);
+  border: 1px solid var(--kanban-border);
+  background: var(--kanban-bg-card); color: var(--kanban-text-secondary);
+  cursor: pointer; transition: background 0.15s ease, border-color 0.15s ease;
+}
+.kanban-card-btn:hover { background: var(--kanban-bg-hover); border-color: var(--kanban-primary); }
+.kanban-card-btn:active { transform: scale(0.98); }
+.kanban-card--done .kanban-card-content { text-decoration: line-through; opacity: 0.66; }
+.kanban-card--done .kanban-card-meta { opacity: 0.66; }
+.kanban-card-done-label { font-size: 12px; color: var(--kanban-accent-green); text-align: center; padding: 4px 0; }
+
+/* Health Card */
+.kanban-health {
+  background: var(--kanban-bg-card); border-radius: var(--kanban-radius-lg);
+  padding: 16px; margin: 16px;
+  box-shadow: var(--kanban-shadow-sm);
+}
+.kanban-health-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.kanban-health-title { font-size: 16px; font-weight: 600; color: var(--kanban-text-primary); }
+.kanban-health-date { font-size: 12px; color: var(--kanban-text-muted); }
+.kanban-health-empty { text-align: center; padding: 24px 0; }
+.kanban-health-empty-icon { font-size: 32px; margin-bottom: 8px; }
+.kanban-health-empty-text { font-size: 14px; color: var(--kanban-text-muted); }
+.kanban-health-link { display: block; text-align: right; padding-top: 8px; font-size: 13px; color: var(--kanban-primary); text-decoration: none; }
+
+/* Sheet Overlay */
+.kanban-sheet-overlay {
+  position: fixed; inset: 0; z-index: 50;
+  background: var(--kanban-overlay);
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+.kanban-sheet-overlay.sheet-open { opacity: 1; pointer-events: auto; }
+
+/* Sheet Panel */
+.kanban-sheet {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 51;
+  background: var(--kanban-sheet-bg);
+  border-radius: var(--kanban-radius-xl) var(--kanban-radius-xl) 0 0;
+  max-height: 85vh; overflow-y: auto;
+  transform: translateY(100%);
+  transition: transform 0.3s ease;
+  box-shadow: var(--kanban-shadow-sheet);
+}
+.kanban-sheet-overlay.sheet-open ~ .kanban-sheet,
+.kanban-sheet-overlay.sheet-open + .kanban-sheet { transform: translateY(0); }
+.kanban-sheet-handle {
+  width: 36px; height: 4px; background: var(--kanban-sheet-handle);
+  border-radius: 2px; margin: 10px auto 8px;
+}
+.kanban-sheet-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 16px 12px;
+}
+.kanban-sheet-title { font-size: 17px; font-weight: 600; color: var(--kanban-text-primary); }
+.kanban-sheet-close { font-size: 20px; color: var(--kanban-text-secondary); cursor: pointer; background: none; border: none; padding: 4px; line-height: 1; }
+
+/* Sheet Form */
+.kanban-sheet-form { padding: 0 16px 24px; }
+.kanban-form-section { margin-bottom: 16px; }
+.kanban-form-label { font-size: 13px; font-weight: 500; color: var(--kanban-text-secondary); margin-bottom: 8px; display: block; }
+.kanban-form-type-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.kanban-form-type-card {
+  background: var(--kanban-bg-input); border: 2px solid transparent;
+  border-radius: var(--kanban-radius-md); padding: 14px; text-align: center;
+  cursor: pointer; font-size: 15px; font-weight: 500; color: var(--kanban-text-primary);
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+.kanban-form-type-card:hover { background: var(--kanban-bg-hover); }
+.kanban-form-type-card.selected { border-color: var(--kanban-primary); background: var(--kanban-primary-light); }
+.kanban-form-type-icon { font-size: 20px; margin-bottom: 4px; display: block; }
+
+.kanban-form-input, .kanban-form-textarea, .kanban-form-select {
+  width: 100%; border: 1px solid var(--kanban-input-border);
+  border-radius: var(--kanban-radius-md); padding: 12px;
+  font-size: 14px; color: var(--kanban-text-primary);
+  background: var(--kanban-bg-input); outline: none;
+  transition: border-color 0.2s ease; box-sizing: border-box;
+  font-family: inherit;
+}
+.kanban-form-input:focus, .kanban-form-textarea:focus, .kanban-form-select:focus { border-color: var(--kanban-input-focus); }
+.kanban-form-textarea { min-height: 80px; resize: vertical; }
+.kanban-form-select { appearance: none; -webkit-appearance: none; }
+
+.kanban-form-error { color: var(--kanban-error); font-size: 12px; margin-top: 4px; display: none; }
+.kanban-form-error.visible { display: block; }
+.kanban-form-input.error, .kanban-form-textarea.error, .kanban-form-select.error { border-color: var(--kanban-error); }
+
+/* Weekday Selector */
+.kanban-weekday-group { display: flex; gap: 6px; flex-wrap: wrap; }
+.kanban-weekday-btn {
+  width: 36px; height: 36px; border-radius: 50%;
+  border: 1px solid var(--kanban-border); background: var(--kanban-bg-card);
+  color: var(--kanban-text-secondary); font-size: 13px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s ease;
+}
+.kanban-weekday-btn:hover { border-color: var(--kanban-primary); }
+.kanban-weekday-btn.selected { background: var(--kanban-primary); color: var(--kanban-text-inverse); border-color: var(--kanban-primary); }
+
+/* Conditional Fields */
+.kanban-conditional { display: none; }
+.kanban-conditional.visible { display: block; }
+
+/* Submit Button */
+.kanban-form-submit {
+  width: 100%; height: 44px; background: var(--kanban-primary); color: var(--kanban-text-inverse);
+  border: none; border-radius: var(--kanban-radius-md); font-size: 16px; font-weight: 600;
+  cursor: pointer; margin-top: 8px; transition: background 0.2s ease, transform 0.15s ease;
+}
+.kanban-form-submit:active { transform: scale(0.98); }
+
+/* Toast */
+.kanban-toast {
+  position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+  z-index: 100; background: var(--kanban-toast-bg);
+  color: #ffffff; padding: 12px 24px; border-radius: 10px;
+  font-size: 14px; font-weight: 500; pointer-events: none;
+  opacity: 0; transition: opacity 0.3s ease;
+  white-space: nowrap;
+}
+[data-theme="dark"] .kanban-toast { color: var(--kanban-text-primary); }
+.kanban-toast.visible { opacity: 1; }
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .kanban-sheet { transition: none; }
+  .kanban-sheet-overlay { transition: none; }
+  .kanban-toast { transition: none; }
+  .kanban-card { transition: none; }
+}
+
+/* Form row for date/time side by side */
+.kanban-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    </style>
+
+    <!-- Header -->
+    <header class="kanban-header" id="kanban-header">
+      <div class="kanban-header-left">
+        <span class="kanban-header-title">AI懂我</span>
+        <span class="kanban-header-version">v1.0</span>
+      </div>
+      <div class="kanban-header-right">
+        <button class="kanban-theme-toggle" id="theme-toggle" aria-label="切换主题">◐</button>
+        <a class="kanban-header-exit" href="#">退出</a>
+      </div>
+    </header>
+
+    <!-- Greeting -->
+    <section class="kanban-greeting">
+      <div class="kanban-greeting-left">
+        <span class="kanban-greeting-date" id="greeting-date">2024年8月4日 星期日</span>
+        <span class="kanban-greeting-name">下午好，小明爸爸</span>
+      </div>
+      <button class="kanban-btn-new" id="btn-new-task">+ 新建任务</button>
+    </section>
+
+    <!-- Kanban Board -->
+    <div class="kanban-board" id="kanban-board">
+      <!-- 待办 Column -->
+      <div class="kanban-column" data-column="todo">
+        <div class="kanban-column-header">
+          <span class="kanban-column-dot kanban-column-dot--todo"></span>
+          <span class="kanban-column-title">&#128203; 待办</span>
+          <span class="kanban-column-count" id="count-todo">0</span>
+        </div>
+        <div class="kanban-column-cards" id="col-todo"></div>
+      </div>
+      <!-- 进行中 Column -->
+      <div class="kanban-column" data-column="progress">
+        <div class="kanban-column-header">
+          <span class="kanban-column-dot kanban-column-dot--progress"></span>
+          <span class="kanban-column-title">&#128260; 进行中</span>
+          <span class="kanban-column-count" id="count-progress">0</span>
+        </div>
+        <div class="kanban-column-cards" id="col-progress"></div>
+      </div>
+      <!-- 已完成 Column -->
+      <div class="kanban-column" data-column="done">
+        <div class="kanban-column-header">
+          <span class="kanban-column-dot kanban-column-dot--done"></span>
+          <span class="kanban-column-title">&#9989; 已完成</span>
+          <span class="kanban-column-count" id="count-done">0</span>
+        </div>
+        <div class="kanban-column-cards" id="col-done"></div>
+      </div>
+    </div>
+
+    <!-- Health Card -->
+    <div class="kanban-health">
+      <div class="kanban-health-header">
+        <span class="kanban-health-title">今日活动亮点</span>
+        <span class="kanban-health-date" id="health-date">8月4日</span>
+      </div>
+      <div class="kanban-health-empty">
+        <div class="kanban-health-empty-icon">&#128221;</div>
+        <div class="kanban-health-empty-text">今天还没有记录</div>
+      </div>
+      <a class="kanban-health-link" href="#">查看完整分析 &#8594;</a>
+    </div>
+
+    <!-- Sheet Overlay -->
+    <div class="kanban-sheet-overlay" id="sheet-overlay"></div>
+
+    <!-- Sheet Panel -->
+    <div class="kanban-sheet" id="sheet-panel">
+      <div class="kanban-sheet-handle"></div>
+      <div class="kanban-sheet-header">
+        <span class="kanban-sheet-title">新建任务</span>
+        <button class="kanban-sheet-close" id="sheet-close" aria-label="关闭">&#10005;</button>
+      </div>
+      <div class="kanban-sheet-form" id="sheet-form">
+        <!-- Task Type -->
+        <div class="kanban-form-section">
+          <span class="kanban-form-label">任务类型</span>
+          <div class="kanban-form-type-grid" id="type-grid">
+            <div class="kanban-form-type-card" data-type="regular" tabindex="0">
+              <span class="kanban-form-type-icon">&#128257;</span>规律
+            </div>
+            <div class="kanban-form-type-card" data-type="temporary" tabindex="0">
+              <span class="kanban-form-type-icon">&#128221;</span>临时
+            </div>
+          </div>
+        </div>
+
+        <!-- Task Content -->
+        <div class="kanban-form-section">
+          <span class="kanban-form-label">任务内容</span>
+          <textarea class="kanban-form-textarea" id="task-content" placeholder="请输入任务内容"></textarea>
+          <div class="kanban-form-error" id="error-content">请输入任务内容</div>
+        </div>
+
+        <!-- Category -->
+        <div class="kanban-form-section">
+          <span class="kanban-form-label">分类</span>
+          <select class="kanban-form-select" id="task-category">
+            <option value="">请选择分类</option>
+            <option value="用药">用药</option>
+            <option value="饮食">饮食</option>
+            <option value="卫生">卫生</option>
+            <option value="活动">活动</option>
+            <option value="学习">学习</option>
+            <option value="其他">其他</option>
+          </select>
+        </div>
+
+        <!-- Assignee -->
+        <div class="kanban-form-section">
+          <span class="kanban-form-label">接收人</span>
+          <input class="kanban-form-input" id="task-assignee" type="text" placeholder="请选择接收人">
+          <div class="kanban-form-error" id="error-assignee">请选择接收人</div>
+        </div>
+
+        <!-- Conditional: 规律 -->
+        <div class="kanban-conditional" id="cond-regular">
+          <div class="kanban-form-section">
+            <span class="kanban-form-label">重复频率</span>
+            <select class="kanban-form-select" id="repeat-freq">
+              <option value="每天">每天</option>
+              <option value="每周">每周</option>
+              <option value="每月">每月</option>
+            </select>
+          </div>
+          <div class="kanban-form-section">
+            <span class="kanban-form-label">执行时间</span>
+            <input class="kanban-form-input" id="exec-time" type="time" value="09:00">
+          </div>
+          <div class="kanban-form-section">
+            <span class="kanban-form-label">执行日</span>
+            <div class="kanban-weekday-group" id="weekday-group">
+              <button class="kanban-weekday-btn" data-day="1">一</button>
+              <button class="kanban-weekday-btn" data-day="2">二</button>
+              <button class="kanban-weekday-btn" data-day="3">三</button>
+              <button class="kanban-weekday-btn" data-day="4">四</button>
+              <button class="kanban-weekday-btn" data-day="5">五</button>
+              <button class="kanban-weekday-btn" data-day="6">六</button>
+              <button class="kanban-weekday-btn" data-day="0">日</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Conditional: 临时 -->
+        <div class="kanban-conditional" id="cond-temporary">
+          <div class="kanban-form-row">
+            <div class="kanban-form-section">
+              <span class="kanban-form-label">截止日期</span>
+              <input class="kanban-form-input" id="due-date" type="date">
+            </div>
+            <div class="kanban-form-section">
+              <span class="kanban-form-label">截止时间</span>
+              <input class="kanban-form-input" id="due-time" type="time" value="18:00">
+            </div>
+          </div>
+        </div>
+
+        <!-- Submit -->
+        <button class="kanban-form-submit" id="btn-submit-task">创建任务</button>
+      </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="kanban-toast" id="toast">&#9989; 任务创建成功</div>
+
+    <script>
+(function() {
+  'use strict';
+
+  // ===== Theme =====
+  const html = document.documentElement;
+  const savedTheme = localStorage.getItem('kanban-theme') || 'light';
+  html.setAttribute('data-theme', savedTheme);
+
+  const themeToggle = document.getElementById('theme-toggle');
+  themeToggle.addEventListener('click', function() {
+    const current = html.getAttribute('data-theme');
+    const next = current === 'dark' ? 'light' : 'dark';
+    html.setAttribute('data-theme', next);
+    localStorage.setItem('kanban-theme', next);
+  });
+
+  // ===== Date =====
+  (function setDate() {
+    const now = new Date();
+    const weekdays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+    const dateStr = now.getFullYear() + '年' + (now.getMonth() + 1) + '月' + now.getDate() + '日 ' + weekdays[now.getDay()];
+    const greetingDate = document.getElementById('greeting-date');
+    if (greetingDate) greetingDate.textContent = dateStr;
+    const healthDate = document.getElementById('health-date');
+    if (healthDate) healthDate.textContent = (now.getMonth() + 1) + '月' + now.getDate() + '日';
+  })();
+
+  // ===== Task Data =====
+  var tasks = [
+    { id: 1, content: '帮小明准备早餐和牛奶', assignee: '妈妈', time: '08:00', category: '饮食', column: 'todo' },
+    { id: 2, content: '带小明去公园散步30分钟', assignee: '爸爸', time: '10:30', category: '活动', column: 'todo' },
+    { id: 3, content: '督促小明按时服药', assignee: '妈妈', time: '12:00', category: '用药', column: 'progress' },
+    { id: 4, content: '整理小明的学习笔记', assignee: '爸爸', time: '14:00', category: '学习', column: 'done' }
+  ];
+  var nextId = 5;
+
+  // ===== Render =====
+  function renderAll() {
+    ['todo', 'progress', 'done'].forEach(function(col) {
+      var container = document.getElementById('col-' + col);
+      var colTasks = tasks.filter(function(t) { return t.column === col; });
+      var html = '';
+      colTasks.forEach(function(t) {
+        var doneClass = col === 'done' ? ' kanban-card--done' : '';
+        var footerHtml = '';
+        if (col === 'todo') {
+          footerHtml = '<button class="kanban-card-btn" data-action="start" data-id="' + t.id + '">开始</button>';
+        } else if (col === 'progress') {
+          footerHtml = '<button class="kanban-card-btn" data-action="complete" data-id="' + t.id + '">完成</button>';
+        } else {
+          footerHtml = '<div class="kanban-card-done-label">已完成</div>';
+        }
+        html += '<div class="kanban-card' + doneClass + '" data-id="' + t.id + '">' +
+          '<div class="kanban-card-content">' + escapeHtml(t.content) + '</div>' +
+          '<div class="kanban-card-meta">' +
+            '<span class="kanban-card-assignee">' + escapeHtml(t.assignee) + '</span>' +
+            '<span class="kanban-card-time">' + escapeHtml(t.time) + '</span>' +
+          '</div>' +
+          footerHtml +
+        '</div>';
+      });
+      container.innerHTML = html;
+      document.getElementById('count-' + col).textContent = colTasks.length;
+    });
+
+    // Re-bind card buttons
+    document.querySelectorAll('.kanban-card-btn').forEach(function(btn) {
+      btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        var action = this.getAttribute('data-action');
+        var taskId = parseInt(this.getAttribute('data-id'));
+        if (action === 'start') moveTask(taskId, 'progress');
+        if (action === 'complete') moveTask(taskId, 'done');
+      });
+    });
+  }
+
+  function moveTask(taskId, toColumn) {
+    var task = tasks.find(function(t) { return t.id === taskId; });
+    if (task) {
+      task.column = toColumn;
+      renderAll();
+    }
+  }
+
+  function escapeHtml(str) {
+    var div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  // ===== Sheet Modal =====
+  var sheetOverlay = document.getElementById('sheet-overlay');
+  var sheetPanel = document.getElementById('sheet-panel');
+  var selectedType = 'regular';
+  var selectedWeekdays = [];
+
+  function openSheet() {
+    sheetOverlay.classList.add('sheet-open');
+    sheetPanel.style.transform = 'translateY(0)';
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeSheet() {
+    sheetOverlay.classList.remove('sheet-open');
+    sheetPanel.style.transform = 'translateY(100%)';
+    document.body.style.overflow = '';
+    resetForm();
+  }
+
+  function resetForm() {
+    document.getElementById('task-content').value = '';
+    document.getElementById('task-category').value = '';
+    document.getElementById('task-assignee').value = '';
+    document.getElementById('due-date').value = '';
+    document.getElementById('due-time').value = '18:00';
+    document.getElementById('exec-time').value = '09:00';
+    document.getElementById('repeat-freq').value = '每天';
+    selectedType = 'regular';
+    selectedWeekdays = [];
+    updateTypeUI();
+    updateWeekdayUI();
+    clearErrors();
+  }
+
+  function clearErrors() {
+    document.querySelectorAll('.kanban-form-error').forEach(function(el) { el.classList.remove('visible'); });
+    document.querySelectorAll('.kanban-form-input.error, .kanban-form-textarea.error, .kanban-form-select.error').forEach(function(el) { el.classList.remove('error'); });
+  }
+
+  // Open sheet
+  document.getElementById('btn-new-task').addEventListener('click', openSheet);
+  document.getElementById('sheet-close').addEventListener('click', closeSheet);
+  sheetOverlay.addEventListener('click', function(e) {
+    if (e.target === sheetOverlay) closeSheet();
+  });
+
+  // Task type selection
+  document.querySelectorAll('.kanban-form-type-card').forEach(function(card) {
+    card.addEventListener('click', function() {
+      selectedType = this.getAttribute('data-type');
+      updateTypeUI();
+    });
+  });
+
+  function updateTypeUI() {
+    document.querySelectorAll('.kanban-form-type-card').forEach(function(card) {
+      card.classList.toggle('selected', card.getAttribute('data-type') === selectedType);
+    });
+    document.getElementById('cond-regular').classList.toggle('visible', selectedType === 'regular');
+    document.getElementById('cond-temporary').classList.toggle('visible', selectedType === 'temporary');
+  }
+
+  // Weekday selection
+  document.querySelectorAll('.kanban-weekday-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var day = parseInt(this.getAttribute('data-day'));
+      var idx = selectedWeekdays.indexOf(day);
+      if (idx > -1) { selectedWeekdays.splice(idx, 1); }
+      else { selectedWeekdays.push(day); }
+      updateWeekdayUI();
+    });
+  });
+
+  function updateWeekdayUI() {
+    document.querySelectorAll('.kanban-weekday-btn').forEach(function(btn) {
+      var day = parseInt(btn.getAttribute('data-day'));
+      btn.classList.toggle('selected', selectedWeekdays.indexOf(day) > -1);
+    });
+  }
+
+  // Form validation
+  function validateForm() {
+    clearErrors();
+    var valid = true;
+    var content = document.getElementById('task-content').value.trim();
+    var assignee = document.getElementById('task-assignee').value.trim();
+
+    if (!content) {
+      document.getElementById('task-content').classList.add('error');
+      document.getElementById('error-content').classList.add('visible');
+      valid = false;
+    }
+    if (!assignee) {
+      document.getElementById('task-assignee').classList.add('error');
+      document.getElementById('error-assignee').classList.add('visible');
+      valid = false;
+    }
+    return valid;
+  }
+
+  // Submit
+  document.getElementById('btn-submit-task').addEventListener('click', function() {
+    if (!validateForm()) return;
+
+    var content = document.getElementById('task-content').value.trim();
+    var category = document.getElementById('task-category').value || '其他';
+    var assignee = document.getElementById('task-assignee').value.trim();
+    var timeLabel = '';
+
+    if (selectedType === 'regular') {
+      var freq = document.getElementById('repeat-freq').value;
+      var execTime = document.getElementById('exec-time').value;
+      var days = selectedWeekdays.sort(function(a,b){return a-b;}).map(function(d){return ['日','一','二','三','四','五','六'][d];}).join(',');
+      timeLabel = freq + ' ' + execTime + (days ? ' ' + days : '');
+    } else {
+      var dueDate = document.getElementById('due-date').value;
+      var dueTime = document.getElementById('due-time').value;
+      timeLabel = (dueDate || '') + ' ' + dueTime;
+    }
+    if (!timeLabel.trim()) timeLabel = '今天';
+
+    tasks.push({
+      id: nextId++,
+      content: content,
+      assignee: assignee,
+      time: timeLabel,
+      category: category,
+      column: 'todo'
+    });
+
+    closeSheet();
+    renderAll();
+    showToast();
+  });
+
+  // ===== Toast =====
+  var toastTimer = null;
+  function showToast() {
+    var toast = document.getElementById('toast');
+    if (toastTimer) clearTimeout(toastTimer);
+    toast.classList.add('visible');
+    toastTimer = setTimeout(function() {
+      toast.classList.remove('visible');
+    }, 1500);
+  }
+
+  // ===== Initial render =====
+  updateTypeUI();
+  renderAll();
+
+})();
+    </script>
+    </main>
+    <script>lucide.createIcons();</script>
+</body>
+</html>

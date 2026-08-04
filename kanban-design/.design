@@ -1,0 +1,101 @@
+{
+  "data": [
+    {
+      "id": "page-kanban",
+      "title": "看板",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1722748800000,
+      "canvasData": {
+        "x": 0,
+        "y": 0,
+        "group": 0,
+        "layoutSnapshot": {
+          "version": 1,
+          "contentHeight": 900,
+          "viewportWidth": 375,
+          "sourceHash": "fnv1a-819ec0f4",
+          "measuredAt": 1785842318179
+        }
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/kanban.html",
+        "interactions": []
+      }
+    },
+    {
+      "id": "page-chat-home",
+      "title": "AI聊聊 · 对话首页",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1754294400000,
+      "canvasData": {
+        "x": 430,
+        "y": 0,
+        "group": 0,
+        "layoutSnapshot": {
+          "version": 1,
+          "contentHeight": 20,
+          "viewportWidth": 375,
+          "sourceHash": "fnv1a-108ab150",
+          "measuredAt": 1785842318179
+        }
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/chat-home.html",
+        "interactions": []
+      }
+    },
+    {
+      "id": "page-chat-conversation",
+      "title": "AI聊聊 · 对话界面",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1754294400000,
+      "canvasData": {
+        "x": 860,
+        "y": 0,
+        "group": 0,
+        "layoutSnapshot": {
+          "version": 1,
+          "contentHeight": 20,
+          "viewportWidth": 375,
+          "sourceHash": "fnv1a-919d2fd0",
+          "measuredAt": 1785842318179
+        }
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/chat-conversation.html",
+        "interactions": []
+      }
+    },
+    {
+      "id": "page-chat-review",
+      "title": "AI聊聊 · 整理确认",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1754294400000,
+      "canvasData": {
+        "x": 1290,
+        "y": 0,
+        "group": 0,
+        "layoutSnapshot": {
+          "version": 1,
+          "contentHeight": 900,
+          "viewportWidth": 375,
+          "sourceHash": "fnv1a-cd60da2a",
+          "measuredAt": 1785842318179
+        }
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/chat-review.html",
+        "interactions": []
+      }
+    }
+  ],
+  "config": {
+    "autoLayout": true,
+    "deviceType": "mobile",
+    "projectName": "AI懂我 · 看板 UI"
+  }
+}

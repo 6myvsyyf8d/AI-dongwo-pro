@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI聊聊 · 对话界面</title>
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg: #F7F4FB;
+      --card: #FFFFFF;
+      --text: #3D3327;
+      --muted: #A39588;
+      --accent: #5E6AD2;
+      --accent-gradient: 135deg, #7562a6, #5E6AD2;
+      --purple-light: #EEEDFB;
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --shadow: 0 1px 4px rgba(0,0,0,0.04);
+      --border-subtle: 1px rgba(119,98,168,0.08);
+    }
+
+    body {
+      font-family: 'Noto Sans SC', -apple-system, sans-serif;
+      background: #E8E4F0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .phone-frame {
+      width: 375px;
+      height: 812px;
+      background: var(--bg);
+      border-radius: 32px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow:
+        0 0 0 2px rgba(0,0,0,0.1),
+        0 20px 60px rgba(0,0,0,0.25);
+      position: relative;
+    }
+
+    /* ── 1. 顶部栏 ── */
+    .top-bar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      background: rgba(250,248,253,0.92);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgba(119,98,168,0.08);
+      flex-shrink: 0;
+    }
+
+    .btn-back {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: none;
+      background: transparent;
+      font-size: 22px;
+      color: var(--text);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      line-height: 1;
+      transition: background 0.2s;
+    }
+
+    .btn-back:active {
+      background: rgba(0,0,0,0.05);
+    }
+
+    .top-title {
+      flex: 1;
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text);
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .btn-end {
+      flex-shrink: 0;
+      padding: 6px 16px;
+      border-radius: 9999px;
+      background: var(--purple-light);
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 700;
+      border: 1.5px solid rgba(94,106,210,0.3);
+      cursor: pointer;
+      transition: background 0.2s, transform 0.15s;
+    }
+
+    .btn-end:active {
+      transform: scale(0.96);
+      background: #e2e0f8;
+    }
+
+    /* ── 2. AI 状态栏 ── */
+    .status-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 16px;
+      background: var(--purple-light);
+      flex-shrink: 0;
+      border-bottom: 1px solid rgba(119,98,168,0.06);
+    }
+
+    .status-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #7562a6, #5E6AD2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+
+    .status-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+      min-width: 0;
+    }
+
+    .status-title {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--accent);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .status-subtitle {
+      font-size: 12px;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .btn-drafts {
+      flex-shrink: 0;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--accent);
+      cursor: pointer;
+      background: none;
+      border: none;
+      padding: 2px 4px;
+      white-space: nowrap;
+    }
+
+    .btn-drafts:active {
+      opacity: 0.7;
+    }
+
+    /* ── 3. 消息列表 ── */
+    .message-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .message-list::-webkit-scrollbar {
+      width: 3px;
+    }
+
+    .message-list::-webkit-scrollbar-thumb {
+      background: rgba(0,0,0,0.1);
+      border-radius: 10px;
+    }
+
+    /* 日期分隔符 */
+    .date-separator {
+      text-align: center;
+      padding: 6px 0;
+    }
+
+    .date-separator span {
+      display: inline-block;
+      font-size: 12px;
+      color: var(--muted);
+      background: var(--bg);
+      padding: 4px 12px;
+      border-radius: 9999px;
+    }
+
+    /* AI 气泡 */
+    .msg-ai {
+      align-self: flex-start;
+    }
+
+    .msg-ai .bubble {
+      background: var(--card);
+      max-width: 82%;
+      padding: 10px 14px;
+      border-radius: 16px 16px 16px 4px;
+      font-size: 14px;
+      color: var(--text);
+      line-height: 1.55;
+      box-shadow: var(--shadow);
+      word-break: break-word;
+    }
+
+    /* 用户气泡 */
+    .msg-user {
+      align-self: flex-end;
+    }
+
+    .msg-user .bubble {
+      background: var(--accent);
+      max-width: 82%;
+      padding: 10px 14px;
+      border-radius: 16px 16px 4px 16px;
+      font-size: 14px;
+      color: #FFFFFF;
+      line-height: 1.55;
+      word-break: break-word;
+    }
+
+    /* 草稿卡片 */
+    .msg-draft {
+      align-self: flex-start;
+    }
+
+    .msg-draft .draft-card {
+      display: flex;
+      align-items: center;
+      background: var(--card);
+      border-left: 4px solid var(--accent);
+      border-radius: 0 12px 12px 0;
+      padding: 10px 14px;
+      gap: 8px;
+      box-shadow: var(--shadow);
+      max-width: 90%;
+    }
+
+    .msg-draft .draft-content {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .msg-draft .draft-title {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .msg-draft .draft-summary {
+      font-size: 10.5px;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .msg-draft .draft-arrow {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--accent);
+      flex-shrink: 0;
+    }
+
+    /* 系统提示 */
+    .msg-system {
+      text-align: center;
+      padding: 4px 0;
+    }
+
+    .msg-system span {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    /* ── 4. 快捷回复行 ── */
+    .quick-replies {
+      flex-shrink: 0;
+      border-top: 1px solid rgba(119,98,168,0.06);
+    }
+
+    .quick-toggle {
+      display: flex;
+      justify-content: center;
+      padding: 4px 0 0;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .quick-toggle-icon {
+      font-size: 16px;
+      color: var(--muted);
+      transition: transform 0.25s ease;
+      line-height: 1;
+    }
+
+    .quick-replies.collapsed .quick-toggle-icon {
+      transform: rotate(180deg);
+    }
+
+    .quick-row {
+      display: flex;
+      gap: 8px;
+      padding: 8px 16px;
+      overflow-x: auto;
+      flex-shrink: 0;
+      transition: max-height 0.25s ease, padding 0.25s ease, opacity 0.25s ease;
+      max-height: 50px;
+      opacity: 1;
+    }
+
+    .quick-replies.collapsed .quick-row {
+      max-height: 0;
+      padding-top: 0;
+      padding-bottom: 0;
+      opacity: 0;
+    }
+
+    .quick-row::-webkit-scrollbar {
+      display: none;
+    }
+
+    .quick-pill {
+      flex-shrink: 0;
+      padding: 8px 14px;
+      border-radius: 9999px;
+      background: var(--card);
+      border: 1.5px solid rgba(94,106,210,0.25);
+      color: var(--accent);
+      font-size: 13px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.15s, transform 0.15s;
+    }
+
+    .quick-pill:active {
+      background: var(--purple-light);
+      transform: scale(0.96);
+    }
+
+    /* ── 5. 底部输入区 ── */
+    .input-bar {
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+      padding: 10px 12px 12px;
+      background: rgba(255,255,255,0.92);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-top: 1px solid rgba(119,98,168,0.08);
+      flex-shrink: 0;
+    }
+
+    .btn-plus {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 1.5px solid rgba(94,106,210,0.25);
+      background: transparent;
+      color: var(--accent);
+      font-size: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: background 0.15s, transform 0.15s;
+    }
+
+    .btn-plus:active {
+      background: var(--purple-light);
+      transform: scale(0.94);
+    }
+
+    .chat-editor {
+      flex: 1;
+      min-height: 36px;
+      max-height: 88px;
+      border-radius: 20px;
+      border: 1.5px solid rgba(0,0,0,0.1);
+      background: var(--bg);
+      padding: 8px 14px;
+      font-size: 14px;
+      color: var(--text);
+      outline: none;
+      overflow-y: auto;
+      line-height: 1.45;
+      word-break: break-word;
+      font-family: inherit;
+    }
+
+    .chat-editor:empty::before {
+      content: "说说今天发生的事…";
+      color: #C5BFB8;
+    }
+
+    .chat-editor:focus {
+      border-color: rgba(94,106,210,0.35);
+      box-shadow: 0 0 0 2px rgba(94,106,210,0.08);
+    }
+
+    .btn-voice {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      font-size: 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: background 0.15s;
+    }
+
+    .btn-voice:active {
+      background: rgba(0,0,0,0.04);
+    }
+
+    .btn-send {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: transform 0.15s, opacity 0.15s;
+      font-size: 16px;
+    }
+
+    .btn-send.active {
+      background: var(--accent);
+      color: #FFFFFF;
+    }
+
+    .btn-send.disabled {
+      background: #ccc;
+      color: #FFFFFF;
+      cursor: default;
+      pointer-events: none;
+    }
+
+    .btn-send:active:not(.disabled) {
+      transform: scale(0.94);
+    }
+
+    /* ── SVG icons ── */
+    .icon {
+      width: 1em;
+      height: 1em;
+      display: inline-block;
+      vertical-align: middle;
+    }
+
+    /* ── animations ── */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .message-list > * {
+      animation: fadeInUp 0.3s ease-out backwards;
+    }
+
+    .message-list > *:nth-child(1) { animation-delay: 0.05s; }
+    .message-list > *:nth-child(2) { animation-delay: 0.12s; }
+    .message-list > *:nth-child(3) { animation-delay: 0.19s; }
+    .message-list > *:nth-child(4) { animation-delay: 0.26s; }
+    .message-list > *:nth-child(5) { animation-delay: 0.33s; }
+    .message-list > *:nth-child(6) { animation-delay: 0.40s; }
+    .message-list > *:nth-child(7) { animation-delay: 0.47s; }
+    .message-list > *:nth-child(8) { animation-delay: 0.54s; }
+    .message-list > *:nth-child(9) { animation-delay: 0.61s; }
+  </style>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="phone-frame">
+    <!-- 1. 顶部栏 -->
+    <div class="top-bar">
+      <button class="btn-back" data-dom-id="btn-chat-back" aria-label="返回">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+      </button>
+      <span class="top-title">小宇的 AI聊聊</span>
+      <button class="btn-end" data-dom-id="btn-chat-end">结束</button>
+    </div>
+
+    <!-- 2. AI 状态栏 -->
+    <div class="status-bar">
+      <div class="status-avatar">
+        <span style="font-size:14px;line-height:1;">&#x2728;</span>
+      </div>
+      <div class="status-info">
+        <span class="status-title">AI记录助手</span>
+        <span class="status-subtitle">草稿已保存</span>
+      </div>
+      <button class="btn-drafts" data-dom-id="btn-status-drafts">N条草稿 &#8250;</button>
+    </div>
+
+    <!-- 3. 消息列表 -->
+    <div class="message-list">
+      <!-- a) 日期分隔符 -->
+      <div class="date-separator">
+        <span>今天 8月4日</span>
+      </div>
+
+      <!-- b) AI气泡 -->
+      <div class="msg-ai">
+        <div class="bubble">你好！我是 AI 懂我助手 &#x1F33B;，今天想和你聊聊小宇最近的情况。</div>
+      </div>
+
+      <!-- c) AI气泡 -->
+      <div class="msg-ai">
+        <div class="bubble">最近小宇有什么让你印象特别深的事吗？</div>
+      </div>
+
+      <!-- d) 用户气泡 -->
+      <div class="msg-user">
+        <div class="bubble">今天小宇在烘焙课上独立完成了杯子蛋糕！</div>
+      </div>
+
+      <!-- e) AI气泡 -->
+      <div class="msg-ai">
+        <div class="bubble">太棒了！能说说具体的过程吗？他用了哪些材料？</div>
+      </div>
+
+      <!-- f) 用户气泡 -->
+      <div class="msg-user">
+        <div class="bubble">面粉、鸡蛋、牛奶，他都是自己量的。老师说比以前专注多了。</div>
+      </div>
+
+      <!-- g) 草稿卡片 -->
+      <div class="msg-draft">
+        <div class="draft-card">
+          <div class="draft-content">
+            <div class="draft-title">活动记录</div>
+            <div class="draft-summary">小宇独立完成烘焙，专注度提升</div>
+          </div>
+          <span class="draft-arrow">&#8250;</span>
+        </div>
+      </div>
+
+      <!-- h) 系统提示 -->
+      <div class="msg-system">
+        <span>AI已自动生成1条草稿记录</span>
+      </div>
+    </div>
+
+    <!-- 4. 快捷回复行 -->
+    <div class="quick-replies" id="quickReplies">
+      <div class="quick-toggle" id="quickToggle">
+        <span class="quick-toggle-icon">&#8963;</span>
+      </div>
+      <div class="quick-row">
+        <span class="quick-pill">＋另一件事</span>
+        <span class="quick-pill">补充刚才</span>
+        <span class="quick-pill">记录进步</span>
+      </div>
+    </div>
+
+    <!-- 5. 底部输入区 -->
+    <div class="input-bar">
+      <button class="btn-plus" data-dom-id="btn-plus" aria-label="添加">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+      </button>
+      <div class="chat-editor" contenteditable="true" data-dom-id="chat-editor" role="textbox" aria-placeholder="说说今天发生的事…"></div>
+      <button class="btn-voice" aria-label="语音">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+      </button>
+      <button class="btn-send disabled" data-dom-id="btn-send" aria-label="发送">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+      </button>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      /* ── Quick replies toggle ── */
+      var toggle = document.getElementById('quickToggle');
+      var container = document.getElementById('quickReplies');
+      toggle.addEventListener('click', function() {
+        container.classList.toggle('collapsed');
+      });
+
+      /* ── Send button state based on editor content ── */
+      var editor = document.querySelector('[data-dom-id="chat-editor"]');
+      var sendBtn = document.querySelector('[data-dom-id="btn-send"]');
+
+      function updateSendState() {
+        var text = (editor.textContent || '').trim();
+        if (text.length > 0) {
+          sendBtn.classList.remove('disabled');
+          sendBtn.classList.add('active');
+        } else {
+          sendBtn.classList.add('disabled');
+          sendBtn.classList.remove('active');
+        }
+      }
+
+      editor.addEventListener('input', updateSendState);
+      editor.addEventListener('paste', function() {
+        setTimeout(updateSendState, 0);
+      });
+
+      /* ── Quick reply pills ── */
+      var pills = document.querySelectorAll('.quick-pill');
+      pills.forEach(function(pill) {
+        pill.addEventListener('click', function() {
+          var text = pill.textContent.replace(/^[＋+]/, '').trim();
+          editor.textContent = text;
+          editor.focus();
+          // Move cursor to end
+          var range = document.createRange();
+          range.selectNodeContents(editor);
+          range.collapse(false);
+          var sel = window.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(range);
+          updateSendState();
+        });
+      });
+
+      /* ── Send button ── */
+      sendBtn.addEventListener('click', function() {
+        if (sendBtn.classList.contains('disabled')) return;
+        var text = (editor.textContent || '').trim();
+        if (!text) return;
+        // In demo, just clear
+        editor.textContent = '';
+        updateSendState();
+        editor.focus();
+      });
+
+      /* ── Enter key to send ── */
+      editor.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          sendBtn.click();
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,139 @@
+/* ==========================================
+   AI懂我 · 看板 UI — Design Tokens
+   Dark / Light Theme v1.0
+   ========================================== */
+
+/* --- CSS Variables: Light Theme (Default) --- */
+:root,
+[data-theme="light"] {
+  /* Backgrounds */
+  --kanban-bg-page: #f5f5f7;
+  --kanban-bg-card: #ffffff;
+  --kanban-bg-header: #ffffff;
+  --kanban-bg-input: #f5f5f7;
+  --kanban-bg-hover: rgba(0, 0, 0, 0.04);
+
+  /* Text */
+  --kanban-text-primary: #1d1d1f;
+  --kanban-text-secondary: #6e6e73;
+  --kanban-text-muted: #aeaeb2;
+  --kanban-text-inverse: #ffffff;
+
+  /* Borders */
+  --kanban-border: #e5e5ea;
+  --kanban-border-light: rgba(0, 0, 0, 0.06);
+
+  /* Accent / Status */
+  --kanban-accent-orange: #e7ad51;
+  --kanban-accent-purple: #9ba5ff;
+  --kanban-accent-green: #4fc083;
+  --kanban-primary: #5e6ad2;
+  --kanban-primary-hover: #4f5bc4;
+  --kanban-primary-light: rgba(94, 106, 210, 0.08);
+
+  /* Sheet / Overlay */
+  --kanban-overlay: rgba(0, 0, 0, 0.5);
+  --kanban-sheet-bg: #ffffff;
+  --kanban-sheet-handle: #d1d1d6;
+
+  /* Form */
+  --kanban-input-border: #e5e5ea;
+  --kanban-input-focus: #5e6ad2;
+
+  /* Feedback */
+  --kanban-error: #e34d4d;
+  --kanban-error-bg: rgba(227, 77, 77, 0.06);
+  --kanban-success: #4fc083;
+  --kanban-toast-bg: rgba(0, 0, 0, 0.85);
+
+  /* Shadows */
+  --kanban-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
+  --kanban-shadow-md: 0 2px 12px rgba(0, 0, 0, 0.08);
+  --kanban-shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.16);
+  --kanban-shadow-sheet: 0 -4px 24px rgba(0, 0, 0, 0.12);
+
+  /* Radius */
+  --kanban-radius-sm: 8px;
+  --kanban-radius-md: 12px;
+  --kanban-radius-lg: 16px;
+  --kanban-radius-xl: 22px;
+  --kanban-radius-full: 9999px;
+
+  /* Column header dots */
+  --kanban-dot-size: 8px;
+}
+
+/* --- CSS Variables: Dark Theme --- */
+[data-theme="dark"] {
+  --kanban-bg-page: #1c1c1e;
+  --kanban-bg-card: #2c2c2e;
+  --kanban-bg-header: #2c2c2e;
+  --kanban-bg-input: #3a3a3c;
+  --kanban-bg-hover: rgba(255, 255, 255, 0.06);
+
+  --kanban-text-primary: #f5f5f7;
+  --kanban-text-secondary: #aeaeb2;
+  --kanban-text-muted: #636366;
+  --kanban-text-inverse: #1d1d1f;
+
+  --kanban-border: #3a3a3c;
+  --kanban-border-light: rgba(255, 255, 255, 0.06);
+
+  --kanban-accent-orange: #e7ad51;
+  --kanban-accent-purple: #9ba5ff;
+  --kanban-accent-green: #4fc083;
+  --kanban-primary: #7b83e8;
+  --kanban-primary-hover: #969df0;
+  --kanban-primary-light: rgba(123, 131, 232, 0.12);
+
+  --kanban-overlay: rgba(0, 0, 0, 0.7);
+  --kanban-sheet-bg: #2c2c2e;
+  --kanban-sheet-handle: #48484a;
+
+  --kanban-input-border: #48484a;
+  --kanban-input-focus: #7b83e8;
+
+  --kanban-error: #e34d4d;
+  --kanban-error-bg: rgba(227, 77, 77, 0.08);
+  --kanban-success: #4fc083;
+  --kanban-toast-bg: rgba(255, 255, 255, 0.9);
+
+  --kanban-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --kanban-shadow-md: 0 2px 12px rgba(0, 0, 0, 0.35);
+  --kanban-shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.5);
+  --kanban-shadow-sheet: 0 -4px 24px rgba(0, 0, 0, 0.4);
+}
+
+/* Brand-prefixed semantic aliases for validation */
+:root,
+[data-theme="light"] {
+  --kanban-background: #f5f5f7;
+  --kanban-foreground: #1d1d1f;
+  --kanban-card: #ffffff;
+  --kanban-card-foreground: #1d1d1f;
+  --kanban-primary: #5e6ad2;
+  --kanban-primary-foreground: #ffffff;
+  --kanban-muted: #f5f5f7;
+  --kanban-muted-foreground: #6e6e73;
+  --kanban-border: #e5e5ea;
+  --kanban-ring: #5e6ad2;
+  --kanban-radius-md: 12px;
+  --kanban-radius-sm: 8px;
+  --kanban-radius-lg: 16px;
+}
+
+[data-theme="dark"] {
+  --kanban-background: #1c1c1e;
+  --kanban-foreground: #f5f5f7;
+  --kanban-card: #2c2c2e;
+  --kanban-card-foreground: #f5f5f7;
+  --kanban-primary: #7b83e8;
+  --kanban-primary-foreground: #ffffff;
+  --kanban-muted: #3a3a3c;
+  --kanban-muted-foreground: #aeaeb2;
+  --kanban-border: #3a3a3c;
+  --kanban-ring: #7b83e8;
+  --kanban-radius-md: 12px;
+  --kanban-radius-sm: 8px;
+  --kanban-radius-lg: 16px;
+}
