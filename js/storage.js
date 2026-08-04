@@ -957,6 +957,151 @@
     getPrimaryYouth: function (userId) {
       var data = this.load();
       return (data && data.primaryYouthMap) ? data.primaryYouthMap[userId] : null;
+    },
+
+    /* ==========================================================
+     * 操作日志 — 审计追踪
+     * audit_log: [{id, action, actorId, actorName, targetId,
+     *   targetName, detail, undoData, createdAt, reverted}]
+     * ========================================================== */
+    AUDIT_KEY: 'ai_dongwo_audit_log',
+    getAuditLog: function () {
+      return this._loadByKey(this.AUDIT_KEY) || [];
+    },
+    saveAuditLog: function (logs) {
+      this._saveByKey(this.AUDIT_KEY, logs);
+    },
+    addAuditEntry: function (entry) {
+      var logs = this.getAuditLog();
+      entry.id = entry.id || 'log_' + window.generateUUID();
+      entry.createdAt = entry.createdAt || window.getTodayString();
+      entry.reverted = false;
+      logs.unshift(entry);
+      // 最多保留200条
+      if (logs.length > 200) logs = logs.slice(0, 200);
+      this.saveAuditLog(logs);
+      return entry;
+    },
+    /** 撤销某条日志对应的操作（如果仍有 undoData） */
+    revertAuditEntry: function (logId) {
+      var logs = this.getAuditLog();
+      var entry = logs.find(function (l) { return l.id === logId; });
+      if (!entry || entry.reverted || !entry.undoData) return false;
+      entry.reverted = true;
+      this.saveAuditLog(logs);
+      return entry.undoData;
+    },
+    /** 获取某个 youth 的操作日志 */
+    getAuditLogByYouth: function (youthId) {
+      return this.getAuditLog().filter(function (l) {
+        return l.targetId === youthId || (l.undoData && l.undoData.youthId === youthId);
+      });
+    },
+
+    /* ==========================================================
+     * 授权角色变更（带审计日志）
+     * ========================================================== */
+    updateGrantRole: function (grantId, newRole, actor) {
+      var grants = this.getGrants();
+      var grant = grants.find(function (g) { return g.id === grantId; });
+      if (!grant) return false;
+      var oldRole = grant.role;
+      grant.role = newRole;
+      this.saveGrants(grants);
+      // 写审计日志
+      var targetUser = this.findUserById(grant.userId);
+      this.addAuditEntry({
+        action: 'role_change',
+        actorId: actor.id, actorName: actor.name,
+        targetId: grant.userId, targetName: targetUser ? targetUser.name : '未知用户',
+        detail: '角色从「' + (window.Constants.ROLES[oldRole] ? window.Constants.ROLES[oldRole].label : oldRole) + '」变更为「' + (window.Constants.ROLES[newRole] ? window.Constants.ROLES[newRole].label : newRole) + '」',
+        undoData: { type: 'role_restore', grantId: grantId, oldRole: oldRole, newRole: newRole, grant: grant }
+      });
+      return true;
+    },
+    /** 撤销角色变更 */
+    undoRoleChange: function (undoData) {
+      var grants = this.getGrants();
+      var grant = grants.find(function (g) { return g.id === undoData.grantId; });
+      if (!grant) return false;
+      grant.role = undoData.oldRole;
+      this.saveGrants(grants);
+      return true;
+    },
+
+    /* ==========================================================
+     * 撤权（带审计日志）
+     * ========================================================== */
+    revokeGrant: function (grantId, actor) {
+      var grants = this.getGrants();
+      var grant = grants.find(function (g) { return g.id === grantId; });
+      if (!grant) return false;
+      grant.status = 'revoked';
+      grant.revokedAt = window.getTodayString();
+      this.saveGrants(grants);
+      var targetUser = this.findUserById(grant.userId);
+      this.addAuditEntry({
+        action: 'revoke',
+        actorId: actor.id, actorName: actor.name,
+        targetId: grant.userId, targetName: targetUser ? targetUser.name : '未知用户',
+        detail: '撤销了「' + (window.Constants.ROLES[grant.role] ? window.Constants.ROLES[grant.role].label : grant.role) + '」的授权',
+        undoData: { type: 'grant_restore', grantId: grantId, grant: grant }
+      });
+      return true;
+    },
+    /** 恢复授权 */
+    restoreGrant: function (grantId) {
+      var grants = this.getGrants();
+      var grant = grants.find(function (g) { return g.id === grantId; });
+      if (!grant) return false;
+      grant.status = 'active';
+      delete grant.revokedAt;
+      this.saveGrants(grants);
+      return true;
+    },
+
+    /* ==========================================================
+     * 获取即将到期的授权（7天内到期）
+     * ========================================================== */
+    getExpiringGrants: function (youthId) {
+      var today = window.getTodayString();
+      var expDate = new Date();
+      expDate.setDate(expDate.getDate() + 7);
+      var expStr = expDate.toISOString().split('T')[0];
+      return this.getGrants().filter(function (g) {
+        return g.youthId === youthId
+          && g.status === 'active'
+          && g.expiresAt
+          && g.expiresAt >= today
+          && g.expiresAt <= expStr;
+      });
+    },
+
+    /* ==========================================================
+     * 系统备份与恢复
+     * ========================================================== */
+    exportBackup: function () {
+      var backup = {
+        version: DATA_VERSION,
+        exportedAt: new Date().toISOString(),
+        data: this.load(),
+        grants: this.getGrants(),
+        invitations: this.getInvitations(),
+        joinRequests: this.getJoinRequests(),
+        familyRelations: this.getFamilyRelations(),
+        auditLog: this.getAuditLog()
+      };
+      return backup;
+    },
+    importBackup: function (backup) {
+      if (!backup || !backup.data) return false;
+      this.save(backup.data);
+      if (backup.grants) this.saveGrants(backup.grants);
+      if (backup.invitations) this.saveInvitations(backup.invitations);
+      if (backup.joinRequests) this.saveJoinRequests(backup.joinRequests);
+      if (backup.familyRelations) this.saveFamilyRelations(backup.familyRelations);
+      if (backup.auditLog) this.saveAuditLog(backup.auditLog);
+      return true;
     }
   };
 

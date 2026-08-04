@@ -111,20 +111,20 @@
     var user = DataStore.getCurrentUser() || appState.currentUser;
     var role = user ? user.role : 'parent';
 
-    // 所有角色共用的5个tab
+    // 所有角色共用的5个tab：AI聊聊第一位
     var allTabs = [
-      { route: 'home', icon: '🏠', label: '首页' },
-      { route: 'timeline', icon: '📋', label: '记录' },
+      { route: 'chat', icon: '💬', label: 'AI聊聊' },
+      { route: 'home', icon: '✅', label: '任务' },
       { route: 'archive', icon: '👤', label: '档案' },
       { route: 'charts', icon: '📊', label: '分析' },
       { route: 'profile', icon: '⚙️', label: '管理' }
     ];
 
-    // 心青年显示：首页、对话、档案
+    // 心青年显示：对话、任务、档案
     var visibleTabs = (role === 'youth')
       ? [
-          { route: 'home', icon: '🏠', label: '首页' },
           { route: 'youth-chat', icon: '💬', label: '对话' },
+          { route: 'home', icon: '✅', label: '任务' },
           { route: 'archive', icon: '👤', label: '档案' }
         ]
       : allTabs;
@@ -180,7 +180,10 @@
     var quickEl = Utils.dom.get('topbar-quick');
 
     var pageTitles = {
-      home: '首页概览',
+      chat: 'AI聊聊',
+      'chat-conversation': 'AI聊聊',
+      'chat-review': '整理确认',
+      home: '任务',
       archive: '完整档案',
       life: '我喜欢的生活',
       communication: '沟通说明书',
@@ -208,11 +211,17 @@
     if (titleEl) {
       titleEl.textContent = pageTitles[pageName] || 'AI懂我';
     }
+    // 对话页面自带顶栏，隐藏全局顶栏
+    var isChatPage = (pageName === 'chat' || pageName === 'chat-conversation' || pageName === 'chat-review');
     if (backEl) {
-      backEl.style.display = (pageName === 'home') ? 'none' : 'block';
+      backEl.style.display = (pageName === 'home' || isChatPage) ? 'none' : 'block';
     }
     if (quickEl) {
-      quickEl.style.display = (pageName === 'home') ? 'block' : 'none';
+      quickEl.style.display = (pageName === 'home' || pageName === 'archive') ? 'block' : 'none';
+    }
+    var topbar = document.getElementById('app-topbar');
+    if (topbar) {
+      topbar.style.display = isChatPage ? 'none' : '';
     }
   }
 
@@ -266,6 +275,14 @@
       if (window.YouthChat && window.YouthChat.destroy) {
         window.YouthChat.destroy();
       }
+    }
+
+    // 离开对话页面时恢复全局顶栏
+    var isLeavingChat = (currentPage === 'chat' || currentPage === 'chat-conversation' || currentPage === 'chat-review');
+    var isEnteringChat = (basePage === 'chat' || basePage === 'chat-conversation' || basePage === 'chat-review');
+    if (isLeavingChat && !isEnteringChat) {
+      var topbar = document.getElementById('app-topbar');
+      if (topbar) topbar.style.display = '';
     }
 
     // 切换 body 模式
@@ -346,7 +363,7 @@
         window.Auth.renderRoleSelect();
         break;
       case 'profile':
-        window.ProfilePage.renderManagement();
+        window.AdminPage.render();
         break;
       case 'records':
         window.RecordsPage.renderRecordsPage(queryParams.module || null);
@@ -462,6 +479,12 @@
 
     // 渲染添加记录浮动按钮
     renderFAB();
+
+    // v2.0：渲染「认识我」卡片（首页核心新增）
+    renderKnowMeCard();
+
+    // v2.0：渲染演示工作链（AI发现有效支持经验）
+    renderDemoWorkflow();
   }
 
   /**
@@ -814,36 +837,15 @@
    * 渲染"我喜欢的生活"页面 - 双列卡片（喜欢 & 不喜欢）
    */
   function renderLife() {
+    // v2.0：使用新的「认识我」以人为本渲染
+    if (window.ProfilePage && window.ProfilePage.renderAboutMe) {
+      window.ProfilePage.renderAboutMe();
+      return;
+    }
+    // fallback
     var contentArea = document.getElementById('life-content');
     if (!contentArea) return;
-
-    var html = '';
-
-    // 喜欢的事物
-    html += '<h2 class="section-title">💚 喜欢的事物</h2>';
-    html += '<div class="two-col" style="margin-bottom:32px;">';
-    likesList.forEach(function (item) {
-      html += '<div class="content-card green">';
-      html += '  <div style="font-size:2rem;margin-bottom:8px;">' + item.icon + '</div>';
-      html += '  <div style="font-weight:600;font-size:1rem;margin-bottom:4px;">' + item.title + '</div>';
-      html += '  <div style="font-size:0.88rem;color:#666;">' + item.desc + '</div>';
-      html += '</div>';
-    });
-    html += '</div>';
-
-    // 不喜欢的事物
-    html += '<h2 class="section-title">🙅 不喜欢的事物</h2>';
-    html += '<div class="two-col">';
-    dislikesList.forEach(function (item) {
-      html += '<div class="content-card red">';
-      html += '  <div style="font-size:2rem;margin-bottom:8px;">' + item.icon + '</div>';
-      html += '  <div style="font-weight:600;font-size:1rem;margin-bottom:4px;">' + item.title + '</div>';
-      html += '  <div style="font-size:0.88rem;color:#666;">' + item.desc + '</div>';
-      html += '</div>';
-    });
-    html += '</div>';
-
-    contentArea.innerHTML = html;
+    contentArea.innerHTML = '<div class="empty-state"><div class="empty-icon">💚</div><div class="empty-text">加载中...</div></div>';
   }
 
   /* ==========================================================
@@ -903,180 +905,15 @@
    * 渲染情绪与行为支持页面 - 流程图 + 彩色卡片
    */
   function renderEmotion() {
+    // v2.0：使用新的压力信号与支持方法渲染
+    if (window.ProfilePage && window.ProfilePage.renderEmotionSupport) {
+      window.ProfilePage.renderEmotionSupport();
+      return;
+    }
+    // fallback
     var contentArea = document.getElementById('emotion-content');
     if (!contentArea) return;
-
-    var html = '';
-
-    // === AI情绪预警分析 ===
-    var records = DataStore.getRecords();
-    var emotionAlert = analyzeEmotionTrend(records);
-    html += renderEmotionAlert(emotionAlert);
-
-    // === AI策略推荐 ===
-    html += '<h2 class="section-title">🧩 智能策略推荐</h2>';
-    html += '<div style="background:#fff;border-radius:12px;padding:16px;margin-bottom:20px;box-shadow:0 1px 6px rgba(0,0,0,0.06);">';
-    html += '  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">';
-    html += '    <select id="strategy-emotion-select" style="padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:0.85rem;background:#fff;">';
-    html += '      <option value="">选择情绪状态...</option>';
-    EMOTION_OPTIONS.forEach(function (e) {
-      if (e.value !== 'happy' && e.value !== 'calm') {
-        html += '      <option value="' + e.value + '">' + e.emoji + ' ' + e.value + '</option>';
-      }
-    });
-    html += '    </select>';
-    html += '    <select id="strategy-severity-select" style="padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:0.85rem;background:#fff;">';
-    html += '      <option value="mild">轻度</option>';
-    html += '      <option value="moderate">中度</option>';
-    html += '      <option value="severe">重度</option>';
-    html += '    </select>';
-    html += '    <button id="btn-get-strategy" style="padding:8px 20px;background:#4A90D9;color:#fff;border:none;border-radius:8px;font-size:0.85rem;cursor:pointer;">获取策略</button>';
-    html += '  </div>';
-    html += '  <div id="strategy-recommendation-area" style="min-height:60px;">';
-    html += '    <div style="padding:16px;text-align:center;color:#999;font-size:0.9rem;">选择情绪状态和严重程度，获取个性化策略推荐</div>';
-    html += '  </div>';
-    html += '</div>';
-
-    // 流程图：触发 → 预警 → 安抚 → 危机
-    html += '<h2 class="section-title">情绪支持流程</h2>';
-    html += '<div class="flow-indicator">';
-    html += '  <div class="flow-step red" data-flow="triggers">😰 触发因素</div>';
-    html += '  <span class="flow-arrow">→</span>';
-    html += '  <div class="flow-step yellow" data-flow="warnings">⚠️ 预警信号</div>';
-    html += '  <span class="flow-arrow">→</span>';
-    html += '  <div class="flow-step green" data-flow="soothing">💚 安抚策略</div>';
-    html += '  <span class="flow-arrow">→</span>';
-    html += '  <div class="flow-step red" data-flow="crisis">🆘 危机处理</div>';
-    html += '</div>';
-
-    // 触发因素
-    html += '<div id="flow-triggers" class="flow-detail">';
-    html += '  <div class="content-card red">';
-    html += '    <div class="card-section-title">😰 触发因素</div>';
-    html += '    <p style="font-size:0.88rem;color:#666;margin-bottom:8px;">以下情况可能引起小雨情绪波动：</p>';
-    html += '    <ul class="card-list">';
-    emotionSupport.triggers.forEach(function (item) {
-      html += '<li>' + item + '</li>';
-    });
-    html += '    </ul>';
-    html += '  </div>';
-    html += '</div>';
-
-    // 预警信号
-    html += '<div id="flow-warnings" class="flow-detail" style="display:none;">';
-    html += '  <div class="content-card yellow">';
-    html += '    <div class="card-section-title">⚠️ 预警信号</div>';
-    html += '    <p style="font-size:0.88rem;color:#666;margin-bottom:8px;">当出现以下表现时，说明小雨可能正在变得焦虑：</p>';
-    html += '    <ul class="card-list">';
-    emotionSupport.warnings.forEach(function (item) {
-      html += '<li>' + item + '</li>';
-    });
-    html += '    </ul>';
-    html += '  </div>';
-    html += '</div>';
-
-    // 安抚策略
-    html += '<div id="flow-soothing" class="flow-detail" style="display:none;">';
-    html += '  <div class="content-card green">';
-    html += '    <div class="card-section-title">💚 安抚策略</div>';
-    html += '    <p style="font-size:0.88rem;color:#666;margin-bottom:8px;">发现焦虑迹象时，请尝试以下方法：</p>';
-    html += '    <ul class="card-list">';
-    emotionSupport.soothing.forEach(function (item) {
-      html += '<li>' + item + '</li>';
-    });
-    html += '    </ul>';
-    html += '  </div>';
-    html += '</div>';
-
-    // 危机处理
-    html += '<div id="flow-crisis" class="flow-detail" style="display:none;">';
-    html += '  <div class="content-card red">';
-    html += '    <div class="card-section-title">🆘 危机处理</div>';
-    html += '    <p style="font-size:0.88rem;color:#666;margin-bottom:8px;">紧急情况处理步骤：</p>';
-    html += '    <ul class="card-list">';
-    emotionSupport.crisis.forEach(function (item) {
-      html += '<li>' + item + '</li>';
-    });
-    html += '    </ul>';
-    html += '  </div>';
-    html += '</div>';
-
-    contentArea.innerHTML = html;
-
-    // 绑定流程步骤点击事件
-    contentArea.querySelectorAll('.flow-step').forEach(function (step) {
-      step.addEventListener('click', function () {
-        // 移除所有active
-        contentArea.querySelectorAll('.flow-step').forEach(function (s) {
-          s.classList.remove('active');
-        });
-        this.classList.add('active');
-
-        // 显示对应的详情面板
-        var flowTarget = this.getAttribute('data-flow');
-        contentArea.querySelectorAll('.flow-detail').forEach(function (d) {
-          d.style.display = 'none';
-        });
-        var detailEl = document.getElementById('flow-' + flowTarget);
-        if (detailEl) {
-          detailEl.style.display = 'block';
-        }
-      });
-    });
-
-    // 默认选中第一个流程步骤
-    var firstStep = contentArea.querySelector('.flow-step');
-    if (firstStep) {
-      firstStep.classList.add('active');
-    }
-
-    // 绑定策略推荐按钮
-    var strategyBtn = document.getElementById('btn-get-strategy');
-    if (strategyBtn) {
-      strategyBtn.addEventListener('click', function () {
-        var emotionSelect = document.getElementById('strategy-emotion-select');
-        var severitySelect = document.getElementById('strategy-severity-select');
-        var emotionValue = emotionSelect ? emotionSelect.value : '';
-        var severity = severitySelect ? severitySelect.value : 'mild';
-
-        if (!emotionValue) {
-          showToast('请先选择情绪状态');
-          return;
-        }
-
-        var recentStrategies = getRecentStrategyRecords();
-        var recommendation = recommendStrategies(emotionValue, severity, recentStrategies);
-        var area = document.getElementById('strategy-recommendation-area');
-        if (area) {
-          area.innerHTML = renderStrategyRecommendation(recommendation);
-        }
-
-        // 绑定"记录使用此策略"按钮
-        contentArea.querySelectorAll('.btn-use-strategy').forEach(function (btn) {
-          btn.addEventListener('click', function () {
-            var strategyName = this.getAttribute('data-strategy');
-            var emotionLabel = this.getAttribute('data-emotion');
-            var user = DataStore.getCurrentUser() || appState.currentUser;
-            if (!user) {
-              showToast('请先登录');
-              return;
-            }
-            // 预填策略记录弹窗
-            addRecordState.selectedType = 'strategy';
-            var overlay = document.getElementById('add-record-modal');
-            if (!overlay) overlay = window.RecordsPage.createAddRecordModal();
-            overlay.classList.add('active');
-            document.body.style.overflow = 'hidden';
-            window.RecordsPage.renderAddRecordStep2(user, ROLES[user.role], 'strategy');
-            // 预填标题
-            setTimeout(function () {
-              var titleInput = document.querySelector('#add-record-form input[name="title"]');
-              if (titleInput) titleInput.value = strategyName;
-            }, 50);
-          });
-        });
-      });
-    }
+    contentArea.innerHTML = '<div class="empty-state"><div class="empty-icon">🌊</div><div class="empty-text">加载中...</div></div>';
   }
 
   /* ==========================================================
@@ -1872,6 +1709,117 @@
    * 十二、事件绑定与初始化
    * ========================================================== */
 
+  // ====== v2.0 新增：渲染「认识我」卡片 ======
+  function renderKnowMeCard() {
+    var container = document.getElementById('know-me-card-container');
+    if (!container) return;
+
+    var am = C.aboutMe;
+    if (!am) return;
+
+    var html = '';
+    html += '<div class="know-me-card">';
+
+    // 头部
+    html += '  <div class="know-me-header">';
+    html += '    <div class="know-me-avatar">🌻</div>';
+    html += '    <div class="know-me-header-info">';
+    html += '      <div class="know-me-header-title">🌟 认识我</div>';
+    html += '      <div class="know-me-header-sub">先了解我是谁，再学习如何支持我</div>';
+    html += '    </div>';
+    html += '  </div>';
+
+    // 第一人称自述
+    html += '  <div class="know-me-first-person">' + am.firstPerson + '</div>';
+
+    // 我擅长 + 我喜欢
+    html += '  <div class="know-me-grid">';
+    html += '    <div class="know-me-mini">';
+    html += '      <div class="know-me-mini-title">💪 我擅长和知道</div>';
+    am.strengths.forEach(function(s) {
+      html += '      <div class="know-me-tag highlight" style="margin-bottom:4px;">' + s.icon + ' ' + s.title + '：' + s.desc + '</div>';
+    });
+    html += '    </div>';
+    html += '    <div class="know-me-mini">';
+    html += '      <div class="know-me-mini-title">💚 让我安心和快乐</div>';
+    am.calming.forEach(function(c) {
+      html += '      <div class="know-me-tag" style="margin-bottom:4px;">' + c.icon + ' ' + c.desc + '</div>';
+    });
+    html += '    </div>';
+
+    // 沟通偏好
+    html += '    <div class="know-me-mini full">';
+    html += '      <div class="know-me-mini-title">🗣️ 我希望别人这样与我交流</div>';
+    html += '      <div class="know-me-tag-row">';
+    html += '        <span class="know-me-tag highlight">' + am.communicationPreference.callMe + '</span>';
+    html += '        <span class="know-me-tag">' + am.communicationPreference.howToTalk + '</span>';
+    html += '      </div>';
+    html += '    </div>';
+    html += '  </div>';
+
+    // 我能自己做 / 需要协助
+    html += '  <div class="know-me-independence">';
+    am.independence.forEach(function(ind) {
+      html += '    <div class="know-me-ind-col">';
+      html += '      <div class="ind-label">' + ind.level + '</div>';
+      html += '      <ul class="ind-list">';
+      ind.items.forEach(function(item) {
+        html += '        <li>' + item + '</li>';
+      });
+      html += '      </ul>';
+      html += '    </div>';
+    });
+    html += '  </div>';
+
+    // 愿望
+    html += '  <div class="know-me-aspiration">';
+    html += '    <span class="asp-label">⭐ 我想过怎样的生活</span>';
+    html += '    ' + am.aspiration;
+    html += '  </div>';
+
+    // 信息来源图例
+    html += '  <div class="source-legend">';
+    html += '    <span>📋 信息来源：</span>';
+    html += '    <span class="source-badge self">💬 心青年自己说的</span>';
+    html += '    <span class="source-badge observer">👁️ 支持者观察到的</span>';
+    html += '    <span class="source-badge confirmed">✅ 共同确认的</span>';
+    html += '  </div>';
+
+    html += '</div>';
+
+    container.innerHTML = html;
+  }
+
+  // ====== v2.0 新增：渲染演示工作链 ======
+  function renderDemoWorkflow() {
+    var container = document.getElementById('demo-workflow-container');
+    if (!container) return;
+
+    var dw = C.demoWorkflow;
+    if (!dw) return;
+
+    var html = '';
+    html += '<div class="demo-workflow">';
+    html += '  <div class="demo-workflow-header">';
+    html += '    <div class="dw-title">🤖 ' + dw.title + '</div>';
+    html += '    <div class="dw-desc">' + dw.description + '</div>';
+    html += '  </div>';
+
+    dw.steps.forEach(function(s) {
+      html += '  <div class="demo-step">';
+      html += '    <div class="demo-step-num" style="background:' + s.color + ';">' + s.step + '</div>';
+      html += '    <div class="demo-step-content">';
+      html += '      <div class="demo-step-actor">' + s.icon + ' ' + s.actor + '</div>';
+      html += '      <div class="demo-step-action">' + s.action + '</div>';
+      html += '    </div>';
+      html += '  </div>';
+    });
+
+    html += '</div>';
+
+    container.innerHTML = html;
+  }
+
   /**
    * 绑定全局事件监听器
    */
@@ -2028,138 +1976,264 @@
   }
 
   /* ==========================================================
-   * 十三、每日任务页面
+   * 十三、每日任务页面 — Outlook 风格
    * ========================================================== */
+  var TASK_CATEGORY_CONFIG = {
+    medication: { label: '医疗', color: '#F5222D', bg: 'rgba(245,34,45,0.08)' },
+    meal:       { label: '饮食', color: '#FA8C16', bg: 'rgba(250,140,22,0.08)' },
+    hygiene:    { label: '卫生', color: '#1890FF', bg: 'rgba(24,144,255,0.08)' },
+    activity:   { label: '活动', color: '#52C41A', bg: 'rgba(82,196,26,0.08)' },
+    learning:   { label: '学习', color: '#722ED1', bg: 'rgba(114,46,209,0.08)' },
+    other:      { label: '其他', color: '#8C8C8C', bg: 'rgba(140,140,140,0.08)' }
+  };
+
+  var TASK_TIME_GROUPS = [
+    { label: '上午', range: ['00:00', '12:00'], icon: '🌅' },
+    { label: '下午', range: ['12:00', '18:00'], icon: '☀️' },
+    { label: '晚上', range: ['18:00', '24:00'], icon: '🌙' }
+  ];
+
   function renderTasks() {
     var contentArea = document.getElementById('tasks-content');
     if (!contentArea) return;
 
-    var tasks = DataStore.getTasks();
     var today = getTodayString();
-    var activeTasks = tasks.filter(function(t) { return t.isActive; });
-    activeTasks.sort(function(a,b) { return (a.time||'99:99').localeCompare(b.time||'99:99'); });
 
-    // 统计今日完成情况
-    var completedCount = 0;
-    var totalCount = activeTasks.length;
-    activeTasks.forEach(function(t) {
-      var todayCheck = t.checkins.find(function(c) { return c.date === today && c.status === 'done'; });
-      if (todayCheck) completedCount++;
+    // 确保今日实例已生成
+    DataStore.generateDailyInstances(today);
+
+    // 获取今日实例 + 所有任务（用于匹配详情）
+    var instances = DataStore.getTaskInstances(today);
+    var tasks = DataStore.getTasks(true);
+    var taskMap = {};
+    tasks.forEach(function(t) { taskMap[t.id] = t; });
+
+    // 分离 routine 实例（关联到任务详情）和 adhoc 任务
+    var routineItems = [];
+    var adhocItems = [];
+
+    instances.forEach(function(inst) {
+      var task = taskMap[inst.taskId];
+      if (task && task.type === 'routine') {
+        routineItems.push({ instance: inst, task: task });
+      }
     });
+
+    // 找出活跃的 adhoc 任务
+    tasks.forEach(function(t) {
+      if (t.type === 'adhoc' && t.isActive !== false) {
+        adhocItems.push({ task: t });
+      }
+    });
+
+    // 按时间排序 routine
+    routineItems.sort(function(a, b) {
+      return (a.task.time || '99:99').localeCompare(b.task.time || '99:99');
+    });
+
+    // 按截止日期排序 adhoc
+    adhocItems.sort(function(a, b) {
+      var da = a.task.dueDate || '9999-99-99';
+      var db = b.task.dueDate || '9999-99-99';
+      return da.localeCompare(db);
+    });
+
+    // 统计
+    var completedCount = routineItems.filter(function(item) { return item.instance.status === 'done'; }).length;
+    var totalCount = routineItems.length;
     var percentage = totalCount > 0 ? Math.round(completedCount / totalCount * 100) : 0;
 
+    // 格式化日期
+    var weekLabels = ['日','一','二','三','四','五','六'];
+    var d = new Date(today + 'T00:00:00');
+    var dateDisplay = (d.getMonth() + 1) + '月' + d.getDate() + '日 周' + weekLabels[d.getDay()];
+
     var html = '';
-    // 进度卡片
-    html += '<div class="task-progress-card">';
-    html += '  <div class="task-progress-circle" style="--progress: ' + percentage + '%;">';
-    html += '    <div class="task-progress-text">' + percentage + '%</div>';
+
+    // ===== 顶部进度环 =====
+    html += '<div class="ot-progress-section">';
+    html += '  <div class="ot-progress-ring-wrapper">';
+    html += '    <svg class="ot-progress-ring" viewBox="0 0 100 100">';
+    html += '      <circle class="ot-progress-bg" cx="50" cy="50" r="42" />';
+    html += '      <circle class="ot-progress-fill" cx="50" cy="50" r="42" ' +
+            'stroke-dasharray="' + (percentage * 2.64).toFixed(1) + ' 264" />';
+    html += '    </svg>';
+    html += '    <div class="ot-progress-center">';
+    html += '      <div class="ot-progress-pct">' + (totalCount > 0 ? percentage + '%' : '--') + '</div>';
+    html += '    </div>';
     html += '  </div>';
-    html += '  <div class="task-progress-info">';
-    html += '    <div style="font-size:1.1rem;font-weight:700;">今日进度</div>';
-    html += '    <div style="font-size:0.9rem;color:#666;">已完成 ' + completedCount + ' / ' + totalCount + ' 项</div>';
-    html += '    <div style="font-size:0.8rem;color:#999;">' + today + '</div>';
+    html += '  <div class="ot-progress-meta">';
+    html += '    <div class="ot-progress-date">' + dateDisplay + '</div>';
+    html += '    <div class="ot-progress-stat">已完成 <strong>' + completedCount + '</strong> / ' + totalCount + ' 项</div>';
     html += '  </div>';
     html += '</div>';
 
-    // 任务列表
-    html += '<div class="task-list">';
-    activeTasks.forEach(function(task) {
-      var todayCheck = task.checkins.find(function(c) { return c.date === today; });
-      var status = todayCheck ? todayCheck.status : 'pending';
-      var statusClass = status === 'done' ? 'task-done' : (status === 'skip' ? 'task-skipped' : 'task-pending');
+    // ===== 规律任务 — 按时间段分组 =====
+    TASK_TIME_GROUPS.forEach(function(group) {
+      var groupItems = routineItems.filter(function(item) {
+        var t = item.task.time || '00:00';
+        return t >= group.range[0] && t < group.range[1];
+      });
+      if (groupItems.length === 0) return;
 
-      html += '<div class="task-item ' + statusClass + '" data-task-id="' + task.id + '">';
-      html += '  <div class="task-check" data-task-id="' + task.id + '" data-action="toggle">';
-      if (status === 'done') {
-        html += '<span style="color:#52C41A;font-size:1.3rem;">✅</span>';
-      } else if (status === 'skip') {
-        html += '<span style="color:#999;font-size:1.3rem;">⏭️</span>';
-      } else {
-        html += '<span class="task-check-circle"></span>';
-      }
+      html += '<div class="ot-group">';
+      html += '  <div class="ot-group-header">';
+      html += '    <span class="ot-group-icon">' + group.icon + '</span>';
+      html += '    <span class="ot-group-label">' + group.label + '</span>';
+      html += '    <span class="ot-group-count">' + groupItems.length + '项</span>';
       html += '  </div>';
-      html += '  <div class="task-info">';
-      html += '    <div class="task-title">' + task.icon + ' ' + task.title + '</div>';
-      if (task.time) html += '<div class="task-time">⏰ ' + task.time + '</div>';
-      html += '    <div class="task-tip">💡 ' + task.supportTip + '</div>';
-      html += '  </div>';
-      html += '  <div class="task-actions">';
-      if (status === 'pending') {
-        html += '<button class="task-skip-btn" data-task-id="' + task.id + '" data-action="skip">跳过</button>';
-      }
-      if (status === 'done') {
-        html += '<button class="task-undo-btn" data-task-id="' + task.id + '" data-action="undo">撤销</button>';
-      }
-      html += '</div></div>';
+
+      groupItems.forEach(function(item) {
+        var inst = item.instance;
+        var task = item.task;
+        var cat = TASK_CATEGORY_CONFIG[task.category] || TASK_CATEGORY_CONFIG.other;
+        var isDone = inst.status === 'done';
+        var isInProgress = inst.status === 'in_progress';
+
+        html += '<div class="ot-task-row ' + (isDone ? 'ot-done' : '') + '" data-instance-id="' + inst.id + '">';
+        // 分类色条
+        html += '  <div class="ot-task-bar" style="background:' + cat.color + '"></div>';
+        // 复选框
+        html += '  <div class="ot-task-check" data-action="toggle" data-instance-id="' + inst.id + '">';
+        if (isDone) {
+          html += '    <svg viewBox="0 0 24 24" width="20" height="20"><circle cx="12" cy="12" r="10" fill="' + cat.color + '"/><path d="M7 12l3 3 7-7" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+        } else if (isInProgress) {
+          html += '    <svg viewBox="0 0 24 24" width="20" height="20"><circle cx="12" cy="12" r="10" fill="none" stroke="' + cat.color + '" stroke-width="2" stroke-dasharray="31.4 31.4"/><circle cx="12" cy="12" r="10" fill="none" stroke="' + cat.color + '" stroke-width="2" stroke-dasharray="15.7 47.1" stroke-linecap="round"/></svg>';
+        } else {
+          html += '    <svg viewBox="0 0 24 24" width="20" height="20"><circle cx="12" cy="12" r="10" fill="none" stroke="#D1D5DB" stroke-width="2"/></svg>';
+        }
+        html += '  </div>';
+        // 内容
+        html += '  <div class="ot-task-body">';
+        html += '    <div class="ot-task-title">' + task.icon + ' ' + task.title + '</div>';
+        html += '    <div class="ot-task-meta">';
+        html += '      <span class="ot-task-cat" style="color:' + cat.color + '">' + cat.label + '</span>';
+        html += '      <span class="ot-task-time">' + (task.time || '') + '</span>';
+        html += '    </div>';
+        html += '  </div>';
+        // 操作
+        html += '  <div class="ot-task-actions">';
+        if (!isDone) {
+          html += '    <button class="ot-btn-progress" data-action="progress" data-instance-id="' + inst.id + '" title="标记进行中">▶</button>';
+        }
+        if (isDone || isInProgress) {
+          html += '    <button class="ot-btn-undo" data-action="undo" data-instance-id="' + inst.id + '" title="撤销">↩</button>';
+        }
+        html += '  </div>';
+        html += '</div>';
+      });
+
+      html += '</div>';
     });
-    html += '</div>';
 
-    // 添加新任务按钮
-    html += '<div style="text-align:center;margin-top:20px;">';
-    html += '<button id="btn-add-task" class="btn btn-outline" style="padding:10px 24px;">+ 添加新任务</button>';
-    html += '</div>';
+    // ===== 临时任务 =====
+    if (adhocItems.length > 0) {
+      html += '<div class="ot-group">';
+      html += '  <div class="ot-group-header">';
+      html += '    <span class="ot-group-icon">📌</span>';
+      html += '    <span class="ot-group-label">待办事项</span>';
+      html += '    <span class="ot-group-count">' + adhocItems.length + '项</span>';
+      html += '  </div>';
 
-    // 本周打卡记录
-    html += '<div class="task-week-section">';
-    html += '<h3 style="font-size:1rem;margin-bottom:12px;">📅 本周打卡</h3>';
-    html += '<div class="task-week-grid">';
+      adhocItems.forEach(function(item) {
+        var task = item.task;
+        var cat = TASK_CATEGORY_CONFIG[task.category] || TASK_CATEGORY_CONFIG.other;
+        var isOverdue = task.dueDate && task.dueDate < today;
+
+        html += '<div class="ot-task-row ot-adhoc" data-task-id="' + task.id + '">';
+        html += '  <div class="ot-task-bar" style="background:' + cat.color + '"></div>';
+        html += '  <div class="ot-task-check ot-check-adhoc">';
+        html += '    <svg viewBox="0 0 24 24" width="20" height="20"><rect x="4" y="4" width="16" height="16" rx="3" fill="none" stroke="#D1D5DB" stroke-width="2"/></svg>';
+        html += '  </div>';
+        html += '  <div class="ot-task-body">';
+        html += '    <div class="ot-task-title">' + task.icon + ' ' + task.title + '</div>';
+        html += '    <div class="ot-task-meta">';
+        html += '      <span class="ot-task-cat" style="color:' + cat.color + '">' + cat.label + '</span>';
+        if (task.dueDate) {
+          html += '    <span class="ot-task-due ' + (isOverdue ? 'ot-overdue' : '') + '">📅 ' + task.dueDate + (task.dueTime ? ' ' + task.dueTime : '') + '</span>';
+        }
+        html += '    </div>';
+        html += '  </div>';
+        html += '</div>';
+      });
+
+      html += '</div>';
+    }
+
+    // ===== 本周打卡 =====
+    html += '<div class="ot-week-section">';
+    html += '  <div class="ot-group-header" style="margin-bottom:12px;">';
+    html += '    <span class="ot-group-icon">📅</span>';
+    html += '    <span class="ot-group-label">本周打卡</span>';
+    html += '  </div>';
+    html += '  <div class="ot-week-grid">';
+
+    // 获取本周每天数据
     for (var i = 6; i >= 0; i--) {
       var dt = new Date();
       dt.setDate(dt.getDate() - i);
       var ds = dt.getFullYear() + '-' + String(dt.getMonth()+1).padStart(2,'0') + '-' + String(dt.getDate()).padStart(2,'0');
-      var dayLabel = ['日','一','二','三','四','五','六'][dt.getDay()];
-      var dayCompleted = 0;
-      var dayTotal = activeTasks.length;
-      activeTasks.forEach(function(t) {
-        var c = t.checkins.find(function(ch) { return ch.date === ds && ch.status === 'done'; });
-        if (c) dayCompleted++;
-      });
-      var ratio = dayTotal > 0 ? dayCompleted / dayTotal : 0;
+      var dayLabel = weekLabels[dt.getDay()];
+
+      // 获取该日实例统计
+      DataStore.generateDailyInstances(ds);
+      var dayInstances = DataStore.getTaskInstances(ds);
+      var dayDone = dayInstances.filter(function(inst) { return inst.status === 'done'; }).length;
+      var dayTotal = dayInstances.length;
+      var ratio = dayTotal > 0 ? dayDone / dayTotal : 0;
       var isToday = ds === today;
-      html += '<div class="task-week-day ' + (isToday ? 'today' : '') + '">';
-      html += '<div class="task-week-label">周' + dayLabel + '</div>';
-      html += '<div class="task-week-bar" style="background:conic-gradient(#4A90D9 ' + (ratio*360) + 'deg, #eee 0);">';
-      html += '<div class="task-week-bar-inner"></div></div>';
-      html += '<div class="task-week-count">' + dayCompleted + '/' + dayTotal + '</div>';
+
+      html += '<div class="ot-week-day ' + (isToday ? 'ot-week-today' : '') + '">';
+      html += '  <div class="ot-week-label">周' + dayLabel + '</div>';
+      html += '  <div class="ot-week-ring" style="--ratio:' + ratio + '">';
+      html += '    <svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="16" fill="none" stroke="#E5E7EB" stroke-width="3"/>';
+      html += '    <circle cx="20" cy="20" r="16" fill="none" stroke="' + (ratio > 0.5 ? '#52C41A' : '#1890FF') + '" stroke-width="3" ' +
+              'stroke-dasharray="' + (ratio * 100.5).toFixed(1) + ' 100.5" stroke-linecap="round" transform="rotate(-90 20 20)"/>';
+      html += '    </svg>';
+      html += '    <span class="ot-week-num">' + (ratio > 0 ? dayDone : '') + '</span>';
+      html += '  </div>';
+      html += '  <div class="ot-week-date">' + (dt.getMonth()+1) + '/' + dt.getDate() + '</div>';
       html += '</div>';
     }
-    html += '</div></div>';
+    html += '  </div>';
+    html += '</div>';
+
+    // ===== 添加按钮 =====
+    html += '<div style="text-align:center;margin:24px 0 32px;">';
+    html += '  <button id="btn-add-task" class="ot-add-btn">+ 新建任务</button>';
+    html += '</div>';
 
     contentArea.innerHTML = html;
     bindTaskEvents(today);
   }
 
   function bindTaskEvents(today) {
-    // 打卡/撤销事件委托
-    document.getElementById('tasks-content').addEventListener('click', function(e) {
-      var checkEl = e.target.closest('[data-action="toggle"]');
-      var skipEl = e.target.closest('[data-action="skip"]');
+    var container = document.getElementById('tasks-content');
+    if (!container) return;
+
+    container.addEventListener('click', function(e) {
+      var toggleEl = e.target.closest('[data-action="toggle"]');
+      var progressEl = e.target.closest('[data-action="progress"]');
       var undoEl = e.target.closest('[data-action="undo"]');
 
-      if (checkEl) {
-        var taskId = checkEl.dataset.taskId;
-        DataStore.updateTaskCheckin(taskId, today, 'done', '');
-        renderTasks();
-      }
-      if (skipEl) {
-        var taskId = skipEl.dataset.taskId;
-        DataStore.updateTaskCheckin(taskId, today, 'skip', '');
-        renderTasks();
-      }
-      if (undoEl) {
-        var taskId = undoEl.dataset.taskId;
-        var tasks = DataStore.getTasks();
-        var task = tasks.find(function(t) { return t.id === taskId; });
-        if (task) {
-          task.checkins = task.checkins.filter(function(c) { return c.date !== today; });
-          var data = JSON.parse(localStorage.getItem('ai_dongwo_data'));
-          var idx = data.tasks.findIndex(function(t) { return t.id === taskId; });
-          if (idx >= 0) { data.tasks[idx] = task; localStorage.setItem('ai_dongwo_data', JSON.stringify(data)); }
-          renderTasks();
-        }
+      if (toggleEl) {
+        var instanceId = toggleEl.dataset.instanceId;
+        var inst = DataStore.updateTaskInstance(instanceId, today, { status: 'done' });
+        if (inst) renderTasks();
       }
 
-      // 添加新任务
+      if (progressEl) {
+        var instanceId = progressEl.dataset.instanceId;
+        var inst = DataStore.updateTaskInstance(instanceId, today, { status: 'in_progress' });
+        if (inst) renderTasks();
+      }
+
+      if (undoEl) {
+        var instanceId = undoEl.dataset.instanceId;
+        DataStore.updateTaskInstance(instanceId, today, { status: 'todo' });
+        renderTasks();
+      }
+
       if (e.target.closest('#btn-add-task')) {
         showAddTaskModal();
       }
@@ -2170,31 +2244,128 @@
     var overlay = document.createElement('div');
     overlay.className = 'modal-overlay active';
     overlay.id = 'add-task-modal';
-    overlay.innerHTML = '<div class="modal-content" style="max-width:440px;">' +
-      '<div class="modal-header"><span class="modal-title">添加新任务</span><button class="modal-close" onclick="document.getElementById(\'add-task-modal\').remove();">&times;</button></div>' +
+
+    var catOptions = '';
+    Object.keys(TASK_CATEGORY_CONFIG).forEach(function(k) {
+      var c = TASK_CATEGORY_CONFIG[k];
+      catOptions += '<option value="' + k + '">' + c.label + '</option>';
+    });
+
+    overlay.innerHTML =
+      '<div class="modal-content" style="max-width:440px;">' +
+      '<div class="modal-header"><span class="modal-title">新建任务</span><button class="modal-close" onclick="document.getElementById(\'add-task-modal\').remove();document.body.style.overflow=\'\';">&times;</button></div>' +
       '<div class="modal-body">' +
-      '<div style="margin-bottom:12px;"><label class="form-label">任务名称</label><input class="form-input" id="new-task-title" placeholder="例如：做早操" style="width:100%;padding:10px 14px;border:1.5px solid #ddd;border-radius:8px;"></div>' +
+      // 类型切换
+      '<div class="ot-modal-type-tabs">' +
+      '  <button class="ot-type-tab active" data-type="routine" onclick="switchTaskType(\'routine\')">📋 规律任务</button>' +
+      '  <button class="ot-type-tab" data-type="adhoc" onclick="switchTaskType(\'adhoc\')">📌 临时任务</button>' +
+      '</div>' +
+      // 基础字段
+      '<div style="margin-bottom:12px;"><label class="form-label">任务名称</label><input class="form-input" id="new-task-title" placeholder="例：做早操" style="width:100%;padding:10px 14px;border:1.5px solid #ddd;border-radius:8px;"></div>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">' +
       '<div><label class="form-label">图标</label><input class="form-input" id="new-task-icon" placeholder="🏃" maxlength="2" style="width:100%;padding:10px 14px;border:1.5px solid #ddd;border-radius:8px;"></div>' +
-      '<div><label class="form-label">计划时间</label><input class="form-input" id="new-task-time" type="time" style="width:100%;padding:10px 14px;border:1.5px solid #ddd;border-radius:8px;"></div></div>' +
-      '<div style="margin-bottom:12px;"><label class="form-label">支持提示</label><input class="form-input" id="new-task-tip" placeholder="给照顾者的提示" style="width:100%;padding:10px 14px;border:1.5px solid #ddd;border-radius:8px;"></div>' +
-      '<button class="btn btn-primary" style="width:100%;padding:12px;border-radius:10px;" onclick="submitNewTask()">添加任务</button>' +
+      '<div><label class="form-label">分类</label><select class="form-input" id="new-task-category" style="width:100%;padding:10px 14px;border:1.5px solid #ddd;border-radius:8px;">' + catOptions + '</select></div></div>' +
+      // routine 专属字段
+      '<div id="routine-fields">' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">' +
+      '<div><label class="form-label">重复规律</label><select class="form-input" id="new-task-pattern" style="width:100%;padding:10px 14px;border:1.5px solid #ddd;border-radius:8px;"><option value="daily">每天</option><option value="weekly">每周</option></select></div>' +
+      '<div><label class="form-label">时间</label><input class="form-input" id="new-task-time" type="time" value="09:00" style="width:100%;padding:10px 14px;border:1.5px solid #ddd;border-radius:8px;"></div></div>' +
+      '<div id="weekday-picker" style="display:none;margin-bottom:12px;">' +
+      '<label class="form-label" style="margin-bottom:6px;display:block;">重复日</label>' +
+      '<div class="ot-weekday-grid">' +
+      '  <button class="ot-weekday-btn" data-day="1">一</button>' +
+      '  <button class="ot-weekday-btn" data-day="2">二</button>' +
+      '  <button class="ot-weekday-btn" data-day="3">三</button>' +
+      '  <button class="ot-weekday-btn" data-day="4">四</button>' +
+      '  <button class="ot-weekday-btn" data-day="5">五</button>' +
+      '  <button class="ot-weekday-btn" data-day="6">六</button>' +
+      '  <button class="ot-weekday-btn" data-day="7">日</button>' +
+      '</div></div>' +
+      '<div style="margin-bottom:12px;"><label class="form-label">负责人</label><select class="form-input" id="new-task-assignee" style="width:100%;padding:10px 14px;border:1.5px solid #ddd;border-radius:8px;"><option value="youth">心青年</option><option value="parent">家长</option><option value="teacher">老师</option><option value="caregiver">影子老师</option></select></div>' +
+      '</div>' +
+      // adhoc 专属字段
+      '<div id="adhoc-fields" style="display:none;">' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">' +
+      '<div><label class="form-label">截止日期</label><input class="form-input" id="new-task-dueDate" type="date" style="width:100%;padding:10px 14px;border:1.5px solid #ddd;border-radius:8px;"></div>' +
+      '<div><label class="form-label">截止时间</label><input class="form-input" id="new-task-dueTime" type="time" style="width:100%;padding:10px 14px;border:1.5px solid #ddd;border-radius:8px;"></div></div>' +
+      '</div>' +
+      '<button class="btn btn-primary" style="width:100%;padding:12px;border-radius:10px;margin-top:8px;" onclick="submitNewTask()">添加任务</button>' +
       '</div></div>';
+
     document.body.appendChild(overlay);
     document.body.style.overflow = 'hidden';
     document.getElementById('new-task-title').focus();
+
+    // 绑定类型切换事件
+    document.querySelectorAll('.ot-type-tab').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('.ot-type-tab').forEach(function(b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        var isRoutine = btn.dataset.type === 'routine';
+        document.getElementById('routine-fields').style.display = isRoutine ? '' : 'none';
+        document.getElementById('adhoc-fields').style.display = isRoutine ? 'none' : '';
+      });
+    });
+
+    // 绑定 weekday 选择
+    document.querySelectorAll('.ot-weekday-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        btn.classList.toggle('selected');
+      });
+    });
+
+    // 绑定 pattern 变化
+    document.getElementById('new-task-pattern').addEventListener('change', function() {
+      document.getElementById('weekday-picker').style.display = this.value === 'weekly' ? '' : 'none';
+    });
   }
+
+  window.switchTaskType = function(type) {
+    // handled by event listeners above
+  };
 
   window.submitNewTask = function() {
     var title = document.getElementById('new-task-title').value.trim();
     if (!title) { showToast('请输入任务名称'); return; }
+
+    var typeTab = document.querySelector('.ot-type-tab.active');
+    var taskType = typeTab ? typeTab.dataset.type : 'routine';
     var icon = document.getElementById('new-task-icon').value.trim() || '📋';
-    var time = document.getElementById('new-task-time').value || '';
-    var tip = document.getElementById('new-task-tip').value.trim() || '';
-    DataStore.addTask({ title: title, icon: icon, category: 'custom', time: time, difficulty: 'easy', supportTip: tip, isActive: true });
+    var category = document.getElementById('new-task-category').value || 'other';
+
+    if (taskType === 'routine') {
+      var pattern = document.getElementById('new-task-pattern').value;
+      var time = document.getElementById('new-task-time').value || '09:00';
+      var assignee = document.getElementById('new-task-assignee').value;
+      var weekdays = [];
+      if (pattern === 'weekly') {
+        document.querySelectorAll('.ot-weekday-btn.selected').forEach(function(b) {
+          weekdays.push(parseInt(b.dataset.day));
+        });
+        if (weekdays.length === 0) {
+          showToast('请至少选择一个重复日'); return;
+        }
+      }
+      DataStore.addTask({
+        title: title, icon: icon, category: category,
+        type: 'routine', pattern: pattern,
+        weekdays: weekdays, time: time, assignee: assignee,
+        createdBy: (DataStore.getCurrentUser() || {}).role || 'parent'
+      });
+    } else {
+      var dueDate = document.getElementById('new-task-dueDate').value || null;
+      var dueTime = document.getElementById('new-task-dueTime').value || null;
+      DataStore.addTask({
+        title: title, icon: icon, category: category,
+        type: 'adhoc', dueDate: dueDate, dueTime: dueTime,
+        assignee: 'parent',
+        createdBy: (DataStore.getCurrentUser() || {}).role || 'parent'
+      });
+    }
+
     document.getElementById('add-task-modal').remove();
     document.body.style.overflow = '';
-    showToast('任务添加成功');
+    showToast('任务已添加');
     renderTasks();
   };
 
