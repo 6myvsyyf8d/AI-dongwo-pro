@@ -1201,3 +1201,165 @@
   color: var(--chat-text-muted);
   line-height: 1.5;
 }
+
+/* ==========================================
+   v3 新增样式
+   ========================================== */
+
+/* --- 继续上次对话按钮 --- */
+.chat-home-btn-continue {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(100% - 32px);
+  margin: 0 16px 12px;
+  padding: 14px 0;
+  border: 1.5px solid rgba(94, 106, 210, 0.3);
+  border-radius: var(--chat-radius-lg);
+  background: var(--chat-white);
+  color: var(--chat-purple);
+  font-size: 16px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+  transition: all 0.2s ease;
+}
+
+.chat-home-btn-continue:hover {
+  background: var(--chat-purple-light);
+  border-color: var(--chat-purple);
+}
+
+/* --- 历史对话列表 --- */
+.chat-history-section {
+  margin: 12px 16px;
+  border-top: 1px solid var(--chat-border);
+  padding-top: 12px;
+}
+
+.chat-history-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--chat-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+  padding: 0 4px;
+}
+
+.chat-history-item {
+  display: flex;
+  align-items: center;
+  padding: 10px 4px;
+  border-radius: var(--chat-radius-sm);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.chat-history-item:hover {
+  background: rgba(94, 106, 210, 0.04);
+}
+
+.chat-history-item-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.chat-history-item-preview {
+  font-size: 13px;
+  color: var(--chat-text);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.4;
+}
+
+.chat-history-item-meta {
+  font-size: 11px;
+  color: var(--chat-text-muted);
+  margin-top: 2px;
+}
+
+.chat-history-item-arrow {
+  font-size: 16px;
+  color: var(--chat-text-muted);
+  font-weight: 700;
+  flex-shrink: 0;
+  margin-left: 8px;
+}
+
+/* --- 流式输出气泡 --- */
+.chat-stream-bubble {
+  min-height: 20px;
+  position: relative;
+}
+
+.chat-stream-bubble.streaming::after {
+  content: '|';
+  display: inline;
+  animation: blink 0.8s step-end infinite;
+  color: var(--chat-purple);
+  font-weight: 400;
+  margin-left: 1px;
+  opacity: 0.8;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* --- 错误气泡 --- */
+.chat-bubble-error {
+  background: #FFF0F0 !important;
+  border: 1px solid rgba(212, 101, 74, 0.3) !important;
+  border-radius: 16px 16px 16px 4px !important;
+  color: #B8382E !important;
+}
+
+.chat-error-text {
+  font-size: 13px;
+  margin-bottom: 8px;
+  line-height: 1.5;
+}
+
+.chat-error-retry-btn {
+  display: inline-block;
+  padding: 6px 14px;
+  border: 1px solid rgba(212, 101, 74, 0.4);
+  border-radius: var(--chat-radius-full);
+  background: #fff;
+  color: #D4654A;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.2s ease;
+}
+
+.chat-error-retry-btn:hover {
+  background: #D4654A;
+  color: #fff;
+  border-color: #D4654A;
+}
+
+/* --- 语音录制脉冲动画 --- */
+.chat-conv-btn-voice.recording {
+  background: rgba(212, 101, 74, 0.12);
+  color: #D4654A;
+  animation: voicePulse 1.2s ease-in-out infinite;
+  border-radius: 50%;
+}
+
+@keyframes voicePulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(212, 101, 74, 0.4);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(212, 101, 74, 0);
+    transform: scale(1.08);
+  }
+}

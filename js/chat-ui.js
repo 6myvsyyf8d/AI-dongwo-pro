@@ -1,19 +1,33 @@
 /**
- * chat-ui.js — 对话 UI 控制器 v2
+ * chat-ui.js — 对话 UI 控制器 v3
  * 挂载：window.ChatUI
  *
  * 管理三个屏幕：对话首页 / 对话界面 / 整理确认页
- * 依赖：window.ChatBot, window.ChatMarkdown
+ * 依赖：window.ChatBot, window.ChatMarkdown, window.ChatbotProviders
  *
  * 路由： #chat → 对话首页, #chat-conversation → 对话界面, #chat-review → 整理确认
+ *
+ * v3 新增：
+ *  - AI API 流式渲染（逐 chunk 追加到空气泡）
+ *  - 语音输入（Web Speech API，按住录音松开发送）
+ *  - 对话持久化增强（自动保存、刷新恢复、历史列表）
+ *  - 错误状态（红色气泡 + 重试按钮）
  */
 (function () {
   'use strict';
 
   var ChatBot = window.ChatBot;
+  var ApiProvider = window.ChatbotProviders ? window.ChatbotProviders.ApiProvider : null;
+  var ChatMarkdown = window.ChatMarkdown;
+  var Classifier = window.ChatbotClassifier;
+
   var _activeSession = null;
   var _quickRepliesVisible = true;
   var _savingTimeout = null;
+
+  // ========== 持久化键 ==========
+  var LAST_SESSION_KEY = 'ai_dongwo_last_active_session';
+  var SESSIONS_KEY = 'ai_dongwo_chat_sessions';
 
   /* ==========================================================
    * ChatUI 主对象
@@ -34,6 +48,8 @@
 
       var youthName = _getYouthName();
       var pendingCount = _getPendingCount();
+      var lastSessionId = localStorage.getItem(LAST_SESSION_KEY);
+      var hasHistory = _getSessionSummaries().length > 0;
 
       container.innerHTML = ''
         + '<div class="chat-page-container chat-home-ready">'
@@ -53,6 +69,9 @@
         + '    <div class="chat-home-hero-hint">AI会帮你把对话整理成档案记录，说到哪儿算哪儿，不用着急</div>'
         + '  </div>'
         + '  <button class="chat-home-btn-start" id="btn-start-chat">开始聊天</button>'
+        + (lastSessionId && hasHistory
+          ? '  <button class="chat-home-btn-continue" id="btn-continue-chat">继续上次对话</button>'
+          : '')
         + (pendingCount > 0
           ? '  <div class="chat-home-pending-card" id="card-pending-review">'
           + '    <div class="chat-home-pending-info">'
@@ -62,6 +81,9 @@
           + '    <div class="chat-home-pending-arrow">›</div>'
           + '  </div>'
           : '')
+        + (hasHistory
+          ? _renderHistoryList()
+          : '')
         + '  <a class="chat-home-records-link" id="link-all-records">查看全部聊天记录</a>'
         + '  <div class="chat-home-footer">AI懂我 · 心智障碍者动态支持档案</div>'
         + '</div>';
@@ -70,7 +92,14 @@
       var startBtn = document.getElementById('btn-start-chat');
       if (startBtn) {
         startBtn.addEventListener('click', function () {
-          _startNewConversation();
+          ChatUI._startNewConversation();
+        });
+      }
+
+      var continueBtn = document.getElementById('btn-continue-chat');
+      if (continueBtn) {
+        continueBtn.addEventListener('click', function () {
+          ChatUI._continueLastConversation();
         });
       }
 
@@ -88,6 +117,8 @@
           _showAllRecords();
         });
       }
+
+      _bindHistoryEvents();
     },
 
     /**
@@ -96,11 +127,26 @@
     _startNewConversation: function () {
       var youthId = _getYouthId();
       _activeSession = ChatBot.createSession(youthId);
+      localStorage.setItem(LAST_SESSION_KEY, _activeSession.id);
+      window.location.hash = 'chat-conversation';
+    },
 
-      // 导航到对话界面
-      if (typeof window.location !== 'undefined') {
-        window.location.hash = 'chat-conversation';
+    /**
+     * 继续上次对话
+     */
+    _continueLastConversation: function () {
+      var sessionId = localStorage.getItem(LAST_SESSION_KEY);
+      if (!sessionId) {
+        _startNewConversation();
+        return;
       }
+      var session = ChatBot.loadSession(sessionId);
+      if (!session) {
+        _startNewConversation();
+        return;
+      }
+      _activeSession = session;
+      window.location.hash = 'chat-conversation';
     },
 
     /**
@@ -113,18 +159,27 @@
 
       // 确保有活跃会话
       if (!_activeSession) {
-        var youthId = _getYouthId();
-        _activeSession = ChatBot.createSession(youthId);
+        var savedId = localStorage.getItem(LAST_SESSION_KEY);
+        if (savedId) {
+          _activeSession = ChatBot.loadSession(savedId);
+        }
+        if (!_activeSession) {
+          var youthId = _getYouthId();
+          _activeSession = ChatBot.createSession(youthId);
+          localStorage.setItem(LAST_SESSION_KEY, _activeSession.id);
+        }
       }
 
       var draftCount = _getActiveDraftCount();
+      var voiceSupported = _isVoiceSupported();
+      var youthName = _getYouthName();
 
       container.innerHTML = ''
         + '<div class="chat-page-container chat-conv-ready">'
         // 顶部栏
         + '  <div class="chat-conv-topbar">'
         + '    <button class="chat-conv-btn-back" id="btn-chat-back">‹</button>'
-        + '    <div class="chat-conv-title">小宇的 AI聊聊</div>'
+        + '    <div class="chat-conv-title">' + youthName + '的 AI聊聊</div>'
         + '    <button class="chat-conv-btn-end" id="btn-chat-end">结束</button>'
         + '  </div>'
         // AI 状态栏
@@ -150,7 +205,9 @@
         + '    <button class="chat-conv-btn-plus" id="btn-chat-plus">＋</button>'
         + '    <div class="chat-conv-editor" id="chat-editor" contenteditable="true" '
         + '         data-placeholder="说说今天发生的事…"></div>'
-        + '    <button class="chat-conv-btn-voice" id="btn-chat-voice">🎤</button>'
+        + (voiceSupported
+          ? '    <button class="chat-conv-btn-voice" id="btn-chat-voice" title="按住录音">🎤</button>'
+          : '')
         + '    <button class="chat-conv-btn-send" id="btn-chat-send" disabled>➤</button>'
         + '  </div>'
         + '</div>';
@@ -159,6 +216,8 @@
       _bindInputEvents();
       // 绑定快捷回复
       _bindQuickReplies();
+      // 绑定语音输入
+      if (voiceSupported) _bindVoiceInput();
       // 滚动到底部
       _scrollToBottom();
     },
@@ -173,7 +232,6 @@
 
       var session = _activeSession;
       var _drafts = session ? session.drafts.filter(function (d) { return d.status !== 'discarded'; }) : [];
-      // 用 demo drafts 如果没有活跃会话
       if (!session || _drafts.length === 0) {
         _drafts = _getDemoDrafts();
       }
@@ -184,12 +242,10 @@
 
       var html = ''
         + '<div class="chat-page-container chat-review-ready">'
-        // 顶部栏
         + '  <div class="chat-review-topbar">'
         + '    <button class="chat-review-btn-back" id="btn-review-back">‹</button>'
         + '    <div class="chat-review-title">本次整理</div>'
         + '  </div>'
-        // 说明条
         + '  <div class="chat-review-info-bar">'
         + '    <span class="chat-review-info-count">共' + totalCount + '条记录</span>'
         + '    <span class="chat-review-info-legend">'
@@ -197,7 +253,6 @@
         + '      <span><span class="chat-review-legend-dot green"></span>已确认 ' + confirmedCount + '</span>'
         + '    </span>'
         + '  </div>'
-        // 草稿卡片列表
         + '  <div class="chat-review-list" id="review-list">';
 
       _drafts.forEach(function (draft, idx) {
@@ -218,7 +273,6 @@
           html += '    <div class="chat-review-draft-confirmed-note">✓ 已确认等待统一保存</div>';
         } else {
           html += '    <div class="chat-review-draft-summary">' + _escapeHtml(draft.content || '') + '</div>';
-          // 可展开字段
           html += '    <div class="chat-review-draft-fields">'
             + '      <div class="chat-review-draft-field">'
             + '        <div class="chat-review-draft-field-label">具体内容</div>'
@@ -243,7 +297,6 @@
 
       html += ''
         + '  </div>'
-        // 底部固定栏
         + '  <div class="chat-review-bottom-bar">'
         + '    <button class="chat-review-btn-confirm-all" id="btn-confirm-all" ' + (pendingCount === 0 ? 'disabled' : '') + '>确认全部待确认记录</button>'
         + '    <button class="chat-review-btn-later" id="btn-later">稍后处理</button>'
@@ -252,13 +305,11 @@
 
       container.innerHTML = html;
 
-      // 绑定卡片事件
       _bindReviewEvents();
     },
 
     /**
      * 加载已有会话继续对话
-     * @param {string} sessionId
      */
     loadSession: function (sessionId) {
       var session = ChatBot.loadSession(sessionId);
@@ -267,20 +318,17 @@
         return;
       }
       _activeSession = session;
-
-      // 导航到对话界面
-      if (typeof window.location !== 'undefined') {
-        window.location.hash = 'chat-conversation';
-      }
+      localStorage.setItem(LAST_SESSION_KEY, sessionId);
+      window.location.hash = 'chat-conversation';
     },
 
     /**
      * 获取所有草稿（跨会话）
      */
     getAllPendingDrafts: function () {
-      var sessions = ChatBot.listSessions();
       var allDrafts = [];
-      sessions.forEach(function (s) {
+      var summaries = _getSessionSummaries();
+      summaries.forEach(function (s) {
         var session = ChatBot.loadSession(s.id);
         if (session) {
           var pending = session.drafts.filter(function (d) { return d.status === 'pending'; });
@@ -314,6 +362,17 @@
     return '小宇';
   }
 
+  function _getYouthProfile() {
+    var DataStore = window.DataStore;
+    if (!DataStore) return { name: '小宇' };
+    var users = DataStore.getAllUsers ? DataStore.getAllUsers() : [];
+    var youth = users.find(function (u) { return u.role === 'youth'; });
+    if (youth) return youth;
+    var constants = window.Constants;
+    if (constants && constants.basicInfo) return constants.basicInfo;
+    return { name: '小宇' };
+  }
+
   function _getPendingCount() {
     var allDrafts = ChatUI.getAllPendingDrafts();
     return allDrafts.length;
@@ -332,12 +391,105 @@
   }
 
   /**
-   * 渲染欢迎消息
+   * 检查语音输入是否可用
    */
+  function _isVoiceSupported() {
+    return !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+  }
+
+  /* ==========================================================
+   * 对话持久化 — 会话摘要列表
+   * ========================================================== */
+
+  function _getSessionSummaries() {
+    try {
+      var raw = localStorage.getItem(SESSIONS_KEY);
+      if (!raw) return [];
+      var sessions = JSON.parse(raw);
+
+      return sessions
+        .filter(function (s) { return s.messages && s.messages.length > 0; })
+        .map(function (s) {
+          var firstUser = (s.messages || []).find(function (m) { return m.role === 'user'; });
+          var lastMsg = s.messages[s.messages.length - 1];
+          return {
+            id: s.id,
+            startTime: s.startTime,
+            endTime: s.endTime,
+            messageCount: s.messages.length,
+            draftCount: (s.drafts || []).length,
+            firstText: firstUser ? firstUser.text : '(新对话)',
+            lastPreview: lastMsg ? lastMsg.text.substring(0, 50) : ''
+          };
+        })
+        .sort(function (a, b) {
+          // 按时间倒序（最新的在前）
+          return (b.startTime || '').localeCompare(a.startTime || '');
+        });
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function _renderHistoryList() {
+    var summaries = _getSessionSummaries();
+    if (summaries.length === 0) return '';
+
+    var html = '<div class="chat-history-section"><div class="chat-history-title">最近对话</div>';
+    summaries.slice(0, 10).forEach(function (s) {
+      var timeLabel = _formatSessionTime(s.startTime);
+      html += ''
+        + '<div class="chat-history-item" data-session-id="' + s.id + '">'
+        + '  <div class="chat-history-item-info">'
+        + '    <div class="chat-history-item-preview">' + _escapeHtml(s.firstText.substring(0, 30)) + '</div>'
+        + '    <div class="chat-history-item-meta">' + timeLabel + ' · ' + s.messageCount + '条消息'
+        + (s.draftCount > 0 ? ' · ' + s.draftCount + '条草稿' : '')
+        + '    </div>'
+        + '  </div>'
+        + '  <div class="chat-history-item-arrow">›</div>'
+        + '</div>';
+    });
+    html += '</div>';
+    return html;
+  }
+
+  function _formatSessionTime(isoStr) {
+    if (!isoStr) return '';
+    var d = new Date(isoStr);
+    var now = new Date();
+    var diffMs = now - d;
+    var diffMin = Math.floor(diffMs / 60000);
+
+    if (diffMin < 1) return '刚刚';
+    if (diffMin < 60) return diffMin + '分钟前';
+
+    var diffHr = Math.floor(diffMin / 60);
+    if (diffHr < 24) return diffHr + '小时前';
+
+    var diffDay = Math.floor(diffHr / 24);
+    if (diffDay === 1) return '昨天';
+    if (diffDay < 7) return diffDay + '天前';
+
+    return (d.getMonth() + 1) + '/' + d.getDate();
+  }
+
+  function _bindHistoryEvents() {
+    var items = document.querySelectorAll('.chat-history-item');
+    items.forEach(function (item) {
+      item.addEventListener('click', function () {
+        var sid = this.getAttribute('data-session-id');
+        if (sid) ChatUI.loadSession(sid);
+      });
+    });
+  }
+
+  /* ==========================================================
+   * 渲染欢迎消息 / 历史消息
+   * ========================================================== */
+
   function _renderWelcomeMessage() {
     var youthName = _getYouthName();
     var dateStr = _getDateStr();
-
     var session = _activeSession;
     var messages = session ? session.messages : [];
 
@@ -352,7 +504,7 @@
           module: null,
           timestamp: new Date().toISOString()
         });
-        session._save();
+        _saveSession();
       }
 
       return ''
@@ -408,7 +560,6 @@
 
   function _getDateStr() {
     var now = new Date();
-    var weekDays = ['日', '一', '二', '三', '四', '五', '六'];
     return '今天 ' + (now.getMonth() + 1) + '月' + now.getDate() + '日';
   }
 
@@ -423,25 +574,14 @@
     return (d.getMonth() + 1) + '月' + d.getDate() + '日';
   }
 
-  function _getYouthProfile() {
-    var DataStore = window.DataStore;
-    if (!DataStore) return { name: '小宇' };
-    var users = DataStore.getAllUsers ? DataStore.getAllUsers() : [];
-    var youth = users.find(function (u) { return u.role === 'youth'; });
-    if (youth) return youth;
-    var constants = window.Constants;
-    if (constants && constants.basicInfo) return constants.basicInfo;
-    return { name: '小宇' };
-  }
+  /* ==========================================================
+   * 事件绑定
+   * ========================================================== */
 
-  /**
-   * 绑定对话输入区事件
-   */
   function _bindInputEvents() {
     var editor = document.getElementById('chat-editor');
     var sendBtn = document.getElementById('btn-chat-send');
     var plusBtn = document.getElementById('btn-chat-plus');
-    var voiceBtn = document.getElementById('btn-chat-voice');
     var backBtn = document.getElementById('btn-chat-back');
     var endBtn = document.getElementById('btn-chat-end');
     var statusBar = document.getElementById('status-bar-drafts');
@@ -488,13 +628,6 @@
       });
     }
 
-    // 语音按钮
-    if (voiceBtn) {
-      voiceBtn.addEventListener('click', function () {
-        _showToast('语音输入即将上线');
-      });
-    }
-
     // 返回按钮
     if (backBtn) {
       backBtn.addEventListener('click', function () {
@@ -538,9 +671,6 @@
     }
   }
 
-  /**
-   * 绑定快捷回复
-   */
   function _bindQuickReplies() {
     var replies = document.querySelectorAll('#chat-quick-replies .chat-quick-reply-btn');
     replies.forEach(function (btn) {
@@ -562,9 +692,109 @@
     });
   }
 
-  /**
-   * 发送消息
-   */
+  /* ==========================================================
+   * 语音输入（Web Speech API）
+   * ========================================================== */
+
+  function _bindVoiceInput() {
+    var voiceBtn = document.getElementById('btn-chat-voice');
+    if (!voiceBtn) return;
+
+    var recognition = null;
+    var isRecording = false;
+
+    // 初始化语音识别
+    var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) return;
+
+    recognition = new SpeechRecognition();
+    recognition.lang = 'zh-CN';
+    recognition.interimResults = true;
+    recognition.continuous = false;
+    recognition.maxAlternatives = 1;
+
+    recognition.onresult = function (event) {
+      var transcript = '';
+      for (var i = event.resultIndex; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript;
+      }
+
+      // 填入输入框
+      var editor = document.getElementById('chat-editor');
+      if (editor) {
+        editor.textContent = transcript;
+        editor.focus();
+
+        // 触发 input 事件以更新发送按钮状态
+        var event_ = new Event('input', { bubbles: true });
+        editor.dispatchEvent(event_);
+      }
+    };
+
+    recognition.onerror = function (event) {
+      console.warn('语音识别错误:', event.error);
+      isRecording = false;
+      voiceBtn.classList.remove('recording');
+
+      if (event.error === 'aborted' || event.error === 'no-speech') {
+        _showToast('未识别到语音');
+      }
+    };
+
+    recognition.onend = function () {
+      isRecording = false;
+      voiceBtn.classList.remove('recording');
+    };
+
+    // 按住录音，松开发送
+    voiceBtn.addEventListener('mousedown', function (e) {
+      e.preventDefault();
+      if (isRecording) return;
+      try {
+        recognition.start();
+        isRecording = true;
+        voiceBtn.classList.add('recording');
+      } catch (err) {
+        // 已在录制中，忽略
+      }
+    });
+
+    voiceBtn.addEventListener('mouseup', function (e) {
+      e.preventDefault();
+      if (isRecording) {
+        recognition.stop();
+      }
+    });
+
+    voiceBtn.addEventListener('mouseleave', function () {
+      if (isRecording) {
+        recognition.stop();
+      }
+    });
+
+    // 触摸事件（移动端）
+    voiceBtn.addEventListener('touchstart', function (e) {
+      e.preventDefault();
+      if (isRecording) return;
+      try {
+        recognition.start();
+        isRecording = true;
+        voiceBtn.classList.add('recording');
+      } catch (err) {}
+    });
+
+    voiceBtn.addEventListener('touchend', function (e) {
+      e.preventDefault();
+      if (isRecording) {
+        recognition.stop();
+      }
+    });
+  }
+
+  /* ==========================================================
+   * 发送消息（流式渲染核心）
+   * ========================================================== */
+
   function _handleSend(text) {
     var session = _activeSession;
     if (!session) return;
@@ -579,49 +809,245 @@
     // 添加用户气泡
     _addMessageBubble('user', text);
 
-    // 显示打字指示器
-    _showTypingIndicator();
+    // 添加用户消息到会话
+    var classification = Classifier.classifyMessage(text);
+    session.messages.push({
+      role: 'user',
+      text: text,
+      module: classification.module,
+      timestamp: new Date().toISOString(),
+      confidence: classification.confidence
+    });
+
+    _saveSession();
 
     // 更新保存状态
-    _updateSavingStatus('保存中');
-    if (_savingTimeout) clearTimeout(_savingTimeout);
+    _updateSavingStatus('AI思考中...');
 
-    // 模拟延迟 → 调用引擎
-    setTimeout(function () {
-      // 移除打字指示器
-      _removeTypingIndicator();
+    // 创建空的 AI 气泡用于流式渲染
+    var streamBubble = _createStreamBubble();
+    var fullReply = '';
 
-      var result = session.sendMessage(text);
+    // 获取青年档案
+    var youthProfile = _getYouthProfile();
 
-      // 添加 AI 回复气泡
-      _addMessageBubble('ai', result.reply);
+    // 调用流式 API
+    if (ApiProvider && typeof ApiProvider.generateReplyStream === 'function') {
+      ApiProvider.generateReplyStream(
+        session.messages,
+        youthProfile,
+        // onChunk — 逐块追加
+        function (chunk, fullText) {
+          if (fullText !== undefined) {
+            fullReply = fullText;
+          } else {
+            fullReply = chunk; // fallback：非流式直接给全文
+          }
 
-      // 添加草稿卡片
-      if (result.draftsGenerated && result.draftsGenerated.length > 0) {
-        result.draftsGenerated.forEach(function (draft) {
-          _addDraftCard(draft);
-        });
-        _addSystemMsg('AI已自动生成' + result.draftsGenerated.length + '条草稿记录');
-      }
+          // 更新气泡内文（用 markdown 渲染）
+          if (streamBubble) {
+            streamBubble.innerHTML = _renderMessageContent(fullReply);
+            // 如果正在流式输出，添加打字光标
+            if (fullText !== undefined) {
+              streamBubble.classList.add('streaming');
+            } else {
+              streamBubble.classList.remove('streaming');
+            }
+          }
+          _scrollToBottom();
+        },
+        // onDone — 完成
+        function (finalText, isFallback) {
+          var reply = finalText || fullReply;
 
-      // 更新状态栏草稿数
-      _updateDraftCount();
-      _updateSavingStatus('草稿已保存');
+          // 移除流式光标
+          if (streamBubble) {
+            streamBubble.classList.remove('streaming');
+            streamBubble.innerHTML = _renderMessageContent(reply);
+          }
 
-      // 恢复输入
-      if (editor) {
-        editor.contentEditable = 'true';
-        editor.focus();
-      }
-      if (sendBtn) sendBtn.disabled = (editor ? editor.innerText.trim().length === 0 : true);
+          // 添加 AI 消息到会话
+          session.messages.push({
+            role: 'ai',
+            text: reply,
+            module: null,
+            timestamp: new Date().toISOString()
+          });
 
-      _scrollToBottom();
-    }, 800);
+          _saveSession();
+
+          // 触发归类 + 草稿判断
+          _afterAIResponse(session, reply, classification);
+
+          // 恢复输入
+          _restoreInput(editor, sendBtn);
+          _updateSavingStatus('草稿已保存');
+        },
+        // onError — 失败
+        function (error) {
+          // 失败 → 红色气泡 + 重试按钮
+          if (streamBubble) {
+            streamBubble.classList.add('chat-bubble-error');
+            streamBubble.innerHTML = ''
+              + '<div class="chat-error-text">⚠️ ' + (error.message || 'AI 回复失败') + '</div>'
+              + '<button class="chat-error-retry-btn" data-retry-text="' + _escapeHtml(text) + '">重新发送</button>';
+          }
+
+          // 回退：用 TemplateProvider 自动生成
+          var fallbackReply = '';
+          try {
+            fallbackReply = window.ChatbotProviders.TemplateProvider.generateReply(session.messages, youthProfile);
+          } catch (e) {
+            fallbackReply = '好的，我记下了。还有什么想补充的吗？';
+          }
+
+          // 添加回退消息到会话
+          session.messages.push({
+            role: 'ai',
+            text: fallbackReply,
+            module: null,
+            timestamp: new Date().toISOString(),
+            _fallback: true
+          });
+
+          _saveSession();
+
+          // 追加一条系统提示气泡（回退说明）
+          _addMessageBubble('ai', fallbackReply);
+
+          _restoreInput(editor, sendBtn);
+          _updateSavingStatus('已回退模板回复');
+          _showToast('API 失败，已使用模板回复');
+        }
+      );
+    } else {
+      // 没有 ApiProvider，直接用旧逻辑
+      setTimeout(function () {
+        var result = session.sendMessage(text);
+        if (streamBubble) {
+          streamBubble.innerHTML = _renderMessageContent(result.reply);
+        }
+
+        if (result.draftsGenerated && result.draftsGenerated.length > 0) {
+          result.draftsGenerated.forEach(function (draft) {
+            _addDraftCard(draft);
+          });
+          _addSystemMsg('AI已自动生成' + result.draftsGenerated.length + '条草稿记录');
+        }
+
+        _updateDraftCount();
+        _updateSavingStatus('草稿已保存');
+
+        _restoreInput(editor, sendBtn);
+        _scrollToBottom();
+      }, 800);
+    }
   }
 
   /**
-   * 添加消息气泡到消息列表
+   * 创建流式气泡（空壳）
    */
+  function _createStreamBubble() {
+    var msgList = document.getElementById('chat-message-list');
+    if (!msgList) return null;
+
+    var bubble = document.createElement('div');
+    bubble.className = 'chat-bubble-ai chat-stream-bubble streaming';
+    bubble.id = 'chat-stream-bubble';
+    bubble.textContent = ''; // 空的
+
+    msgList.appendChild(bubble);
+    _scrollToBottom();
+
+    // 绑定重试按钮（事件委托）
+    bubble.addEventListener('click', function (e) {
+      var retryBtn = e.target.closest('.chat-error-retry-btn');
+      if (!retryBtn) return;
+
+      var retryText = retryBtn.getAttribute('data-retry-text');
+      if (!retryText) return;
+
+      // 移除错误气泡
+      if (bubble.parentNode) bubble.parentNode.removeChild(bubble);
+
+      // 重新发送
+      _handleSend(retryText);
+    });
+
+    return bubble;
+  }
+
+  /**
+   * AI 回复完成后的处理：归类 + 草稿判断
+   */
+  function _afterAIResponse(session, reply, classification) {
+    // 检查是否包含 #DRAFT 标记
+    if (reply.indexOf('#DRAFT') !== -1) {
+      // 尝试生成草稿
+      var draftModules = ['communication', 'emotion', 'care', 'work'];
+      draftModules.forEach(function (modKey) {
+        var existingDrafts = session.drafts.filter(function (d) {
+          return d.module === modKey && d.status !== 'discarded';
+        });
+
+        if (existingDrafts.length === 0) {
+          var newDraft = session.generateDraft(modKey);
+          if (newDraft) {
+            _addDraftCard(newDraft);
+          }
+        }
+      });
+
+      _addSystemMsg('AI检测到记录要点，已自动生成草稿');
+      _updateDraftCount();
+    }
+
+    // 在当前模块有新消息时尝试生成草稿
+    if (classification && classification.module && classification.confidence >= 0.3) {
+      var moduleUserMsgs = session.messages.filter(function (m) {
+        return m.role === 'user' && m.module === classification.module;
+      });
+
+      var existingDrafts = session.drafts.filter(function (d) {
+        return d.module === classification.module && d.status !== 'discarded';
+      });
+
+      if (moduleUserMsgs.length >= 1 && existingDrafts.length === 0 && session.messages.length >= 2) {
+        var newDraft = session.generateDraft(classification.module);
+        if (newDraft) {
+          _addDraftCard(newDraft);
+          _updateDraftCount();
+        }
+      }
+    }
+  }
+
+  /**
+   * 恢复输入状态
+   */
+  function _restoreInput(editor, sendBtn) {
+    if (editor) {
+      editor.contentEditable = 'true';
+      editor.focus();
+    }
+    if (sendBtn) {
+      sendBtn.disabled = (editor ? editor.innerText.trim().length === 0 : true);
+    }
+  }
+
+  /**
+   * 保存当前会话
+   */
+  function _saveSession() {
+    if (!_activeSession) return;
+    _activeSession._save();
+    localStorage.setItem(LAST_SESSION_KEY, _activeSession.id);
+  }
+
+  /* ==========================================================
+   * 消息气泡操作
+   * ========================================================== */
+
   function _addMessageBubble(role, text) {
     var msgList = document.getElementById('chat-message-list');
     if (!msgList) return;
@@ -637,9 +1063,6 @@
     _scrollToBottom();
   }
 
-  /**
-   * 添加草稿卡片
-   */
   function _addDraftCard(draft) {
     var msgList = document.getElementById('chat-message-list');
     if (!msgList) return;
@@ -655,9 +1078,6 @@
     msgList.appendChild(card);
   }
 
-  /**
-   * 添加系统消息
-   */
   function _addSystemMsg(text) {
     var msgList = document.getElementById('chat-message-list');
     if (!msgList) return;
@@ -666,26 +1086,6 @@
     sys.className = 'chat-system-msg';
     sys.innerHTML = '<span>' + _escapeHtml(text) + '</span>';
     msgList.appendChild(sys);
-  }
-
-  /**
-   * 显示打字指示器
-   */
-  function _showTypingIndicator() {
-    var msgList = document.getElementById('chat-message-list');
-    if (!msgList) return;
-
-    var indicator = document.createElement('div');
-    indicator.className = 'chat-bubble-ai chat-typing-indicator';
-    indicator.id = 'chat-typing';
-    indicator.innerHTML = '<span class="chat-typing-dot"></span><span class="chat-typing-dot"></span><span class="chat-typing-dot"></span>';
-    msgList.appendChild(indicator);
-    _scrollToBottom();
-  }
-
-  function _removeTypingIndicator() {
-    var indicator = document.getElementById('chat-typing');
-    if (indicator) indicator.remove();
   }
 
   function _scrollToBottom() {
@@ -749,10 +1149,8 @@
       });
     }
 
-    // 绑定卡片操作按钮
     var cards = document.querySelectorAll('#review-list .chat-review-draft-card');
     cards.forEach(function (card) {
-      // 点击标题区域 → 展开/折叠
       var body = card.querySelector('.chat-review-draft-body');
       if (body) {
         body.addEventListener('click', function (e) {
@@ -761,7 +1159,6 @@
         });
       }
 
-      // 菜单按钮
       var menuBtn = card.querySelector('[data-action="menu"]');
       if (menuBtn) {
         menuBtn.addEventListener('click', function (e) {
@@ -770,7 +1167,6 @@
         });
       }
 
-      // 修改按钮
       var modifyBtn = card.querySelector('[data-action="modify"]');
       if (modifyBtn) {
         modifyBtn.addEventListener('click', function (e) {
@@ -779,7 +1175,6 @@
         });
       }
 
-      // 确认保存按钮
       var confirmBtn = card.querySelector('[data-action="confirm"]');
       if (confirmBtn) {
         confirmBtn.addEventListener('click', function (e) {
@@ -788,7 +1183,6 @@
         });
       }
 
-      // 查看详情按钮
       var detailBtn = card.querySelector('[data-action="detail"]');
       if (detailBtn) {
         detailBtn.addEventListener('click', function (e) {
@@ -803,7 +1197,6 @@
     var draftId = card.getAttribute('data-draft-id');
     if (!_activeSession || !draftId) return;
 
-    // 读取编辑过的字段
     var textareas = card.querySelectorAll('.chat-review-draft-field-input');
     var updates = {};
     textareas.forEach(function (ta) {
@@ -818,7 +1211,6 @@
     }
     _activeSession.confirmDraft(draftId);
 
-    // 刷新 UI
     _refreshReviewUI();
     _showToast('已确认保存');
   }
@@ -834,14 +1226,12 @@
       _activeSession.confirmDraft(d.id);
     });
 
-    // 显示成功弹窗
     _showSuccessDialog(pendingDrafts.length);
   }
 
   function _showDraftMenu(e, card) {
     var draftId = card.getAttribute('data-draft-id');
 
-    // 移除旧弹窗
     var oldPopup = document.querySelector('.chat-draft-menu-popup');
     if (oldPopup) oldPopup.remove();
 
@@ -852,20 +1242,14 @@
       + '<button class="chat-draft-menu-item" data-action="edit">编辑内容</button>'
       + '<button class="chat-draft-menu-item danger" data-action="discard">放弃记录</button>';
 
-    // 定位弹窗
     var rect = menuBtn.getBoundingClientRect();
-    var reviewList = document.getElementById('review-list');
-    if (reviewList) {
-      var listRect = reviewList.getBoundingClientRect();
-      popup.style.position = 'fixed';
-      popup.style.top = rect.bottom + 4 + 'px';
-      popup.style.right = (window.innerWidth - rect.right) + 'px';
-      popup.style.zIndex = '200';
-    }
+    popup.style.position = 'fixed';
+    popup.style.top = rect.bottom + 4 + 'px';
+    popup.style.right = (window.innerWidth - rect.right) + 'px';
+    popup.style.zIndex = '200';
 
     document.body.appendChild(popup);
 
-    // 绑定菜单项
     popup.querySelector('[data-action="edit"]').addEventListener('click', function () {
       card.classList.add('expanded');
       popup.remove();
@@ -880,7 +1264,6 @@
       _showToast('已放弃该记录');
     });
 
-    // 点击外部关闭
     setTimeout(function () {
       var closeFn = function (ev) {
         if (!popup.contains(ev.target) && ev.target !== menuBtn) {
@@ -901,7 +1284,6 @@
   }
 
   function _showSuccessDialog(count) {
-    // 移除旧弹窗
     var old = document.getElementById('chat-success-overlay');
     if (old) old.remove();
 
@@ -947,9 +1329,6 @@
     }, 2000);
   }
 
-  /**
-   * 生成 demo 草稿（当没有活跃会话时用于预览）
-   */
   function _getDemoDrafts() {
     return [
       { id: 'demo-1', module: 'communication', title: '沟通观察', status: 'pending', content: '小雨最近喜欢用短句表达需求，能主动说出"要喝水"和"出去玩"' },
@@ -959,5 +1338,20 @@
   }
 
   window.ChatUI = ChatUI;
+
+  // ========== 页面刷新时恢复最后活跃会话 ==========
+  window.addEventListener('DOMContentLoaded', function () {
+    // 如果已经在对话页面，尝试恢复会话
+    var hash = window.location.hash.replace('#', '');
+    if (hash === 'chat-conversation' || hash === 'chat-review') {
+      var savedId = localStorage.getItem(LAST_SESSION_KEY);
+      if (savedId) {
+        var session = ChatBot.loadSession(savedId);
+        if (session) {
+          _activeSession = session;
+        }
+      }
+    }
+  });
 
 })();
