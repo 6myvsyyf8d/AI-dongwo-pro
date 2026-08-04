@@ -1,0 +1,533 @@
+/**
+ * youth-chat.css — 心青年无障碍聊天 UI 样式
+ *
+ * 设计原则：
+ * - 超大触控目标（44px+ 最小触摸区域）
+ * - 高对比度、大字体（16px+ 正文）
+ * - 暖色调、柔和圆角、充足间距
+ * - 移动端防缩放（viewport + 输入聚焦控制）
+ * - 安全区适配（safe-area-inset）
+ */
+
+/* ==========================================================
+   CSS 变量
+   ========================================================== */
+:root {
+  --youth-bg: #FFF8F0;
+  --youth-surface: #FFFFFF;
+  --youth-primary: #FF8C42;
+  --youth-primary-hover: #E67A35;
+  --youth-primary-text: #FFFFFF;
+  --youth-accent-green: #4CAF50;
+  --youth-accent-blue: #5B9BD5;
+  --youth-accent-pink: #E87DA0;
+  --youth-text: #3D3327;
+  --youth-text-secondary: #8B7E6E;
+  --youth-bubble-ai: #FFF3E6;
+  --youth-bubble-ai-border: #FFDFB8;
+  --youth-bubble-user: #FF8C42;
+  --youth-bubble-user-text: #FFFFFF;
+  --youth-border: #F0E6DA;
+  --youth-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  --youth-radius-lg: 20px;
+  --youth-radius-md: 14px;
+  --youth-font-size-base: 17px;
+  --youth-font-size-lg: 19px;
+  --youth-font-size-sm: 14px;
+  --youth-nav-height: 64px;
+  --youth-input-height: 72px;
+}
+
+/* ==========================================================
+   页面容器 — 全高 + 安全区 + 覆盖全局样式
+   ========================================================== */
+#youth-chat.page-section {
+  display: none;
+}
+
+#youth-chat.page-section.active {
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  min-height: 100dvh;
+  height: 100dvh;
+  background: var(--youth-bg);
+  z-index: 999;
+  padding: 0;
+  margin: 0;
+}
+
+/* 进入心青年聊天时隐藏全局顶栏和 FAB */
+#youth-chat.page-section.active ~ #app-topbar,
+body:has(#youth-chat.page-section.active) #app-topbar {
+  display: none !important;
+}
+
+body:has(#youth-chat.page-section.active) #fab-container {
+  display: none !important;
+}
+
+/* ==========================================================
+   顶部栏
+   ========================================================== */
+.youth-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  padding-top: calc(12px + env(safe-area-inset-top, 0px));
+  background: var(--youth-surface);
+  border-bottom: 1px solid var(--youth-border);
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.youth-topbar-title {
+  font-size: var(--youth-font-size-lg);
+  font-weight: 700;
+  color: var(--youth-text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.youth-topbar-title .youth-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #FFB84D, #FF8C42);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+}
+
+.youth-topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* TTS 开关按钮 */
+.youth-tts-toggle {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 2px solid var(--youth-border);
+  background: var(--youth-surface);
+  font-size: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.youth-tts-toggle:active {
+  transform: scale(0.92);
+  background: #FFF3E6;
+}
+
+.youth-tts-toggle.on {
+  border-color: var(--youth-primary);
+  background: #FFF3E6;
+}
+
+.youth-tts-toggle.off {
+  opacity: 0.45;
+  border-color: var(--youth-border);
+}
+
+/* ==========================================================
+   消息列表 — 可滚动区域
+   ========================================================== */
+.youth-messages {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 16px;
+  padding-bottom: 8px;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* 欢迎区域 */
+.youth-welcome {
+  text-align: center;
+  padding: 32px 16px 24px;
+}
+
+.youth-welcome-emoji {
+  font-size: 64px;
+  margin-bottom: 12px;
+  animation: wave 2s ease-in-out infinite;
+}
+
+@keyframes wave {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(8deg); }
+  75% { transform: rotate(-8deg); }
+}
+
+.youth-welcome-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--youth-text);
+  margin-bottom: 8px;
+}
+
+.youth-welcome-sub {
+  font-size: var(--youth-font-size-base);
+  color: var(--youth-text-secondary);
+  line-height: 1.6;
+}
+
+/* ==========================================================
+   消息气泡
+   ========================================================== */
+.youth-msg {
+  display: flex;
+  margin-bottom: 20px;
+  animation: msgSlideIn 0.3s ease-out;
+}
+
+.youth-msg.ai {
+  justify-content: flex-start;
+}
+
+.youth-msg.user {
+  justify-content: flex-end;
+}
+
+@keyframes msgSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.youth-bubble {
+  max-width: 82%;
+  padding: 14px 18px;
+  border-radius: var(--youth-radius-md);
+  font-size: var(--youth-font-size-base);
+  line-height: 1.65;
+  word-break: break-word;
+  position: relative;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* AI 气泡 */
+.youth-msg.ai .youth-bubble {
+  background: var(--youth-bubble-ai);
+  border: 1.5px solid var(--youth-bubble-ai-border);
+  color: var(--youth-text);
+  border-bottom-left-radius: 4px;
+  box-shadow: var(--youth-shadow);
+}
+
+/* 用户气泡 */
+.youth-msg.user .youth-bubble {
+  background: var(--youth-bubble-user);
+  color: var(--youth-bubble-user-text);
+  border-bottom-right-radius: 4px;
+  box-shadow: 0 2px 12px rgba(255,140,66,0.25);
+}
+
+/* ==========================================================
+   TTS 朗读指示器
+   ========================================================== */
+.youth-tts-indicator {
+  display: none;
+  align-items: center;
+  gap: 3px;
+  margin-left: 8px;
+  padding: 4px 8px;
+  background: rgba(255,140,66,0.12);
+  border-radius: 10px;
+  font-size: 12px;
+  color: var(--youth-primary);
+  vertical-align: middle;
+}
+
+.youth-tts-indicator .tts-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--youth-primary);
+  animation: ttsPulse 0.6s ease-in-out infinite;
+}
+
+.youth-tts-indicator .tts-dot:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.youth-tts-indicator .tts-dot:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes ttsPulse {
+  0%, 100% { opacity: 0.3; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.3); }
+}
+
+/* ==========================================================
+   快捷回复按钮行
+   ========================================================== */
+.youth-quick-replies {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0 16px 10px;
+}
+
+.youth-quick-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 14px;
+  border-radius: 24px;
+  border: 1.5px solid var(--youth-border);
+  background: var(--youth-surface);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--youth-text);
+  cursor: pointer;
+  white-space: nowrap;
+  min-height: 40px;
+  transition: all 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+
+.youth-quick-btn:active {
+  transform: scale(0.95);
+  background: #FFF3E6;
+  border-color: var(--youth-primary);
+}
+
+/* ==========================================================
+   表情按钮区 (Emoji Feelings)
+   ========================================================== */
+.youth-emoji-bar {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  padding: 6px 12px 8px;
+}
+
+.youth-emoji-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 56px;
+  min-height: 60px;
+  padding: 6px 4px;
+  border-radius: var(--youth-radius-md);
+  border: 2px solid var(--youth-border);
+  background: var(--youth-surface);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+}
+
+.youth-emoji-btn:active {
+  transform: scale(0.93);
+}
+
+.youth-emoji-btn .emoji-icon {
+  font-size: 32px;
+  line-height: 1;
+}
+
+.youth-emoji-btn .emoji-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--youth-text-secondary);
+}
+
+/* 各情绪按钮颜色强调 */
+.youth-emoji-btn.happy:active {
+  border-color: #FFB84D;
+  background: #FFF8EC;
+}
+
+.youth-emoji-btn.sad:active {
+  border-color: #87CEEB;
+  background: #F0F8FF;
+}
+
+.youth-emoji-btn.angry:active {
+  border-color: #E87DA0;
+  background: #FFF0F4;
+}
+
+.youth-emoji-btn.worried:active {
+  border-color: #C4A2E6;
+  background: #F8F2FF;
+}
+
+.youth-emoji-btn.calm:active {
+  border-color: #7EC8A0;
+  background: #F2FAF5;
+}
+
+/* ==========================================================
+   底部输入区 — Sticky 固定
+   ========================================================== */
+.youth-input-area {
+  flex-shrink: 0;
+  position: sticky;
+  bottom: 0;
+  background: var(--youth-surface);
+  border-top: 1px solid var(--youth-border);
+  padding: 10px 16px;
+  padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  z-index: 10;
+}
+
+/* 文字输入框 */
+.youth-text-input {
+  flex: 1;
+  min-height: 48px;
+  max-height: 96px;
+  padding: 12px 16px;
+  border: 2px solid var(--youth-border);
+  border-radius: 24px;
+  font-size: var(--youth-font-size-base);
+  font-family: inherit;
+  color: var(--youth-text);
+  background: #FAF7F2;
+  outline: none;
+  resize: none;
+  -webkit-appearance: none;
+  -webkit-text-size-adjust: 100%;
+  /* 禁止 iOS 聚焦放大 */
+  font-size: 16px !important; /* 不小于 16px 防 iOS 自动缩放 */
+}
+
+.youth-text-input:focus {
+  border-color: var(--youth-primary);
+  background: var(--youth-surface);
+  box-shadow: 0 0 0 3px rgba(255,140,66,0.12);
+}
+
+.youth-text-input::placeholder {
+  color: #C4B8A8;
+  font-size: 15px;
+}
+
+/* 发送按钮 */
+.youth-send-btn {
+  width: 48px;
+  height: 48px;
+  min-width: 48px;
+  border-radius: 50%;
+  border: none;
+  background: var(--youth-primary);
+  color: white;
+  font-size: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+  box-shadow: 0 2px 8px rgba(255,140,66,0.3);
+}
+
+.youth-send-btn:active {
+  transform: scale(0.9);
+  background: var(--youth-primary-hover);
+}
+
+.youth-send-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+  box-shadow: none;
+}
+
+/* ==========================================================
+   打字中指示器
+   ========================================================== */
+.youth-typing {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 14px 18px;
+}
+
+.youth-typing .typing-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #D4C4AE;
+  animation: typingBounce 1.2s ease-in-out infinite;
+}
+
+.youth-typing .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+.youth-typing .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes typingBounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+  30% { transform: translateY(-6px); opacity: 1; }
+}
+
+/* ==========================================================
+   响应式适配
+   ========================================================== */
+
+/* 平板及以上 — 限制最大宽度 */
+@media (min-width: 600px) {
+  #youth-chat.page-section.active {
+    max-width: 500px;
+    margin: 0 auto;
+  }
+
+  .youth-emoji-bar {
+    gap: 16px;
+    padding: 12px 24px 16px;
+  }
+
+  .youth-emoji-btn {
+    min-width: 68px;
+    min-height: 72px;
+  }
+
+  .youth-emoji-btn .emoji-icon {
+    font-size: 34px;
+  }
+}
+
+/* ==========================================================
+   无障碍
+   ========================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .youth-msg {
+    animation: none;
+  }
+  .youth-welcome-emoji {
+    animation: none;
+  }
+  .tts-dot {
+    animation: none;
+  }
+}
