@@ -584,6 +584,297 @@
     work: ['activity', 'note']
   };
 
+  /* ==========================================================
+   * 「认识我」— 以人为本的自我介绍（P1 核心新增）
+   * ========================================================== */
+
+  /** 心青年第一人称自我介绍 */
+  var aboutMe = {
+    firstPerson: '我叫小雨，今年24岁。我说话不多，但我能听懂。给我一点时间，我就能把事情做好。',
+    strengths: [
+      { icon: '🍪', title: '我擅长', desc: '烘焙——我能独立做出好吃的曲奇和杯子蛋糕' },
+      { icon: '🚌', title: '我知道很多', desc: '本市的公交线路我都清楚，去哪坐几路车我都知道' },
+      { icon: '🎹', title: '我会', desc: '弹电子琴，能弹出简单的旋律' }
+    ],
+    interests: [
+      { icon: '🐱', title: '我喜欢', desc: '猫咪和所有小动物' },
+      { icon: '🎵', title: '我喜欢', desc: '听轻音乐、拼图和看公交车线路图' }
+    ],
+    calming: [
+      { icon: '🏠', title: '让我安心的事', desc: '安静的环境、固定的日程、提前知道会发生什么' },
+      { icon: '💚', title: '让我快乐的事', desc: '做烘焙、坐公交车看风景、有人耐心听我说话' },
+      { icon: '🧸', title: '安抚我的方式', desc: '给我5分钟独处时间，给我一个简单的选择，不要催促我' }
+    ],
+    communicationPreference: {
+      callMe: '叫我"小雨"就好',
+      howToTalk: '用短句、慢一点、一次只说一件事。给我几秒钟反应时间。',
+      howToExplain: '用"先...然后..."的句式，用我熟悉的例子（公交车、烘焙）打比方',
+      avoid: '不要一次说很多件事，不要用反问或讽刺，不要催我"快点"'
+    },
+    independence: [
+      { level: '✅ 我能自己做', items: ['刷牙洗脸', '穿衣服', '吃饭', '收拾餐具', '看公交车线路图规划路线', '做曲奇和杯子蛋糕'] },
+      { level: '🤝 需要协助', items: ['理解新任务指令', '应对突然改变的计划', '在嘈杂环境中保持平静', '处理紧急情况'] }
+    ],
+    aspiration: '我希望有一份和烘焙相关的工作，每天能安安静静地做事。我也希望别人了解我之后，不会觉得我"奇怪"。'
+  };
+
+  /* ==========================================================
+   * 三类信息来源标记（P2 核心新增）
+   * ========================================================== */
+
+  /** 信息来源类型 */
+  var SOURCE_TYPES = {
+    selfReported: { key: 'self', label: '心青年自己说的', icon: '💬', color: '#4A90D9', desc: '本人通过对话或表达直接传递的信息' },
+    observerReported: { key: 'observer', label: '支持者观察到的', icon: '👁️', color: '#722ED1', desc: '家长、老师等照护者基于观察记录的信息' },
+    coConfirmed: { key: 'confirmed', label: '大家共同确认的', icon: '✅', color: '#52C41A', desc: '多方交叉验证后共同认可的信息' }
+  };
+
+  /* ==========================================================
+   * ABC 支持框架记录（P4 核心新增）
+   * ========================================================== */
+
+  /** ABC 框架模板 */
+  var ABC_FRAMEWORK = {
+    antecedent: { label: '发生前（环境/人物/事件）', placeholder: '当时的环境是怎样的？周围有哪些人？之前发生了什么？', hint: '尽量描述可观察的事实，避免主观判断' },
+    behavior: { label: '发生时（可观察到的表现）', placeholder: '具体做了什么？说了什么？持续了多久？', hint: '避免"不听话""情绪不好"等标签，只记录观察到的行为' },
+    consequence: { label: '支持措施（工作人员做了什么）', placeholder: '当时采取了什么措施？说了什么？', hint: '描述实际采取的行动' },
+    result: { label: '结果（什么有效、什么无效）', placeholder: '哪种方法有效？哪种没有帮助？为什么？', hint: '记录可观察到的结果变化' },
+    nextSuggestion: { label: '下次建议', placeholder: '是否需要调整环境或任务？下次可以试试什么不同的方法？', hint: '基于这次经验，给下次支持的建议' }
+  };
+
+  /** 示例：完整的ABC支持链记录 */
+  var abcSampleRecord = {
+    antecedent: '下午2:30临时取消烘焙课，改为户外活动。教室里约有6人在说话，声音较大。',
+    behavior: '小雨开始反复问"为什么不去烘焙"，在教室内来回走动，约3分钟后双手捂住耳朵。',
+    consequence: '李老师蹲下来，用平和的语气说"我们先坐一下"，带到安静角落，给他看了明天的日程表，让他选了"先喝水还是先坐5分钟"。',
+    result: '选择"坐5分钟"后，约4分钟情绪平稳。后续主动问"明天有烘焙课吗"。',
+    nextSuggestion: '① 活动改变时提前告知，出示修改后的日程卡 ② 在教室设一个安静的"休息角" ③ 准备备选活动让他选择'
+  };
+
+  /* ==========================================================
+   * 策略有效性评价体系（P9 核心新增）
+   * ========================================================== */
+
+  var EFFECTIVENESS_LEVELS = [
+    { value: 'effective', label: '有效', icon: '✅', color: '#52C41A', desc: '这个方法明显帮助了心青年' },
+    { value: 'partial', label: '部分有效', icon: '🔶', color: '#FAAD14', desc: '有一定帮助，但效果不完全' },
+    { value: 'none', label: '无明显效果', icon: '⚪', color: '#999', desc: '没有观察到明显变化' },
+    { value: 'worse', label: '可能加重压力', icon: '⚠️', color: '#F5222D', desc: '这个方法可能让情况更糟' }
+  ];
+
+  /** 已验证的有效支持经验（P7 AI发现示例） */
+  var verifiedStrategies = [
+    {
+      id: 'strat_001',
+      name: '提前告知变化并展示日程卡',
+      triggerPattern: '活动临时改变',
+      earlySignals: '反复询问、来回走动',
+      steps: ['提前告知活动安排变化', '出示修改后的日程图', '让他选择替代活动'],
+      avoidMethods: ['突然通知变化', '多人围住解释', '连续追问感受'],
+      recoveryArrangement: '确认情绪平稳后，自然过渡到当天活动，不过度关注',
+      effectiveness: 'effective',
+      verifiedAt: '2026-07-28',
+      applicableScenarios: ['学校', '就业', '社区活动'],
+      sourceType: 'confirmed'
+    },
+    {
+      id: 'strat_002',
+      name: '提供安静空间 + 简单选择恢复控制感',
+      triggerPattern: '环境嘈杂、人多',
+      earlySignals: '捂耳朵、突然不说话、找借口离开',
+      steps: ['引导到安静空间', '给5分钟独处', '提供2个简单选择（喝水or坐着）'],
+      avoidMethods: ['追问"你怎么了"', '试图讲道理', '不让离开'],
+      recoveryArrangement: '允许在自己觉得舒服的时候自然回归，不强迫',
+      effectiveness: 'effective',
+      verifiedAt: '2026-07-25',
+      applicableScenarios: ['学校', '社区活动', '临时照护'],
+      sourceType: 'confirmed'
+    },
+    {
+      id: 'strat_003',
+      name: '用"先...然后..."分步说明新任务',
+      triggerPattern: '新任务、不熟悉的流程',
+      earlySignals: '站在原地不动、重复问"怎么做"',
+      steps: ['把任务拆成小步骤', '用"先...然后..."说明', '给步骤卡片辅助理解', '允许按自己节奏做'],
+      avoidMethods: ['一次性说完所有步骤', '催促"快点"', '在他没准备好时就让他开始'],
+      recoveryArrangement: '完成每步后给予简单肯定，自然进入下一步',
+      effectiveness: 'effective',
+      verifiedAt: '2026-07-20',
+      applicableScenarios: ['学校', '就业', '社区活动'],
+      sourceType: 'confirmed'
+    }
+  ];
+
+  /* ==========================================================
+   * AI 发现有效支持经验 演示数据（P7 P10 核心新增）
+   * ========================================================== */
+
+  /** AI 发现提示示例 */
+  var aiDiscoverySamples = [
+    {
+      id: 'discovery_001',
+      title: 'AI 发现：有效支持经验沉淀建议',
+      observation: '近5次情绪波动中，有4次发生在活动临时改变后。其中提前展示日程卡的2次，恢复时间明显更短（平均4分钟 vs 15分钟）。',
+      suggestion: '是否将"提前告知变化并展示日程卡"加入小雨的支持建议？',
+      evidence: [
+        { date: '2026-07-28', event: '烘焙课临时取消', support: '展示日程卡 + 提供选择', result: '4分钟恢复' },
+        { date: '2026-07-22', event: '户外活动改为室内', support: '提前告知 + 展示日程卡', result: '3分钟恢复' },
+        { date: '2026-07-15', event: '老师临时换人', support: '未提前告知', result: '20分钟恢复' },
+        { date: '2026-07-10', event: '参观地点改变', support: '未提前告知', result: '15分钟恢复' },
+        { date: '2026-07-03', event: '课程顺序调整', support: '当时解释原因', result: '12分钟恢复' }
+      ],
+      status: 'pending_confirm'
+    },
+    {
+      id: 'discovery_002',
+      title: 'AI 发现：不同支持者记录差异',
+      observation: '妈妈记录的"情绪波动"频率（每周3次）与李老师记录的频率（每周1次）存在明显差异。可能原因：家庭环境触发因素更多，或妈妈对情绪波动的定义更敏感。',
+      suggestion: '建议妈妈和李老师共同回顾两次记录，确认各自的观察标准是否一致。这不是对错的判断，而是为了更好地理解小雨在不同环境下的状态。',
+      evidence: [],
+      status: 'pending_confirm'
+    },
+    {
+      id: 'discovery_003',
+      title: 'AI 发现：值得关注的变化',
+      observation: '最近两周，小雨在烘焙活动中的参与度从"需要全程引导"变为"可独立完成大部分步骤"。李老师记录中出现了新的积极行为：主动收拾工具、询问"明天还做吗"。',
+      suggestion: '这可能是就业准备度的积极信号。是否可以尝试让他指导新学员做简单步骤？（注意：这只是待核实的观察线索，不是诊断结论，请由熟悉小雨的支持者确认。）',
+      evidence: [],
+      status: 'pending_confirm'
+    }
+  ];
+
+  /* ==========================================================
+   * 多场景交接卡（P6 核心新增）
+   * ========================================================== */
+
+  var scenarioCards = {
+    medical: {
+      id: 'medical',
+      label: '🏥 就医沟通卡',
+      target: '医生、护士',
+      sections: [
+        { title: '基本信息', type: 'blue', items: ['小雨，24岁，男性', '海鲜过敏（虾蟹贝类）——严禁接触', '无长期用药'] },
+        { title: '沟通方式', type: 'green', items: ['用短句、慢一点沟通', '给他几秒钟反应时间', '他能听懂，但表达可能需要时间', '重要信息请先告知陪同者'] },
+        { title: '就诊注意事项', type: 'yellow', items: ['提前告知检查步骤，用"先...然后..."', '嘈杂环境可能让他紧张', '如需身体接触，请先告诉他你要做什么', '提供安静等候空间更好'] },
+        { title: '紧急联系人', type: 'red', items: ['妈妈 138-xxxx-xxxx（法定支持人）', '李老师 010-xxxx-xxxx（机构老师）'] }
+      ]
+    },
+    work: {
+      id: 'work',
+      label: '💼 工作支持卡',
+      target: '就业辅导员、同事',
+      sections: [
+        { title: '能力与优势', type: 'blue', items: ['独立完成烘焙（曲奇、杯子蛋糕）', '按步骤完成任务，做事专注', '了解公交路线，能独立通勤', '工作态度认真负责'] },
+        { title: '有效支持方式', type: 'green', items: ['新任务用步骤卡片辅助，一次一个步骤', '提前告知工作安排的变化', '允许在自己的节奏下完成任务', '用具体、正面的反馈（"这个曲奇形状很好"）'] },
+        { title: '需要特别留意', type: 'yellow', items: ['活动临时改变时可能焦虑', '嘈杂环境可能影响工作状态', '需要明确的开始和结束信号', '避免安排需要快速反应的任务'] },
+        { title: '紧急联系', type: 'red', items: ['妈妈 138-xxxx-xxxx', '李老师 010-xxxx-xxxx'] }
+      ]
+    },
+    community: {
+      id: 'community',
+      label: '🎯 社区活动支持卡',
+      target: '社区工作者、志愿者',
+      sections: [
+        { title: '认识小雨', type: 'blue', items: ['24岁，安静、友善', '对公交车和烘焙非常了解', '喜欢动物、电子琴和拼图'] },
+        { title: '如何支持他', type: 'green', items: ['提前说明活动流程', '嘈杂时带他到安静处', '给他反应时间，不要催促', '用他喜欢的话题开场：公交车、烘焙'] },
+        { title: '需要留意', type: 'yellow', items: ['环境太吵时会捂耳朵', '计划改变时需要提前告知', '海鲜过敏——注意活动中的食物'] },
+        { title: '联系方式', type: 'red', items: ['妈妈 138-xxxx-xxxx', '李老师 010-xxxx-xxxx'] }
+      ]
+    },
+    respite: {
+      id: 'respite',
+      label: '🏠 临时照护交接卡',
+      target: '临时照护者',
+      sections: [
+        { title: '5分钟认识我', type: 'blue', items: ['我是小雨，24岁。我话不多但我能听懂。', '我喜欢烘焙、公交车、猫咪和电子琴。', '请用短句慢慢和我说，给我反应时间。'] },
+        { title: '日常安排', type: 'green', items: ['早餐9:00（注意：不能有海鲜）', '自由时间喜欢看书、拼图、听音乐', '午餐11:30（避免突然更换菜单）', '午休12:30需要安静环境', '晚上10点前入睡'] },
+        { title: '需要特别留意的情况', type: 'yellow', items: ['活动临时改变时可能焦虑——提前告知很重要', '嘈杂环境可能不适——提供安静空间', '被催促时会不安——给他足够时间', '如有焦虑信号（反复问、来回走）：带到安静处，给5分钟'] },
+        { title: '紧急联系', type: 'red', items: ['妈妈 138-xxxx-xxxx', '爸爸 139-xxxx-xxxx', '如发生严重过敏或自伤行为，立即拨打120'] }
+      ]
+    },
+    emergency: {
+      id: 'emergency',
+      label: '🚨 紧急情况速读卡',
+      target: '急救人员',
+      sections: [
+        { title: '身份信息', type: 'red', items: ['姓名：小雨，24岁，男性', '诊断：孤独症谱系', '沟通：能理解简单指令，但表达可能有限'] },
+        { title: '医疗关键信息', type: 'red', items: ['海鲜过敏（虾蟹贝类）——可能引起严重过敏反应', '无长期用药', '年度体检正常'] },
+        { title: '危机处理要点', type: 'yellow', items: ['用短句、平静的声音沟通', '一次只说一件事', '减少环境刺激（关灯、降低噪音）', '不要多人围住或连续追问', '允许他握住熟悉的物品'] },
+        { title: '紧急联系人', type: 'red', items: ['妈妈 138-xxxx-xxxx', '爸爸 139-xxxx-xxxx', '李老师 010-xxxx-xxxx'] }
+      ]
+    }
+  };
+
+  /* ==========================================================
+   * 压力信号与支持方法（替代"行为红线"）（P3 核心新增）
+   * ========================================================== */
+
+  var stressSignals = [
+    {
+      id: 'stress_001',
+      category: '需要特别留意的情况',
+      triggerFactors: '临时改变计划、环境过于嘈杂、多人同时发出指令',
+      earlySignals: '反复询问同一个问题、来回走动、说话音量变大',
+      behavior: '可能捂耳朵、找借口离开、突然不说话',
+      effectiveSupport: [
+        '减少语言指令，出示日程图',
+        '引导到安静空间',
+        '提供2个简单选择（"先喝水还是先坐一下？"）'
+      ],
+      avoidMethods: ['多人围住解释', '连续追问"你怎么了"', '试图讲道理或说服'],
+      recoveryArrangement: '确认情绪平稳后自然过渡，不过度关注刚才的事件',
+      sourceType: 'confirmed'
+    },
+    {
+      id: 'stress_002',
+      category: '压力信号与支持方法',
+      triggerFactors: '被催促、新任务没理解、被不打招呼触碰',
+      earlySignals: '站在原地不动、重复说"不会"、"不知道"',
+      behavior: '可能推开物品、离开座位、说话有情绪',
+      effectiveSupport: [
+        '用步骤卡片分步说明',
+        '允许按自己的节奏做',
+        '用"先...然后..."句式'
+      ],
+      avoidMethods: ['说"你怎么连这个都不懂"', '催促"快点"', '不打招呼就触碰身体'],
+      recoveryArrangement: '完成第一步后给予简单肯定，逐步恢复任务信心',
+      sourceType: 'confirmed'
+    },
+    {
+      id: 'stress_003',
+      category: '安全提醒',
+      triggerFactors: '接触到海鲜（虾蟹贝类）',
+      earlySignals: '皮肤发红、呼吸急促',
+      behavior: '可能出现严重过敏反应',
+      effectiveSupport: [
+        '立即停止接触',
+        '拨打120',
+        '通知紧急联系人'
+      ],
+      avoidMethods: ['任何含有海鲜的食物或调味料'],
+      recoveryArrangement: '就医后确认身体状况，避免再次接触',
+      sourceType: 'confirmed'
+    }
+  ];
+
+  /* ==========================================================
+   * 完整支持链演示数据（P10 核心新增）
+   * ========================================================== */
+
+  var demoWorkflow = {
+    title: 'AI懂我 · 工作演示链',
+    description: '以下演示AI如何帮助沉淀有效支持经验，防止宝贵的支持知识随着人员更换而丢失',
+    steps: [
+      { step: 1, actor: '心青年·小雨', action: '在对话端表达："明天不想去新的工作地点。"', icon: '💬', color: '#4A90D9' },
+      { step: 2, actor: 'AI懂我', action: '通过简短追问理解原因：是因为之前没去过、不知道路怎么走、还是担心那里的人不认识？', icon: '🤖', color: '#722ED1' },
+      { step: 3, actor: '妈妈·家长', action: '补充记录：小雨对新环境和临时变化比较敏感，上次换工位时焦虑了20分钟。', icon: '👩', color: '#52C41A' },
+      { step: 4, actor: '李老师', action: '记录有效方法：提前给小雨看了新地点的照片和公交路线图，用日程卡展示了当天流程，焦虑明显降低。', icon: '👩\u200d🏫', color: '#FAAD14' },
+      { step: 5, actor: 'AI懂我', action: 'AI 分析发现：近4次涉及"新环境"的记录中，有3次使用了"提前展示照片+路线图"，焦虑持续时间平均缩短70%。建议将此方法沉淀为小雨的"新环境适应策略"。', icon: '🤖', color: '#722ED1' },
+      { step: 6, actor: '系统', action: '自动更新工作场景支持卡，新任就业辅导员用5分钟即可了解小雨并知道如何正确提供支持。', icon: '📋', color: '#EB2F96' },
+      { step: 7, actor: '价值', action: '即使支持人员更换，小雨的有效支持经验不会丢失。这就是"AI懂我"的核心价值。', icon: '💡', color: '#13C2C2' }
+    ]
+  };
+
   // 暴露到全局
   window.Constants = {
     basicInfo: basicInfo,
@@ -613,7 +904,18 @@
     EMOTION_TO_STRATEGY: EMOTION_TO_STRATEGY,
     MODULE_TAGS: MODULE_TAGS,
     TYPE_TO_MODULE: TYPE_TO_MODULE,
-    RECORD_MATRIX: RECORD_MATRIX
+    RECORD_MATRIX: RECORD_MATRIX,
+    // v2.0 新增：以人为本
+    aboutMe: aboutMe,
+    SOURCE_TYPES: SOURCE_TYPES,
+    ABC_FRAMEWORK: ABC_FRAMEWORK,
+    abcSampleRecord: abcSampleRecord,
+    EFFECTIVENESS_LEVELS: EFFECTIVENESS_LEVELS,
+    verifiedStrategies: verifiedStrategies,
+    aiDiscoverySamples: aiDiscoverySamples,
+    scenarioCards: scenarioCards,
+    stressSignals: stressSignals,
+    demoWorkflow: demoWorkflow
   };
 
 })();

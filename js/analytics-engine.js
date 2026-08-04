@@ -300,27 +300,27 @@
     var lines = [];
     var dateLabel = U.date.display(dateStr);
 
-    lines.push(dateLabel + '，共记录了 ' + total + ' 条信息。');
+    lines.push('📋 ' + dateLabel + '，共记录了 ' + total + ' 条信息。');
 
-    // 情绪状态描述
+    // 情绪状态描述 — 使用谨慎表达
     if (positive > 0 && negative > 0) {
-      lines.push('今日情绪有起伏：有 ' + positive + ' 次积极记录，' + negative + ' 次需要关注的记录。');
+      lines.push('记录显示今日情绪有起伏：有 ' + positive + ' 次积极记录，' + negative + ' 次需要关注的记录。');
     } else if (positive > 0) {
-      lines.push('今日整体情绪积极，有 ' + positive + ' 次正面记录。');
+      lines.push('记录中正面表现较多，有 ' + positive + ' 次积极记录。');
     } else if (negative > 0) {
-      lines.push('今日需要关注：有 ' + negative + ' 次预警记录，建议详细了解具体情况。');
+      lines.push('记录显示有 ' + negative + ' 条内容需要关注，建议详细了解具体情况。');
     } else if (total > 0) {
-      lines.push('今日记录以日常信息为主，无明显情绪波动。');
+      lines.push('今日记录以日常信息为主，记录中未见明显情绪波动。');
     }
 
     // 沟通表达
     if (expression > 0) {
-      lines.push('主动表达了 ' + expression + ' 次，沟通方面表现积极。');
+      lines.push('记录到主动表达 ' + expression + ' 次，沟通方面表现较为积极。');
     }
 
-    // 用药
+    // 用药 — 仅陈述事实
     if (medInfo.hasMedicationRecord) {
-      lines.push('有用药相关记录，已按时关注。');
+      lines.push('有用药相关记录，已记录在案。');
     }
 
     // 模块参与
@@ -340,9 +340,23 @@
       lines.push('今日活动：' + activities + '。');
     }
 
+    // 高频标签提示
+    var sortedTags = Object.keys(allTags)
+      .map(function (k) { return { tag: k, count: allTags[k] }; })
+      .sort(function (a, b) { return b.count - a.count; })
+      .slice(0, 3);
+    if (sortedTags.length > 0) {
+      var attentionTags = sortedTags.filter(function(t) {
+        return t.tag.indexOf('焦虑') > -1 || t.tag.indexOf('触发') > -1 || t.tag.indexOf('预警') > -1;
+      });
+      if (attentionTags.length > 0) {
+        lines.push('🔍 记录中较常出现标签：' + attentionTags.map(function(t) { return t.tag; }).join('、') + '，可能值得关注。[系统推测]');
+      }
+    }
+
     // 没有记录
     if (total === 0) {
-      lines = [dateLabel + '暂无记录。建议各角色及时记录日常情况，保持档案的连续性。'];
+      lines = ['📋 ' + dateLabel + '暂无记录。建议各角色及时记录日常情况，保持档案的连续性。'];
     }
 
     return lines.join('\n');
@@ -555,7 +569,7 @@
 
   function generateWeeklySummary(startDate, dates, total, positive, negative, expression, dailyCounts, emotionTrend, patterns, moduleDist) {
     var lines = [];
-    lines.push('本周（' + startDate + ' 至 ' + dates[6] + '）共记录了 ' + total + ' 条信息。');
+    lines.push('📋 本周（' + startDate + ' 至 ' + dates[6] + '）共记录了 ' + total + ' 条信息。');
 
     // 记录趋势
     var avgDaily = total > 0 ? Math.round(total / 7 * 10) / 10 : 0;
@@ -563,17 +577,17 @@
     dailyCounts.forEach(function (c, i) { if (c > maxDay) { maxDay = c; maxDayIdx = i; } });
     lines.push('日均记录 ' + avgDaily + ' 条，' + U.date.display(dates[maxDayIdx]) + '记录最多（' + maxDay + '条）。');
 
-    // 情绪
+    // 情绪 — 谨慎表达
     if (positive > 0 || negative > 0) {
-      lines.push('正面记录 ' + positive + ' 次，需要关注 ' + negative + ' 次。');
+      lines.push('记录中积极表现 ' + positive + ' 次，需要关注 ' + negative + ' 次。');
     }
 
     // 沟通表达
     if (expression > 0) {
-      lines.push('主动表达 ' + expression + ' 次。');
+      lines.push('记录到主动表达 ' + expression + ' 次。');
     }
 
-    // 情绪趋势
+    // 情绪趋势 — 标注为系统推测
     var trendScores = emotionTrend.map(function (e) { return e.score; }).filter(function (s) { return s !== null; });
     if (trendScores.length >= 3) {
       var firstHalf = trendScores.slice(0, Math.floor(trendScores.length / 2));
@@ -581,22 +595,22 @@
       var firstAvg = firstHalf.reduce(function (a, b) { return a + b; }, 0) / firstHalf.length;
       var secondAvg = secondHalf.reduce(function (a, b) { return a + b; }, 0) / secondHalf.length;
       if (secondAvg > firstAvg + 0.5) {
-        lines.push('情绪整体呈上升趋势，状态向好。');
+        lines.push('🔍 基于记录的情绪评分呈上升趋势，可能反映状态向好。[系统推测]');
       } else if (secondAvg < firstAvg - 0.5) {
-        lines.push('情绪整体略有下降，建议关注压力来源。');
+        lines.push('🔍 基于记录的情绪评分略有下降，可能值得关注压力来源。[系统推测]');
       } else {
-        lines.push('情绪整体稳定。');
+        lines.push('🔍 基于记录的情绪评分整体稳定。[系统推测]');
       }
     }
 
-    // 模式发现
+    // 模式发现 — 标记为系统推测
     if (patterns.stressPatterns.length > 0) {
       var stressNames = patterns.stressPatterns.map(function (p) { return p.tag; }).join('、');
-      lines.push('常见压力标签：' + stressNames + '。');
+      lines.push('🔍 记录中较常出现的标签：' + stressNames + '，可能值得关注。[系统推测]');
     }
     if (patterns.newAbilities.length > 0) {
       var abilityNames = patterns.newAbilities.map(function (a) { return a.tag; }).join('、');
-      lines.push('本周新出现的能力标签：' + abilityNames + '，值得关注和支持。');
+      lines.push('🔍 本周新出现的能力标签：' + abilityNames + '，可能是积极变化信号。[系统推测]');
     }
 
     if (total === 0) {
@@ -752,59 +766,59 @@
   function generateMonthlySuggestions(yearMonthStr, records, comparison, topTags, moduleDist) {
     var suggestions = [];
 
-    // 基于对比的建议
+    // 基于对比的建议 — 用谨慎表达
     if (comparison.needsAttentionCount.direction === 'up') {
-      suggestions.push('关注：本月需要关注的记录较上月增加，建议与支持团队沟通，排查是否存在环境或计划变化导致的压力增加。');
+      suggestions.push('记录中需要关注的内容较上月增加，可能与环境或计划变化有关，建议与支持团队讨论排查。');
     }
     if (comparison.needsAttentionCount.direction === 'down') {
-      suggestions.push('积极：需要关注的记录较上月减少，当前的支持策略可能有效，建议继续保持。');
+      suggestions.push('需要关注的记录较上月减少，当前的支持方式可能有帮助，建议继续保持观察。');
     }
     if (comparison.expressionCount.direction === 'up') {
-      suggestions.push('本月主动表达次数增加，沟通渠道较为通畅，可适当鼓励更多自主表达。');
+      suggestions.push('本月主动表达次数较上月增加，可考虑适当鼓励更多自主表达机会。');
     }
     if (comparison.expressionCount.direction === 'down') {
-      suggestions.push('本月主动表达次数减少，可尝试更多视觉辅助工具（如图片卡、社交故事）促进沟通。');
+      suggestions.push('本月主动表达次数较上月减少，可尝试更多视觉辅助工具（如图片卡、社交故事）促进沟通。');
     }
     if (comparison.positiveCount.direction === 'up') {
-      suggestions.push('正面记录增加，情绪状态向好，可考虑在现有支持基础上逐步增加挑战性活动。');
+      suggestions.push('积极表现记录较上月增加，可考虑在现有支持基础上逐步增加适度挑战性活动。');
     }
 
     // 基于模块分布
     if (!moduleDist['emotion'] || moduleDist['emotion'] < 5) {
-      suggestions.push('建议：情绪模块记录偏少，提醒各角色及时记录情绪观察，尤其是在过渡时段（如活动变更前后）。');
+      suggestions.push('情绪模块记录偏少，提醒各角色及时记录情绪观察，尤其在过渡时段（如活动变更前后）。');
     }
     if (!moduleDist['communication'] || moduleDist['communication'] < 3) {
-      suggestions.push('建议：沟通模块记录偏少，鼓励老师和影子老师记录日常沟通中的发现。');
+      suggestions.push('沟通模块记录偏少，鼓励老师和影子老师记录日常沟通中的发现。');
     }
 
-    // 基于高频标签
+    // 基于高频标签 — 使用"记录中较常出现"
     var stressTags = topTags.filter(function (t) {
       return ['焦虑', '触发', '预警', '感官'].indexOf(t.tag) !== -1;
     });
     if (stressTags.length > 0) {
       var tagNames = stressTags.map(function (t) { return t.tag; }).join('、');
-      suggestions.push('提醒：与压力相关的标签（' + tagNames + '）出现频繁，建议制定针对性的应对预案。');
+      suggestions.push('记录中较常出现压力相关标签（' + tagNames + '），建议与支持团队讨论是否需要制定针对性的应对预案。');
     }
 
-    // 总有建议
-    suggestions.push('常规建议：保持每日记录的连续性，确保各角色（家长、老师、影子老师）按时完成各自模块的记录。');
+    // 常规建议
+    suggestions.push('保持每日记录的连续性，确保各角色（家长、老师、影子老师）按时完成各自模块的记录。');
 
     return suggestions;
   }
 
   function generateMonthlySummary(yearMonthStr, total, positive, negative, expression, avgMood, moduleDist, comparison, topTags) {
     var lines = [];
-    lines.push(yearMonthStr + ' 月度总结：共记录 ' + total + ' 条信息。');
+    lines.push('📋 ' + yearMonthStr + ' 月度总结：共记录 ' + total + ' 条信息。');
 
     if (avgMood !== null) {
-      var moodDesc = avgMood >= 4 ? '积极偏高' : avgMood >= 3 ? '平稳' : avgMood >= 2 ? '略有波动' : '偏低需关注';
-      lines.push('月度情绪平均评分 ' + avgMood + '（' + moodDesc + '）。');
+      var moodDesc = avgMood >= 4 ? '偏积极' : avgMood >= 3 ? '平稳' : avgMood >= 2 ? '略有波动' : '偏低需关注';
+      lines.push('基于记录的情绪平均评分 ' + avgMood + '（' + moodDesc + '）。[系统推测]');
     }
 
     // 对比
     var tc = comparison.totalRecords;
     if (tc.previous > 0) {
-      lines.push('与上月对比：记录数 ' + tc.diff + '，正面记录 ' + comparison.positiveCount.diff + '，需关注记录 ' + comparison.needsAttentionCount.diff + '。');
+      lines.push('与上月对比：记录数变化 ' + tc.diff + '，积极表现变化 ' + comparison.positiveCount.diff + '，需关注记录变化 ' + comparison.needsAttentionCount.diff + '。');
     }
 
     // 模块
@@ -820,11 +834,11 @@
     // 高频标签
     if (topTags.length > 0) {
       var top3 = topTags.slice(0, 3).map(function (t) { return t.tag + '(' + t.count + ')'; }).join('、');
-      lines.push('高频标签：' + top3 + '。');
+      lines.push('记录中较常出现的标签：' + top3 + '。');
     }
 
     if (total === 0) {
-      lines = [yearMonthStr + ' 暂无记录。请督促各角色按时完成日常记录。'];
+      lines = ['📋 ' + yearMonthStr + ' 暂无记录。请督促各角色按时完成日常记录。'];
     }
 
     return lines.join('\n');

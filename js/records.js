@@ -230,22 +230,34 @@
 
         case 'effectiveness':
           html += '<div style="margin-bottom:14px;">';
-          html += '  <label style="display:block;font-size:0.85rem;color:#555;margin-bottom:8px;font-weight:500;">策略效果评分</label>';
-          html += '  <div style="display:flex;gap:8px;flex-wrap:wrap;">';
-          var effLevels = [
-            { value: 1, label: '无效', emoji: '😞' },
-            { value: 2, label: '较弱', emoji: '🙁' },
-            { value: 3, label: '一般', emoji: '😐' },
-            { value: 4, label: '有效', emoji: '🙂' },
-            { value: 5, label: '很有效', emoji: '😄' }
+          html += '  <label style="display:block;font-size:0.85rem;color:#555;margin-bottom:8px;font-weight:500;">策略效果评价</label>';
+          html += '  <div class="effectiveness-bar">';
+          var effLevels = C.EFFECTIVENESS_LEVELS || [
+            { value: 'effective', label: '有效', icon: '✅', color: '#52C41A' },
+            { value: 'partial', label: '部分有效', icon: '🔶', color: '#FAAD14' },
+            { value: 'none', label: '无明显效果', icon: '⚪', color: '#999' },
+            { value: 'worse', label: '可能加重压力', icon: '⚠️', color: '#F5222D' }
           ];
           effLevels.forEach(function (eff) {
-            html += '    <label class="effectiveness-option" style="cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 14px;border:2px solid #eee;border-radius:10px;transition:all 0.2s;background:#fff;">';
+            html += '    <label class="effectiveness-option eff-' + eff.value + '" style="cursor:pointer;">';
             html += '      <input type="radio" name="effectiveness" value="' + eff.value + '" style="display:none;">';
-            html += '      <span style="font-size:1.5rem;">' + eff.emoji + '</span>';
-            html += '      <span style="font-size:0.75rem;color:#555;">' + eff.label + '</span>';
+            html += '      <span>' + eff.icon + ' ' + eff.label + '</span>';
             html += '    </label>';
           });
+          html += '  </div>';
+          html += '  <div style="margin-top:8px;">';
+          html += '    <label style="display:block;font-size:0.82rem;color:#555;margin-bottom:4px;font-weight:500;">适用场景（可多选）</label>';
+          html += '    <div style="display:flex;gap:6px;flex-wrap:wrap;">';
+          ['学校', '就业', '社区活动', '医疗', '家庭', '临时照护'].forEach(function(sc) {
+            html += '      <label style="cursor:pointer;display:flex;align-items:center;gap:4px;font-size:0.78rem;padding:4px 10px;border:1px solid #ddd;border-radius:14px;background:#fff;">';
+            html += '        <input type="checkbox" name="scenarios" value="' + sc + '" style="margin:0;">' + sc;
+            html += '      </label>';
+          });
+          html += '    </div>';
+          html += '  </div>';
+          html += '  <div style="margin-top:8px;">';
+          html += '    <label style="display:block;font-size:0.82rem;color:#555;margin-bottom:4px;font-weight:500;">补充说明</label>';
+          html += '    <textarea name="effectiveness_note" placeholder="什么情况下有效？什么情况下无效？有没有需要特别注意的地方？" rows="2" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:0.85rem;box-sizing:border-box;resize:vertical;"></textarea>';
           html += '  </div>';
           html += '</div>';
           break;
@@ -332,7 +344,12 @@
     if (formData.get('title')) record.title = formData.get('title');
     if (formData.get('mood')) record.mood = formData.get('mood');
     if (formData.get('emotion_type')) record.emotion_type = formData.get('emotion_type');
-    if (formData.get('effectiveness')) record.effectiveness = parseInt(formData.get('effectiveness'), 10);
+    if (formData.get('effectiveness')) record.effectiveness = formData.get('effectiveness');
+    // 适用场景（多选）
+    var scenarios = formData.getAll('scenarios');
+    if (scenarios.length > 0) record.applicableScenarios = scenarios;
+    // 效果补充说明
+    if (formData.get('effectiveness_note')) record.effectivenessNote = formData.get('effectiveness_note');
 
     // 验证必填
     var typeInfo = RECORD_TYPES[type];

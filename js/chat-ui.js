@@ -40,6 +40,8 @@
 
     /**
      * 渲染对话首页（路由 #chat）
+     * 设计遵循：温和、可信、低压力。一次只问一个问题，不连续追问。
+     * 一个页面只有一个主要行动：「开始聊天」
      */
     renderHome: function () {
       var container = document.getElementById('chat');
@@ -53,34 +55,41 @@
 
       container.innerHTML = ''
         + '<div class="chat-page-container chat-home-ready">'
+        // ── 1. 身份信息条：让用户始终清楚当前记录的是谁 ──
         + '  <div class="chat-home-identity">'
         + '    <div class="chat-home-avatar">🌻</div>'
         + '    <div class="chat-home-identity-info">'
-        + '      <div class="chat-home-identity-name">' + youthName + '的 AI聊聊</div>'
-        + '      <div class="chat-home-identity-desc">记录今天发生的事</div>'
+        + '      <div class="chat-home-identity-name">' + youthName + '</div>'
+        + '      <div class="chat-home-identity-desc">AI 聊聊 · 记录助手</div>'
         + '    </div>'
         + '  </div>'
+        // ── 2. Hero 区域：两个重叠气泡 + 一句话文案，低认知负荷 ──
         + '  <div class="chat-home-hero">'
         + '    <div class="chat-home-deco-bubbles">'
         + '      <div class="chat-home-deco-bubble purple"></div>'
         + '      <div class="chat-home-deco-bubble white"></div>'
         + '    </div>'
         + '    <div class="chat-home-hero-question">今天想记录什么？</div>'
-        + '    <div class="chat-home-hero-hint">AI会帮你把对话整理成档案记录，说到哪儿算哪儿，不用着急</div>'
+        + '    <div class="chat-home-hero-hint">AI 会帮你把对话整理成草稿，说到哪儿算哪儿，不用着急。</div>'
         + '  </div>'
+        // ── 3. 主操作：「开始聊天」—— 整页唯一主导行动 ──
         + '  <button class="chat-home-btn-start" id="btn-start-chat">开始聊天</button>'
+        // ── 3.5 继续上次对话（次要操作，不与「开始聊天」争视觉注意力）──
         + (lastSessionId && hasHistory
           ? '  <button class="chat-home-btn-continue" id="btn-continue-chat">继续上次对话</button>'
           : '')
+        // ── 4. 待确认提醒卡：把「聊天」和「正式入档」分开 ──
         + (pendingCount > 0
           ? '  <div class="chat-home-pending-card" id="card-pending-review">'
           + '    <div class="chat-home-pending-info">'
           + '      <div class="chat-home-pending-icon">📋</div>'
-          + '      <div class="chat-home-pending-text">' + pendingCount + '条记录待确认</div>'
+          + '      <span class="chat-home-pending-label">待确认</span>'
+          + '      <span class="chat-home-pending-text">' + pendingCount + ' 条记录待确认</span>'
           + '    </div>'
           + '    <div class="chat-home-pending-arrow">›</div>'
           + '  </div>'
           : '')
+        // ── 5. 历史对话入口（次要入口，放在页面下部）──
         + (hasHistory
           ? _renderHistoryList()
           : '')
@@ -151,6 +160,7 @@
 
     /**
      * 渲染对话界面（路由 #chat-conversation）
+     * AI 记录助手风格：一次只问一个问题，短句，不连续追问
      */
     renderConversation: function () {
       var container = document.getElementById('chat-conversation');
@@ -176,31 +186,35 @@
 
       container.innerHTML = ''
         + '<div class="chat-page-container chat-conv-ready">'
-        // 顶部栏
+        // ── 1. 顶部导航栏：返回 | 姓名 | 标题 | 结束 ──
         + '  <div class="chat-conv-topbar">'
         + '    <button class="chat-conv-btn-back" id="btn-chat-back">‹</button>'
-        + '    <div class="chat-conv-title">' + youthName + '的 AI聊聊</div>'
+        + '    <div class="chat-conv-title">' + youthName + ' · 本次记录</div>'
         + '    <button class="chat-conv-btn-end" id="btn-chat-end">结束</button>'
         + '  </div>'
-        // AI 状态栏
+        // ── 2. AI 状态栏：AI 记录助手 · 已自动保存 · N 条草稿 ──
         + '  <div class="chat-conv-status-bar" id="status-bar-drafts">'
         + '    <div class="chat-conv-status-avatar">✨</div>'
-        + '    <div class="chat-conv-status-text">AI记录助手</div>'
-        + '    <div class="chat-conv-status-draft" id="status-draft-text">草稿已保存</div>'
-        + (draftCount > 0 ? '    <div class="chat-conv-status-arrow">' + draftCount + '条草稿 ›</div>' : '')
+        + '    <div class="chat-conv-status-info">'
+        + '      <span class="chat-conv-status-title">AI 记录助手</span>'
+        + '      <span class="chat-conv-status-sub" id="status-draft-text">已自动保存</span>'
+        + '    </div>'
+        + (draftCount > 0
+          ? '    <div class="chat-conv-status-arrow" id="status-draft-count">' + draftCount + ' 条草稿 ›</div>'
+          : '')
         + '  </div>'
-        // 消息列表
+        // ── 3. 消息列表 ──
         + '  <div class="chat-conv-messages" id="chat-message-list">'
         + _renderWelcomeMessage()
         + '  </div>'
-        // 快捷回复行
+        // ── 4. 快捷回复条：提供表达方向，不替用户回答 ──
         + '  <div class="chat-quick-replies" id="chat-quick-replies">'
-        + '    <button class="chat-quick-reply-btn" data-reply="＋另一件事">＋另一件事</button>'
+        + '    <button class="chat-quick-reply-btn" data-reply="另一件事">另一件事</button>'
         + '    <button class="chat-quick-reply-btn" data-reply="补充刚才">补充刚才</button>'
-        + '    <button class="chat-quick-reply-btn" data-reply="记录进步">记录进步</button>'
+        + '    <button class="chat-quick-reply-btn" data-reply="记录进步">记录一个进步</button>'
         + '  </div>'
         + '  <div class="chat-quick-replies-toggle" id="chat-toggle-replies">⌃</div>'
-        // 底部输入区
+        // ── 5. 底部输入区：附加操作 · 输入框 · 语音 · 发送 ──
         + '  <div class="chat-conv-input-area">'
         + '    <button class="chat-conv-btn-plus" id="btn-chat-plus">＋</button>'
         + '    <div class="chat-conv-editor" id="chat-editor" contenteditable="true" '
@@ -224,6 +238,8 @@
 
     /**
      * 渲染整理确认页（路由 #chat-review）
+     * 这一页承担「人审」作用——整个产品最重要的安全阀。
+     * AI 草稿不等于正式档案，自动分析不等于专业判断。
      */
     renderReview: function () {
       var container = document.getElementById('chat-review');
@@ -242,63 +258,89 @@
 
       var html = ''
         + '<div class="chat-page-container chat-review-ready">'
+        // ── 顶栏 ──
         + '  <div class="chat-review-topbar">'
         + '    <button class="chat-review-btn-back" id="btn-review-back">‹</button>'
         + '    <div class="chat-review-title">本次整理</div>'
         + '  </div>'
+        // ── 概览条：本次生成 N 条记录 · 待确认 X · 已确认 Y ──
         + '  <div class="chat-review-info-bar">'
-        + '    <span class="chat-review-info-count">共' + totalCount + '条记录</span>'
+        + '    <span class="chat-review-info-count">共 ' + totalCount + ' 条记录</span>'
         + '    <span class="chat-review-info-legend">'
         + '      <span><span class="chat-review-legend-dot orange"></span>待确认 ' + pendingCount + '</span>'
         + '      <span><span class="chat-review-legend-dot green"></span>已确认 ' + confirmedCount + '</span>'
         + '    </span>'
         + '  </div>'
+        // ── 草稿卡片列表 ──
         + '  <div class="chat-review-list" id="review-list">';
 
       _drafts.forEach(function (draft, idx) {
         var isConfirmed = draft.status === 'confirmed';
         var cardClass = isConfirmed ? 'confirmed' : 'pending';
         var statusText = isConfirmed ? '已确认' : '待确认';
+        var moduleInfo = _getModuleInfo(draft.module);
+        var timeStr = _formatMsgDate(draft.createdAt || draft.timestamp);
+        var sourcePreview = (draft.sourceText || '').substring(0, 60);
 
         html += ''
           + '<div class="chat-review-draft-card ' + cardClass + '" data-draft-id="' + draft.id + '">'
+          // 头部：状态标签 + 模块 + 更多菜单
           + '  <div class="chat-review-draft-header">'
-          + '    <span class="chat-review-draft-status">' + statusText + '</span>'
+          + '    <span class="chat-review-draft-status ' + cardClass + '">' + statusText + '</span>'
+          + (moduleInfo ? '    <span class="chat-review-draft-module">' + moduleInfo.icon + ' ' + moduleInfo.label + '</span>' : '')
           + '    <button class="chat-review-draft-menu" data-action="menu" data-draft-id="' + draft.id + '">···</button>'
           + '  </div>'
+          // 主体
           + '  <div class="chat-review-draft-body">'
-          + '    <div class="chat-review-draft-title">' + _escapeHtml(draft.title) + '</div>';
+          + '    <div class="chat-review-draft-title">' + _escapeHtml(draft.title || '未命名记录') + '</div>';
 
         if (isConfirmed) {
-          html += '    <div class="chat-review-draft-confirmed-note">✓ 已确认等待统一保存</div>';
+          html += '    <div class="chat-review-draft-confirmed-note">已确认，等待统一保存</div>';
         } else {
-          html += '    <div class="chat-review-draft-summary">' + _escapeHtml(draft.content || '') + '</div>';
+          html += '    <div class="chat-review-draft-summary">' + _escapeHtml(draft.content || '暂无摘要') + '</div>';
+          // 来源对话预览
+          if (sourcePreview) {
+            html += '    <div class="chat-review-draft-source">💬 ' + _escapeHtml(sourcePreview) + '…</div>';
+          }
+          // 元信息行
+          html += '    <div class="chat-review-draft-meta">'
+            + (timeStr ? '<span>' + timeStr + '</span>' : '')
+            + '<span>隐私级别：仅支持者可见</span>'
+            + '</div>';
+          // 可展开的编辑区域
           html += '    <div class="chat-review-draft-fields">'
             + '      <div class="chat-review-draft-field">'
-            + '        <div class="chat-review-draft-field-label">具体内容</div>'
-            + '        <textarea class="chat-review-draft-field-input" rows="2" data-field="content">' + _escapeHtml(draft.content || '') + '</textarea>'
+            + '        <div class="chat-review-draft-field-label">标题</div>'
+            + '        <input class="chat-review-draft-field-input" value="' + _escapeHtml(draft.title || '') + '" data-field="title">'
+            + '      </div>'
+            + '      <div class="chat-review-draft-field">'
+            + '        <div class="chat-review-draft-field-label">内容摘要</div>'
+            + '        <textarea class="chat-review-draft-field-input" rows="3" data-field="content">' + _escapeHtml(draft.content || '') + '</textarea>'
             + '      </div>'
             + '    </div>';
         }
 
         html += '  </div>'
-          + '  <div class="chat-review-draft-actions">';
-
+          // 操作按钮
+          + '  <div class="chat-review-draft-actions">'
+          + '    <button class="chat-review-btn-expand" data-action="expand" data-draft-id="' + draft.id + '">展开编辑</button>';
         if (!isConfirmed) {
           html += '    <button class="chat-review-btn-modify" data-action="modify" data-draft-id="' + draft.id + '">修改</button>'
-            + '    <button class="chat-review-btn-confirm" data-action="confirm" data-draft-id="' + draft.id + '">确认保存</button>';
+            + '    <button class="chat-review-btn-confirm" data-action="confirm" data-draft-id="' + draft.id + '">确认保存</button>'
+            + '    <button class="chat-review-btn-discard" data-action="discard" data-draft-id="' + draft.id + '">放弃</button>';
         } else {
           html += '    <button class="chat-review-btn-modify" data-action="modify" data-draft-id="' + draft.id + '">修改</button>';
         }
-        html += '    <button class="chat-review-btn-detail" data-action="detail" data-draft-id="' + draft.id + '">查看详情</button>';
-        html += '  </div>'
+        html += '    <button class="chat-review-btn-detail" data-action="detail" data-draft-id="' + draft.id + '">返回原对话</button>'
+          + '  </div>'
           + '</div>';
       });
 
       html += ''
         + '  </div>'
+        // ── 底部固定操作栏 ──
         + '  <div class="chat-review-bottom-bar">'
-        + '    <button class="chat-review-btn-confirm-all" id="btn-confirm-all" ' + (pendingCount === 0 ? 'disabled' : '') + '>确认全部待确认记录</button>'
+        + '    <button class="chat-review-btn-confirm-all" id="btn-confirm-all" ' + (pendingCount === 0 ? 'disabled' : '') + '>确认所选记录并保存</button>'
         + '    <button class="chat-review-btn-later" id="btn-later">稍后处理</button>'
         + '  </div>'
         + '</div>';
@@ -371,6 +413,23 @@
     var constants = window.Constants;
     if (constants && constants.basicInfo) return constants.basicInfo;
     return { name: '小宇' };
+  }
+
+  /** 获取模块信息（图标和标签） */
+  function _getModuleInfo(moduleKey) {
+    if (!moduleKey) return null;
+    var Modules = window.Modules;
+    if (Modules && Modules[moduleKey]) {
+      return { icon: Modules[moduleKey].icon, label: Modules[moduleKey].label, color: Modules[moduleKey].color };
+    }
+    // fallback
+    var fallbacks = {
+      communication: { icon: '💬', label: '沟通观察', color: '#9B85B8' },
+      emotion: { icon: '🌊', label: '情绪事件', color: '#D4877B' },
+      care: { icon: '💊', label: '照护记录', color: '#A8C9A0' },
+      work: { icon: '💼', label: '活动记录', color: '#D4A85A' }
+    };
+    return fallbacks[moduleKey] || { icon: '📝', label: '一般记录', color: '#999' };
   }
 
   function _getPendingCount() {
@@ -494,9 +553,8 @@
     var messages = session ? session.messages : [];
 
     if (messages.length === 0) {
-      // 发送欢迎消息
-      var youthProfile = _getYouthProfile();
-      var welcomeText = '你好！我是 AI 懂我助手 🌻，今天想和你聊聊' + youthName + '最近的情况。';
+      // 发送欢迎消息 — AI 是安静的记录助手，不是专家审问者
+      var welcomeText = '你好，我是' + youthName + '的记录助手 ✨。今天发生了什么想记下来的事吗？';
       if (session) {
         session.messages.push({
           role: 'ai',
@@ -509,8 +567,7 @@
 
       return ''
         + '<div class="chat-date-divider"><span>' + dateStr + '</span></div>'
-        + '<div class="chat-bubble-ai">' + _escapeHtml(welcomeText) + '</div>'
-        + '<div class="chat-bubble-ai">最近' + youthName + '有什么让你印象特别深的事吗？</div>';
+        + '<div class="chat-bubble-ai">' + _escapeHtml(welcomeText) + '</div>';
     }
 
     // 渲染历史消息
@@ -676,12 +733,14 @@
     replies.forEach(function (btn) {
       btn.addEventListener('click', function () {
         var text = this.getAttribute('data-reply') || '';
-        if (text === '＋另一件事') {
+        if (text === '另一件事') {
           text = '还有另一件事想记录';
         } else if (text === '补充刚才') {
           text = '我想补充一下刚才说的';
         } else if (text === '记录进步') {
-          text = '小宇今天有一个进步';
+          text = '想记录一个进步';
+        } else if (text === '记录一个进步') {
+          text = '想记录一个进步';
         }
         _handleSend(text);
         var editor = document.getElementById('chat-editor');
@@ -1112,7 +1171,7 @@
         arrow.className = 'chat-conv-status-arrow';
         statusBar.appendChild(arrow);
       }
-      arrow.textContent = count + '条草稿 ›';
+      arrow.textContent = count + ' 条草稿 ›';
     } else {
       if (arrow) arrow.remove();
     }
@@ -1151,19 +1210,30 @@
 
     var cards = document.querySelectorAll('#review-list .chat-review-draft-card');
     cards.forEach(function (card) {
-      var body = card.querySelector('.chat-review-draft-body');
-      if (body) {
-        body.addEventListener('click', function (e) {
-          if (e.target.tagName === 'BUTTON') return;
-          card.classList.toggle('expanded');
-        });
-      }
+      // 卡片点击展开/收起——绑定在整个卡片上
+      card.addEventListener('click', function (e) {
+        // 不拦截按钮、链接、输入框、文本域
+        var tag = e.target.tagName;
+        if (tag === 'BUTTON' || tag === 'A' || tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+        // 不拦截菜单弹出内的点击
+        if (e.target.closest('.chat-draft-menu-popup')) return;
+        card.classList.toggle('expanded');
+      });
 
       var menuBtn = card.querySelector('[data-action="menu"]');
       if (menuBtn) {
         menuBtn.addEventListener('click', function (e) {
           e.stopPropagation();
           _showDraftMenu(e, card);
+        });
+      }
+
+      // 展开编辑按钮
+      var expandBtn = card.querySelector('[data-action="expand"]');
+      if (expandBtn) {
+        expandBtn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          card.classList.add('expanded');
         });
       }
 
@@ -1183,26 +1253,51 @@
         });
       }
 
+      // 放弃按钮
+      var discardBtn = card.querySelector('[data-action="discard"]');
+      if (discardBtn) {
+        discardBtn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          if (confirm('确定要放弃这条草稿吗？放弃后可从原对话重新生成。')) {
+            _handleDraftDiscard(card);
+          }
+        });
+      }
+
+      // 返回原对话
       var detailBtn = card.querySelector('[data-action="detail"]');
       if (detailBtn) {
         detailBtn.addEventListener('click', function (e) {
           e.stopPropagation();
-          _showToast('详情查看即将上线');
+          window.location.hash = 'chat-conversation';
         });
       }
     });
+  }
+
+  function _handleDraftDiscard(card) {
+    var draftId = card.getAttribute('data-draft-id');
+    if (!_activeSession || !draftId) return;
+
+    var draft = _activeSession.drafts.find(function (d) { return d.id === draftId; });
+    if (draft) {
+      draft.status = 'discarded';
+      _saveSession();
+    }
+    _refreshReviewUI();
+    _showToast('已放弃该草稿');
   }
 
   function _handleDraftConfirm(card) {
     var draftId = card.getAttribute('data-draft-id');
     if (!_activeSession || !draftId) return;
 
-    var textareas = card.querySelectorAll('.chat-review-draft-field-input');
+    var fields = card.querySelectorAll('.chat-review-draft-field-input');
     var updates = {};
-    textareas.forEach(function (ta) {
-      var field = ta.getAttribute('data-field');
-      if (field === 'content') {
-        updates.content = ta.value.trim();
+    fields.forEach(function (el) {
+      var field = el.getAttribute('data-field');
+      if (field === 'content' || field === 'title') {
+        updates[field] = ('value' in el ? el.value : el.textContent || '').trim();
       }
     });
 
