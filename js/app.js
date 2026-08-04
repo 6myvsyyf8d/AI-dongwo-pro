@@ -192,7 +192,12 @@
       tasks: '每日任务',
       calendar: '日程日历',
       analytics: '数据价值',
-      quickcard: '速读卡'
+      quickcard: '速读卡',
+      grants: '授权管理',
+      join: '加入家庭',
+      approvals: '加入申请审批',
+      'archive-code': '档案码',
+      welcome: '欢迎'
     };
 
     if (titleEl) {
@@ -329,7 +334,7 @@
         window.Auth.renderRoleSelect();
         break;
       case 'profile':
-        window.ProfilePage.renderProfile();
+        window.ProfilePage.renderManagement();
         break;
       case 'records':
         window.RecordsPage.renderRecordsPage(queryParams.module || null);
@@ -340,6 +345,11 @@
       case 'archive': window.ProfilePage.renderProfile(); break;
       case 'analytics': renderAnalytics(); break;
       case 'quickcard': window.QuickCard.renderPage(); break;
+      case 'welcome': window.WelcomePage.renderWelcome(); break;
+      case 'grants': window.GrantsPage.renderGrants(); break;
+      case 'join': window.JoinRequestPage.renderJoin(); break;
+      case 'approvals': window.ApprovalsPage.renderApprovals(); break;
+      case 'archive-code': window.ArchiveCodePage.renderArchiveCode(); break;
     }
   }
 
@@ -431,18 +441,23 @@
         { hash: 'timeline', icon: '📅', title: '动态时间轴', desc: '所有记录按时间排列' },
         { hash: 'tasks', icon: '✅', title: '每日任务', desc: '打卡清单、完成进度' },
         { hash: 'analytics', icon: '📈', title: '数据价值', desc: '统计分析、数据导出' },
-        { hash: 'charts', icon: '📊', title: '数据可视化', desc: '心情趋势、统计图表' }
+        { hash: 'charts', icon: '📊', title: '数据可视化', desc: '心情趋势、统计图表' },
+        { hash: 'grants', icon: '👥', title: '授权管理', desc: '邀请家人、管理授权' },
+        { hash: 'approvals', icon: '📋', title: '加入审批', desc: '审核家庭加入申请' },
+        { hash: 'archive-code', icon: '📱', title: '档案码', desc: '生成分享二维码' }
       ],
       teacher: [
         { hash: 'communication', icon: '💬', title: '沟通与表达', desc: '有效话术、禁忌用语' },
         { hash: 'tasks', icon: '✅', title: '每日任务', desc: '今日活动、打卡进度' },
         { hash: 'calendar', icon: '📆', title: '日程日历', desc: '课程安排、重要事项' },
+        { hash: 'join', icon: '👨\u200d👩\u200d👧', title: '加入家庭', desc: '输入邀请码加入' },
         { hash: 'quick-card', icon: '📋', title: '速读卡', desc: '快速了解小雨', action: 'quick-card' }
       ],
       caregiver: [
         { hash: 'care', icon: '💊', title: '照护要点', desc: '过敏、用药、作息提醒' },
         { hash: 'emotion', icon: '🌊', title: '情绪支持', desc: '触发因素、安抚策略' },
         { hash: 'calendar', icon: '📆', title: '日程日历', desc: '今日安排、照护提醒' },
+        { hash: 'join', icon: '👨\u200d👩\u200d👧', title: '加入家庭', desc: '输入邀请码加入' },
         { hash: 'quick-card', icon: '📋', title: '速读卡', desc: '快速参考卡片', action: 'quick-card' }
       ],
       youth: [

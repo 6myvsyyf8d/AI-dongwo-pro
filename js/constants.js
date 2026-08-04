@@ -318,6 +318,23 @@
     { value: '难过', emoji: '😢' }
   ];
 
+  /** 家庭关系选项 */
+  var FAMILY_RELATIONS = [
+    { value: 'father', label: '父亲' },
+    { value: 'mother', label: '母亲' },
+    { value: 'grandfather', label: '祖父' },
+    { value: 'grandmother', label: '祖母' },
+    { value: 'brother', label: '兄弟' },
+    { value: 'sister', label: '姐妹' },
+    { value: 'other_guardian', label: '其他监护人' }
+  ];
+
+  /** 邀请码可选角色（排除 youth 和主监护人 parent） */
+  var INVITABLE_ROLES = [
+    { value: 'teacher', label: '老师' },
+    { value: 'caregiver', label: '影子老师' }
+  ];
+
   /** 页面ID与Hash的映射 */
   var routeMap = {
     'home': 'home',
@@ -337,7 +354,12 @@
     'archive': 'archive',
     'analytics': 'analytics',
     'records': 'records',
-    'quickcard': 'quickcard'
+    'quickcard': 'quickcard',
+    'grants': 'grants',
+    'join': 'join',
+    'approvals': 'approvals',
+    'archive-code': 'archive-code',
+    'welcome': 'welcome'
   };
 
   /** 侧边栏菜单配置（普通角色：youth/parent/teacher/caregiver） */
@@ -572,6 +594,8 @@
     privacyLevels: privacyLevels,
     roleLabels: roleLabels,
     chatScript: chatScript,
+    FAMILY_RELATIONS: FAMILY_RELATIONS,
+    INVITABLE_ROLES: INVITABLE_ROLES,
     ROLES: ROLES,
     RECORD_TYPES: RECORD_TYPES,
     MOOD_OPTIONS: MOOD_OPTIONS,
