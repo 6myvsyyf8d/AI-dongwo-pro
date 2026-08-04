@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI懂我 · 首页</title>
+    <style id="theme-vars">
+/* ==========================================
+   jun Design Library — CSS Tokens
+   ========================================== */
+
+:root {
+  /* --- Original Tokens (prefix-less) --- */
+  --fill-subtle: rgba(0, 0, 0, 0.03);
+  --fill-light: rgba(0, 0, 0, 0.05);
+  --fill-medium: rgba(0, 0, 0, 0.08);
+  --color-fill-subtle: rgba(0, 0, 0, 0.03);
+  --color-fill-light: rgba(0, 0, 0, 0.05);
+  --color-fill-medium: rgba(0, 0, 0, 0.08);
+
+  --text-primary: #29272e;
+  --text-secondary: #6b6572;
+  --text-tertiary: #96909b;
+
+  --bg-main: #f7f4fb;
+  --bg-card: #ffffff;
+
+  --border: rgba(0, 0, 0, 0.08);
+  --border-light: rgba(0, 0, 0, 0.05);
+
+  --font-family-base: 'Inter', system-ui, -apple-system, sans-serif;
+
+  --font-size-xs: 9px;
+  --font-size-sm: 11px;
+  --font-size-base: 13px;
+  --font-size-lg: 16px;
+  --font-size-xl: 20px;
+  --font-size-2xl: 23px;
+
+  --font-weight-xs: 400;
+  --font-weight-sm: 400;
+  --font-weight-base: 400;
+  --font-weight-lg: 500;
+  --font-weight-xl: 600;
+  --font-weight-2xl: 600;
+
+  --line-height-xs: 1.4;
+  --line-height-sm: 1.5;
+  --line-height-base: 1.6;
+  --line-height-lg: 1.5;
+  --line-height-xl: 1.4;
+  --line-height-2xl: 1.3;
+
+  --shadow-card: 0px 7px 24px 0px rgba(45, 36, 57, 0.065);
+
+  --radius-sm: 9px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 22px;
+  --radius-full: 9999px;
+
+  --space-xs: 6px;
+  --space-sm: 9px;
+  --space-md: 14px;
+
+  --max-content-width: 980px;
+
+  /* --- Semantic Aliases (jun prefix) --- */
+  --jun-background: #f7f4fb;
+  --jun-foreground: #29272e;
+  --jun-card: #ffffff;
+  --jun-primary: #7762a8;
+  --jun-border: rgba(0, 0, 0, 0.08);
+  --jun-muted: #6b6572;
+
+  --jun-radius-sm: 9px;
+  --jun-radius-md: 12px;
+  --jun-radius-lg: 16px;
+  --jun-radius-xl: 22px;
+  --jun-radius-full: 9999px;
+}
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-background: var(--jun-background);
+    --color-foreground: var(--jun-foreground);
+    --color-card: var(--jun-card);
+    --color-primary: var(--jun-primary);
+    --color-muted: var(--jun-muted);
+    --color-border: var(--jun-border);
+    --radius-sm: var(--jun-radius-sm);
+    --radius-md: var(--jun-radius-md);
+    --radius-lg: var(--jun-radius-lg);
+    --radius-xl: var(--jun-radius-xl);
+  }
+  @layer base {
+    body { background: var(--jun-background); color: var(--jun-foreground); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style id="semantic-token-fallback">
+      .bg-background { background-color: var(--jun-background); }
+      .text-background { color: var(--jun-background); }
+      .border-background { border-color: var(--jun-background); }
+      .ring-background { --tw-ring-color: var(--jun-background); }
+      .bg-foreground { background-color: var(--jun-foreground); }
+      .text-foreground { color: var(--jun-foreground); }
+      .border-foreground { border-color: var(--jun-foreground); }
+      .ring-foreground { --tw-ring-color: var(--jun-foreground); }
+      .bg-card { background-color: var(--jun-card); }
+      .text-card { color: var(--jun-card); }
+      .border-card { border-color: var(--jun-card); }
+      .ring-card { --tw-ring-color: var(--jun-card); }
+      .bg-primary { background-color: var(--jun-primary); }
+      .text-primary { color: var(--jun-primary); }
+      .border-primary { border-color: var(--jun-primary); }
+      .ring-primary { --tw-ring-color: var(--jun-primary); }
+      .bg-muted { background-color: var(--jun-muted); }
+      .text-muted { color: var(--jun-muted); }
+      .border-muted { border-color: var(--jun-muted); }
+      .ring-muted { --tw-ring-color: var(--jun-muted); }
+      .bg-border { background-color: var(--jun-border); }
+      .text-border { color: var(--jun-border); }
+      .border-border { border-color: var(--jun-border); }
+      .ring-border { --tw-ring-color: var(--jun-border); }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body class="min-h-screen font-sans antialiased">
+    <main>
+    </main>
+    <script>lucide.createIcons();</script>
+</body>
+</html>

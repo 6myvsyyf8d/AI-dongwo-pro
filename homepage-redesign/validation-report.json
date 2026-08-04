@@ -1,0 +1,111 @@
+{
+  "success": true,
+  "outcome": "passed",
+  "repairable": true,
+  "terminalViolations": [],
+  "terminalBlockingSummary": null,
+  "skillProvenance": {
+    "name": "solo-design",
+    "version": "2026.07.06.8",
+    "version_source": "skill-release-manifest.json",
+    "runtime_skill_dir": null,
+    "recorded_at": null,
+    "expected_version": "2026.07.22.00.00.00",
+    "status": "mismatch",
+    "read_status": "ok"
+  },
+  "operatingMode": "free-explore",
+  "renderBlockingErrorCount": 0,
+  "softWarningCount": 9,
+  "renderBlockingErrors": [],
+  "errorSignatures": [],
+  "softWarnings": [
+    "[repair-ledger] validationRepairLedger[0].repairActions[0].preEditFileHashes[] is missing (legacy optional evidence)",
+    "[repair-ledger] validationRepairLedger[0].repairActions[0].postEditFileHashes[] is missing (legacy optional evidence)",
+    "[repair-ledger] validationRepairLedger[0].revalidationReportPath is missing",
+    "[repair-ledger] validationRepairLedger[0].revalidationReportHash is missing",
+    "[repair-ledger] validationRepairLedger[0].revalidationSuccess should be a boolean",
+    "[mobile-bottom-overlay] pages/index.html: bottom fixed/absolute CTA or navigation found. Ensure it has safe-area spacing and does not cover content. Evidence: class=\"absolute -bottom-8 -left-8 w-24 h-24 rounded-full bg-white/5\"",
+    "[html-quality] colors_and_type.css: free-explore brand CSS must use one primary hue only; forbidden secondary/accent brand variables found (--text-secondary). Use --state-success/warning/error/info only for semantic states.",
+    "[html-quality] colors_and_type.css: free-explore radius tokens must stay within the restrained 2/4/8/12/16px scale; oversized or forbidden radius tokens found (--radius-xl: 22px, --jun-radius-xl: 22px). Do not use 20px+ radii unless the user explicitly requested large rounded shapes.",
+    "[html-quality] colors_and_type.css: ordinary/static shadow tokens must keep every shadow alpha <= 0.05; deeper shadows are allowed only for floating-layer tokens such as modal/popover/dropdown/drawer/overlay (--shadow-card: 0px 7px 24px 0px rgba(45, 36, 57, 0.065))."
+  ],
+  "repairPlanHints": [],
+  "repairActionTable": [],
+  "errorCount": 0,
+  "warningCount": 9,
+  "errors": [],
+  "warnings": [
+    "[repair-ledger] validationRepairLedger[0].repairActions[0].preEditFileHashes[] is missing (legacy optional evidence)",
+    "[repair-ledger] validationRepairLedger[0].repairActions[0].postEditFileHashes[] is missing (legacy optional evidence)",
+    "[repair-ledger] validationRepairLedger[0].revalidationReportPath is missing",
+    "[repair-ledger] validationRepairLedger[0].revalidationReportHash is missing",
+    "[repair-ledger] validationRepairLedger[0].revalidationSuccess should be a boolean",
+    "[mobile-bottom-overlay] pages/index.html: bottom fixed/absolute CTA or navigation found. Ensure it has safe-area spacing and does not cover content. Evidence: class=\"absolute -bottom-8 -left-8 w-24 h-24 rounded-full bg-white/5\"",
+    "[html-quality] colors_and_type.css: free-explore brand CSS must use one primary hue only; forbidden secondary/accent brand variables found (--text-secondary). Use --state-success/warning/error/info only for semantic states.",
+    "[html-quality] colors_and_type.css: free-explore radius tokens must stay within the restrained 2/4/8/12/16px scale; oversized or forbidden radius tokens found (--radius-xl: 22px, --jun-radius-xl: 22px). Do not use 20px+ radii unless the user explicitly requested large rounded shapes.",
+    "[html-quality] colors_and_type.css: ordinary/static shadow tokens must keep every shadow alpha <= 0.05; deeper shadows are allowed only for floating-layer tokens such as modal/popover/dropdown/drawer/overlay (--shadow-card: 0px 7px 24px 0px rgba(45, 36, 57, 0.065))."
+  ],
+  "validationRunDisciplineStatus": {
+    "declared": true,
+    "restoreMode": false,
+    "maxFullValidationRuns": 2,
+    "validationHistoryCount": 1,
+    "repairLedgerCount": 1,
+    "softWarningsTriggerRepair": false,
+    "terminalState": null,
+    "nextAction": null,
+    "violations": [],
+    "success": true
+  },
+  "terminalState": null,
+  "nextCheck": {
+    "type": "finish-readiness",
+    "command": "node '/Users/jinjun/.trae-cn/builtin/design/default/skills/solo-design/shared-runtime/deterministic-tooling/validate-finish-readiness.mjs' '/Users/jinjun/Desktop/开发/交互式HTML文件和截图（session）-AI懂我-心智障碍者动态支持档案/homepage-redesign' --check=all",
+    "fullValidationAllowed": false,
+    "reason": "workspace validation passed; run complete finish readiness before final delivery"
+  },
+  "repairBatch": [],
+  "repairContextPacket": {
+    "schema_version": "1.0",
+    "purpose": "small-context repair packet; read this before full validation-report.json",
+    "success": true,
+    "terminalState": null,
+    "skillProvenance": {
+      "name": "solo-design",
+      "version": "2026.07.06.8",
+      "version_source": "skill-release-manifest.json",
+      "runtime_skill_dir": null,
+      "recorded_at": null,
+      "expected_version": "2026.07.22.00.00.00",
+      "status": "mismatch",
+      "read_status": "ok"
+    },
+    "renderBlockingErrorCount": 0,
+    "softWarningCount": 9,
+    "renderBlockingErrors": [],
+    "repairActionTable": [],
+    "nextCheck": {
+      "type": "finish-readiness",
+      "command": "node '/Users/jinjun/.trae-cn/builtin/design/default/skills/solo-design/shared-runtime/deterministic-tooling/validate-finish-readiness.mjs' '/Users/jinjun/Desktop/开发/交互式HTML文件和截图（session）-AI懂我-心智障碍者动态支持档案/homepage-redesign' --check=all",
+      "fullValidationAllowed": false,
+      "reason": "workspace validation passed; run complete finish readiness before final delivery"
+    },
+    "forbidden": [
+      "do not read validator source",
+      "do not rerun full validation when nextCheck.fullValidationAllowed=false",
+      "do not start preview/browser unless user explicitly asks",
+      "do not hand-edit repair ledger fields"
+    ]
+  },
+  "projectFileHashes": {
+    ".design": "627857ab736bfa7e41bbd008b99a20f9a41585aba3815696aeb236465ddee953",
+    "colors_and_type.css": "3718928aa2af4bca227a1dd0472b83ddf3bcf60c7c1309e56e5abe2bd923862b",
+    "runtime-orchestration-summary.json": "701c5d6988d8b65fafcac43a458247784c6c12b45839b94655bc2a5f2f4ca4ac",
+    "pages/index.html": "8d1f58598dc2f8e29f50236d5fb57adf06a96988d0b6db51d01bbe3ee39f0d80"
+  },
+  "designDir": "/Users/jinjun/Desktop/开发/交互式HTML文件和截图（session）-AI懂我-心智障碍者动态支持档案/homepage-redesign",
+  "expectedPages": 1,
+  "requireInteractions": null,
+  "checkedAt": "2026-08-04T13:12:27.421Z"
+}
