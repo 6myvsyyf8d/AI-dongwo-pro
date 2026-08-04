@@ -47,9 +47,6 @@
   var privacyLevels = C.privacyLevels;
   var chatScript = C.chatScript;
   var routeMap = C.routeMap;
-  var MODULE_TAGS = C.MODULE_TAGS;
-  var PRIVACY_LABELS = C.PRIVACY_LABELS;
-  var RECORD_TYPE_TO_MODULE = C.RECORD_TYPE_TO_MODULE;
   var STRATEGY_KB = C.STRATEGY_KB;
   var EMOTION_TO_STRATEGY = C.EMOTION_TO_STRATEGY;
   var DataStore = window.DataStore;
@@ -102,14 +99,6 @@
       return;
     }
     navigateTo(hash);
-  }
-
-  /**
-   * 从 hash 中提取纯页面名（去掉 ? 参数）
-   */
-  function getBasePageName(hash) {
-    var qIndex = hash.indexOf('?');
-    return qIndex === -1 ? hash : hash.substring(0, qIndex);
   }
 
   /**
@@ -196,13 +185,14 @@
       work: '工作支持',
       relations: '关系地图',
       timeline: '记录时间轴',
+      records: '记录列表',
       profile: '个人中心',
       collect: '对话采集',
       charts: '数据可视化',
       tasks: '每日任务',
       calendar: '日程日历',
       analytics: '数据价值',
-      records: '模块记录'
+      quickcard: '速读卡'
     };
 
     if (titleEl) {
@@ -241,17 +231,28 @@
    * @param {string} pageName - 页面名称（如 'home', 'life' 等）
    */
   function navigateTo(pageName) {
-    // 提取纯页面名（去掉 ? 参数如 records?module=xxx）
-    var basePageName = getBasePageName(pageName);
+    // 解析 hash 中的查询参数，如 #records?module=communication
+    var raw = pageName;
+    var qIndex = raw.indexOf('?');
+    var basePage = qIndex === -1 ? raw : raw.substring(0, qIndex);
+    var queryParams = {};
+    if (qIndex !== -1) {
+      var qs = raw.substring(qIndex + 1);
+      qs.split('&').forEach(function (pair) {
+        var parts = pair.split('=');
+        if (parts.length === 2) {
+          queryParams[decodeURIComponent(parts[0])] = decodeURIComponent(parts[1]);
+        }
+      });
+    }
 
     // 如果页面不存在则回到首页
-    if (!routeMap[basePageName]) {
-      pageName = 'home';
-      basePageName = 'home';
+    if (!routeMap[basePage]) {
+      basePage = 'home';
     }
 
     // 切换 body 模式
-    if (basePageName === 'login') {
+    if (basePage === 'login') {
       document.body.classList.add('mode-login');
       document.body.classList.remove('mode-app');
     } else {
@@ -266,25 +267,25 @@
     });
 
     // 显示目标页面
-    var targetSection = document.getElementById(basePageName);
+    var targetSection = document.getElementById(basePage);
     if (targetSection) {
       targetSection.classList.add('active');
     }
 
-    currentPage = basePageName;
-    appState.currentPage = basePageName;
+    currentPage = basePage;
+    appState.currentPage = basePage;
 
     // 高亮底部导航
-    highlightBottomNav(basePageName);
+    highlightBottomNav(basePage);
 
     // 更新顶栏标题
-    updateTopbar(basePageName);
+    updateTopbar(basePage);
 
     // 滚动到页面顶部
     window.scrollTo(0, 0);
 
-    // 根据页面类型调用对应渲染函数
-    renderPage(basePageName);
+    // 根据页面类型调用对应渲染函数（传入查询参数）
+    renderPage(basePage, queryParams);
 
     // 应用当前角色的隐私设置
     window.Permissions.applyPrivacy(currentRole);
@@ -294,7 +295,8 @@
    * 根据页面名称调用对应的渲染函数
    * @param {string} pageName - 页面名称
    */
-  function renderPage(pageName) {
+  function renderPage(pageName, queryParams) {
+    queryParams = queryParams || {};
     switch (pageName) {
       case 'home':
         renderHome();
@@ -329,12 +331,15 @@
       case 'profile':
         window.ProfilePage.renderProfile();
         break;
+      case 'records':
+        window.RecordsPage.renderRecordsPage(queryParams.module || null);
+        break;
       case 'charts': window.ChartsPage.renderCharts(); break;
       case 'tasks': renderTasks(); break;
       case 'calendar': renderCalendar(); break;
-      case 'archive': renderArchive(); break;
+      case 'archive': window.ProfilePage.renderProfile(); break;
       case 'analytics': renderAnalytics(); break;
-      case 'records': window.RecordsPage.renderRecordsList(); break;
+      case 'quickcard': window.QuickCard.renderPage(); break;
     }
   }
 
@@ -394,7 +399,7 @@
           var target = this.getAttribute('data-navigate');
           var action = this.getAttribute('data-action');
           if (action === 'quick-card') {
-            window.QuickCard.createQuickCardModal();
+            window.location.hash = 'quickcard';
           } else if (action === 'add-mood') {
             window.RecordsPage.createAddRecordModal(user, role, 'mood');
           } else if (target === 'collect') {
@@ -1311,7 +1316,7 @@
     var quickCardBtn = document.getElementById('btn-archive-quickcard');
     if (quickCardBtn) {
       quickCardBtn.addEventListener('click', function () {
-        window.QuickCard.createQuickCardModal();
+        window.location.hash = 'quickcard';
       });
     }
   }
@@ -1911,7 +1916,6 @@
     // Esc键关闭弹窗
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape') {
-        window.QuickCard.closeQuickCard();
         window.RecordsPage.closeAddRecordModal();
       }
     });
@@ -1924,21 +1928,21 @@
       }
     });
 
-    // 事件委托：速读卡和对话采集按钮、弹窗关闭按钮
+    // 事件委托：速读卡和对话采集按钮
     document.addEventListener('click', function (e) {
       if (e.target.id === 'btn-quick-card' || e.target.closest('#btn-quick-card')) {
-        window.QuickCard.openQuickCard();
+        window.location.hash = 'quickcard';
       }
       if (e.target.id === 'btn-collect' || e.target.closest('#btn-collect')) {
         window.ChatBot.navigateToCollect();
       }
-      // 速读卡弹窗关闭按钮
+      // 弹窗关闭按钮
       if (e.target.id === 'modal-close-btn' || e.target.id === 'btn-close-modal' || e.target.closest('#modal-close-btn') || e.target.closest('#btn-close-modal')) {
-        window.QuickCard.closeQuickCard();
+        // 由各弹窗模块自行处理关闭
       }
       // 点击弹窗遮罩层关闭
-      if (e.target.id === 'quick-card-modal') {
-        window.QuickCard.closeQuickCard();
+      if (e.target.id === 'quick-card-modal' || e.target.id === 'add-record-modal') {
+        // 由各弹窗模块自行处理关闭
       }
     });
   }
@@ -2394,10 +2398,10 @@
   /* ==========================================================
    * 十七、暴露到全局作用域（供HTML onclick调用）
    * ========================================================== */
-  window.openQuickCard = window.QuickCard.openQuickCard;
-  window.closeQuickCard = window.QuickCard.closeQuickCard;
-  window.switchVersion = window.QuickCard.switchVersion;
-  window.printQuickCard = window.QuickCard.printQuickCard;
+  window.openQuickCard = function () { window.location.hash = 'quickcard'; };
+  window.closeQuickCard = function () { window.location.hash = 'home'; };
+  window.switchVersion = function () { window.location.hash = 'quickcard'; };
+  window.printQuickCard = function () { window.print(); };
   window.switchRole = window.Permissions.switchRole;
   window.openAddRecordModal = window.RecordsPage.openAddRecordModal;
   window.closeAddRecordModal = window.RecordsPage.closeAddRecordModal;

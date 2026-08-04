@@ -10,6 +10,8 @@
 
   var C = window.Constants;
   var ROLES = C.ROLES;
+  var MODULE_TAGS = C.MODULE_TAGS;
+  var TYPE_TO_MODULE = C.TYPE_TO_MODULE;
 
   /** 生成示例用户数据 */
   function generateSampleUsers() {
@@ -44,16 +46,18 @@
     }
 
     function addRecord(type, data) {
-      var moduleKey = C.RECORD_TYPE_TO_MODULE[type] || null;
-      var privacyMap = { mood: 'A', care: 'C', activity: 'B', communication: 'B', emotion: 'D', strategy: 'D', note: 'B' };
-      var privacy = data.privacy || privacyMap[type] || 'B';
+      var moduleKey = data.module || TYPE_TO_MODULE[type] || null;
       var tags = data.tags || [];
-      if (!tags.length && moduleKey && C.MODULE_TAGS[moduleKey]) {
-        var pool = C.MODULE_TAGS[moduleKey];
-        var count = 1 + Math.floor(Math.random() * 3);
-        var shuffled = pool.slice().sort(function() { return Math.random() - 0.5; });
-        tags = shuffled.slice(0, count);
+      if (!data.tags && moduleKey && MODULE_TAGS[moduleKey]) {
+        var pool = MODULE_TAGS[moduleKey];
+        var t1 = pool[Math.floor(Math.random() * pool.length)];
+        tags.push(t1);
+        if (Math.random() > 0.4) {
+          var t2 = pool[Math.floor(Math.random() * pool.length)];
+          if (t2 !== t1) tags.push(t2);
+        }
       }
+      var privacy = data.privacy || 'B';
       records.push(Object.assign({
         id: window.generateUUID(), type: type, date: dateStr(0), time: timeStr(9, 0),
         module: moduleKey, privacy: privacy, tags: tags
@@ -396,38 +400,15 @@
       return data && data.records ? data.records : [];
     },
 
-    /** 获取当前心青年的档案数据 */
-    getYouthProfile: function () {
-      return {
-        basicInfo: C.basicInfo,
-        likesList: C.likesList,
-        dislikesList: C.dislikesList,
-        communicationGuide: C.communicationGuide,
-        emotionSupport: C.emotionSupport,
-        careInfo: C.careInfo,
-        workInfo: C.workInfo,
-        dailyRoutine: C.dailyRoutine,
-        relationsInfo: C.relationsInfo
-      };
-    },
-
-    /** 按模块过滤记录 */
     getRecordsByModule: function (moduleKey) {
       var records = this.getRecords();
-      if (!moduleKey) return records;
-      return records.filter(function (r) {
-        return r.module === moduleKey;
-      });
+      return records.filter(function (r) { return r.module === moduleKey; });
     },
 
-    /** 按日期范围过滤记录 */
     getRecordsByDateRange: function (startDate, endDate) {
       var records = this.getRecords();
       return records.filter(function (r) {
-        if (!r.date) return false;
-        if (startDate && r.date < startDate) return false;
-        if (endDate && r.date > endDate) return false;
-        return true;
+        return r.date >= startDate && r.date <= endDate;
       });
     },
 
@@ -436,24 +417,10 @@
       if (!data) { data = { version: 1, currentUser: null, records: [] }; }
       if (!data.records) data.records = [];
 
-      var moduleKey = record.module || C.RECORD_TYPE_TO_MODULE[record.type] || null;
-      var privacyMap = { mood: 'A', care: 'C', activity: 'B', communication: 'B', emotion: 'D', strategy: 'D', note: 'B' };
-      var privacy = record.privacy || privacyMap[record.type] || 'B';
-      var tags = record.tags || [];
-      if (!tags.length && moduleKey && C.MODULE_TAGS[moduleKey]) {
-        var pool = C.MODULE_TAGS[moduleKey];
-        var count = 1 + Math.floor(Math.random() * 3);
-        var shuffled = pool.slice().sort(function() { return Math.random() - 0.5; });
-        tags = shuffled.slice(0, count);
-      }
-
       var newRecord = Object.assign({}, record, {
         id: window.generateUUID(),
         date: record.date || window.getTodayString(),
-        time: record.time || window.getNowTimeString(),
-        module: moduleKey,
-        privacy: privacy,
-        tags: tags
+        time: record.time || window.getNowTimeString()
       });
 
       data.records.unshift(newRecord);

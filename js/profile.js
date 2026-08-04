@@ -1,184 +1,163 @@
 /**
- * profile.js — 个人中心 / 档案页面渲染
+ * profile.js — 档案页渲染（2B 心智障碍者动态支持档案）
  * 挂载：window.ProfilePage
  * 依赖：window.Utils, window.Constants, window.AppState, window.DataStore, window.Modules
  */
 (function () {
   'use strict';
 
-  var ROLES = window.Constants.ROLES;
-  var RECORD_TYPES = window.Constants.RECORD_TYPES;
-  var DataStore = window.DataStore;
+  var C = window.Constants;
+  var ROLES = C.ROLES;
+  var basicInfo = C.basicInfo;
+  var likesList = C.likesList;
+  var dislikesList = C.dislikesList;
+  var communicationGuide = C.communicationGuide;
+  var emotionSupport = C.emotionSupport;
+  var careInfo = C.careInfo;
+  var workInfo = C.workInfo;
   var Modules = window.Modules;
-  var appState = window.AppState.appState;
+  var DataStore = window.DataStore;
 
   /**
-   * 渲染个人中心页面
+   * 渲染2B档案页
+   * 从上到下：身份卡片 → 关于我 → 动态支持档案 → 志愿者小知识
    */
   function renderProfile() {
-    var profileSection = document.getElementById('profile');
-    if (!profileSection) {
-      profileSection = document.createElement('section');
-      profileSection.id = 'profile';
-      profileSection.className = 'page-section';
-      document.querySelector('.main-content').appendChild(profileSection);
-    }
-
-    var user = DataStore.getCurrentUser() || appState.currentUser;
-    var role = user ? ROLES[user.role] : null;
-    var profile = DataStore.getYouthProfile();
+    var contentArea = document.getElementById('archive-content') || document.getElementById('profile-content');
+    if (!contentArea) return;
 
     var html = '';
-    html += '<div class="page-header">';
-    html += '  <button class="back-btn">←</button>';
-    html += '  <span class="page-title">个人中心</span>';
-    html += '</div>';
-    html += '<div class="container" style="padding:24px;">';
 
-    if (user && role) {
-      // 当前角色信息卡片
-      html += '<div style="background:#fff;border-radius:16px;padding:24px;text-align:center;margin-bottom:24px;box-shadow:0 2px 8px rgba(0,0,0,0.06);">';
-      html += '  <div style="font-size:3.5rem;margin-bottom:12px;">' + (user.avatar || role.avatar) + '</div>';
-      html += '  <div style="font-size:1.25rem;font-weight:600;color:#333;margin-bottom:4px;">' + user.name + '</div>';
-      html += '  <div style="display:inline-block;padding:4px 12px;border-radius:20px;font-size:0.85rem;color:#fff;background:' + role.color + ';margin-bottom:8px;">' + role.label + '</div>';
-      html += '  <p style="color:#666;font-size:0.9rem;">' + role.description + '</p>';
-      html += '  <p style="color:#aaa;font-size:0.78rem;margin-top:8px;">账号ID: ' + user.id + ' | 注册于 ' + (user.createdAt || '今天') + '</p>';
-      html += '</div>';
+    // === 外层滚动容器 ===
+    html += '<div class="profile-scroll">';
 
-      // === 心青年基本信息卡片 ===
-      if (profile && profile.basicInfo) {
-        var bi = profile.basicInfo;
-        html += '<h2 class="section-title">🌟 心青年档案</h2>';
-        html += '<div style="background:#fff;border-radius:16px;padding:20px;margin-bottom:24px;box-shadow:0 2px 8px rgba(0,0,0,0.06);">';
-        html += '  <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">';
-        html += '    <div style="font-size:3rem;">🌻</div>';
-        html += '    <div>';
-        html += '      <div style="font-size:1.1rem;font-weight:700;color:#333;">' + bi.name + '</div>';
-        html += '      <div style="font-size:0.85rem;color:#888;">' + bi.age + '岁 · ' + bi.gender + ' · ' + bi.communication + '</div>';
-        html += '    </div>';
-        html += '  </div>';
-        html += '  <p style="color:#555;font-size:0.9rem;line-height:1.5;">' + bi.intro + '</p>';
-        html += '</div>';
-      }
-
-      // === 四大模块卡片 ===
-      var moduleKeys = ['communicationGuide', 'emotionSupport', 'careInfo', 'workInfo'];
-      var moduleConfigs = {
-        communicationGuide: { icon: '💬', label: '沟通与表达', color: '#9B85B8', key: 'communicationGuide' },
-        emotionSupport: { icon: '🌊', label: '情绪与行为', color: '#D4877B', key: 'emotionSupport' },
-        careInfo: { icon: '💊', label: '照护与医疗', color: '#A8C9A0', key: 'careInfo' },
-        workInfo: { icon: '💼', label: '工作与生活', color: '#D4A85A', key: 'workInfo' }
-      };
-
-      html += '<h2 class="section-title">📋 支持档案模块</h2>';
-      html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:24px;">';
-
-      moduleKeys.forEach(function (mk) {
-        var cfg = moduleConfigs[mk];
-        var moduleRecords = DataStore.getRecordsByModule(mk);
-        var recordCount = moduleRecords.length;
-        html += '<div class="profile-module-card" data-module="' + mk + '" style="background:#fff;border-radius:12px;padding:16px;text-align:center;border-left:4px solid ' + cfg.color + ';box-shadow:0 1px 4px rgba(0,0,0,0.04);cursor:pointer;transition:all 0.2s;">';
-        html += '  <div style="font-size:1.8rem;margin-bottom:6px;">' + cfg.icon + '</div>';
-        html += '  <div style="font-weight:600;font-size:0.9rem;color:#333;margin-bottom:2px;">' + cfg.label + '</div>';
-        html += '  <div style="font-size:0.78rem;color:#999;">' + recordCount + ' 条记录</div>';
-        html += '</div>';
-      });
-
-      html += '</div>';
-
-      // === 喜欢 & 不喜欢快捷视图 ===
-      html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px;">';
-      // 喜欢
-      html += '<div style="background:#fff;border-radius:12px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,0.04);">';
-      html += '  <div style="font-weight:600;color:#52C41A;margin-bottom:10px;font-size:0.9rem;">💚 喜欢的事物</div>';
-      if (profile && profile.likesList) {
-        profile.likesList.forEach(function (item) {
-          html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:0.85rem;color:#555;">';
-          html += '  <span>' + item.icon + '</span><span>' + item.title + '</span>';
-          html += '</div>';
-        });
-      }
-      html += '</div>';
-      // 不喜欢
-      html += '<div style="background:#fff;border-radius:12px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,0.04);">';
-      html += '  <div style="font-weight:600;color:#F5222D;margin-bottom:10px;font-size:0.9rem;">🚫 不喜欢的事物</div>';
-      if (profile && profile.dislikesList) {
-        profile.dislikesList.forEach(function (item) {
-          html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:0.85rem;color:#555;">';
-          html += '  <span>' + item.icon + '</span><span>' + item.title + '</span>';
-          html += '</div>';
-        });
-      }
-      html += '</div>';
-      html += '</div>';
-
-      // 可记录类型
-      html += '<h2 class="section-title">您可以记录的内容</h2>';
-      html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin-bottom:24px;">';
-      role.canAdd.forEach(function (typeKey) {
-        var type = RECORD_TYPES[typeKey];
-        if (type) {
-          html += '<div style="background:#fff;border-radius:12px;padding:16px;text-align:center;border-left:4px solid ' + type.color + ';box-shadow:0 1px 4px rgba(0,0,0,0.04);">';
-          html += '  <div style="font-size:1.5rem;margin-bottom:4px;">' + type.icon + '</div>';
-          html += '  <div style="font-size:0.85rem;color:#555;">' + type.label + '</div>';
-          html += '</div>';
-        }
-      });
-      html += '</div>';
-
-      // 数据统计
-      var records = DataStore.getRecords();
-      var myRecords = records.filter(function (r) { return r.authorId === user.id; });
-      html += '<h2 class="section-title">我的记录统计</h2>';
-      html += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px;">';
-      html += '  <div style="background:#fff;border-radius:12px;padding:16px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,0.04);">';
-      html += '    <div style="font-size:1.5rem;font-weight:700;color:#4A90D9;">' + myRecords.length + '</div>';
-      html += '    <div style="font-size:0.8rem;color:#888;">我的记录</div>';
-      html += '  </div>';
-      html += '  <div style="background:#fff;border-radius:12px;padding:16px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,0.04);">';
-      html += '    <div style="font-size:1.5rem;font-weight:700;color:#52C41A;">' + records.length + '</div>';
-      html += '    <div style="font-size:0.8rem;color:#888;">全部记录</div>';
-      html += '  </div>';
-      html += '  <div style="background:#fff;border-radius:12px;padding:16px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,0.04);">';
-      html += '    <div style="font-size:1.5rem;font-weight:700;color:#FAAD14;">' + Object.keys(ROLES).length + '</div>';
-      html += '    <div style="font-size:0.8rem;color:#888;">参与角色</div>';
-      html += '  </div>';
-      html += '</div>';
-    }
-
-    // 操作按钮
-    html += '<div style="display:flex;flex-direction:column;gap:12px;">';
-    html += '  <button id="btn-logout" style="padding:14px 24px;border-radius:12px;border:1px solid #ddd;background:#fff;color:#666;font-size:1rem;cursor:pointer;transition:all 0.2s;">🚪 退出登录</button>';
+    // ==========================================
+    // 1. 身份卡片
+    // ==========================================
+    html += '<div class="profile-id-card">';
+    html += '  <div class="id-avatar-wrap">🌻</div>';
+    html += '  <div class="id-info">';
+    html += '    <div class="id-name">' + basicInfo.name + '</div>';
+    html += '    <div class="id-meta">' + basicInfo.age + '岁 · ' + basicInfo.gender + ' · ' + basicInfo.communication + '</div>';
+    html += '    <div class="id-intro">' + basicInfo.intro + '</div>';
+    html += '  </div>';
     html += '</div>';
 
+    // ==========================================
+    // 2. 关于我
+    // ==========================================
+    html += '<div class="about-section">';
+    html += '  <div class="about-section-header">';
+    html += '    <span class="about-title">🌻 关于我</span>';
+    html += '    <span class="about-subtitle">先认识我，再支持我</span>';
+    html += '  </div>';
+
+    html += '  <div class="about-card">';
+    html += '    <div class="about-icon-inset">🌻</div>';
+    html += '    <div class="about-grid">';
+
+    // —— 我喜欢和擅长（左半宽）——
+    html += '      <div class="about-mini-card">';
+    html += '        <div class="mini-card-title">💚 我喜欢和擅长</div>';
+    likesList.forEach(function (item) {
+      html += '        <div class="mini-item">';
+      html += '          <span class="mini-item-icon">' + item.icon + '</span>';
+      html += '          <div class="mini-item-text"><strong>' + item.title + '</strong><span>' + item.desc + '</span></div>';
+      html += '        </div>';
+    });
+    html += '      </div>';
+
+    // —— 我容易不安（右半宽）——
+    html += '      <div class="about-mini-card">';
+    html += '        <div class="mini-card-title">⚠️ 我容易不安</div>';
+    dislikesList.forEach(function (item) {
+      html += '        <div class="mini-item">';
+      html += '          <span class="mini-item-icon">' + item.icon + '</span>';
+      html += '          <div class="mini-item-text"><strong>' + item.title + '</strong><span>' + item.desc + '</span></div>';
+      html += '        </div>';
+    });
+    html += '      </div>';
+
+    // —— 请这样支持我（全宽）——
+    html += '      <div class="about-mini-card full-width">';
+    html += '        <div class="mini-card-title">🤝 请这样支持我</div>';
+    html += '        <ul class="mini-list">';
+    communicationGuide.best.forEach(function (tip) {
+      html += '          <li>' + tip + '</li>';
+    });
+    html += '        </ul>';
+    html += '      </div>';
+
+    // —— 我的愿望（全宽）——
+    html += '      <div class="about-mini-card full-width">';
+    html += '        <div class="mini-card-title">⭐ 我的愿望</div>';
+    html += '        <ul class="mini-list">';
+    workInfo.canDo.forEach(function (wish) {
+      html += '          <li>' + wish + '</li>';
+    });
+    html += '        </ul>';
+    html += '      </div>';
+
+    html += '    </div>'; // .about-grid
+    html += '  </div>';   // .about-card
+    html += '</div>';     // .about-section
+
+    // ==========================================
+    // 3. 动态支持档案
+    // ==========================================
+    html += '<div class="support-archive-section">';
+    html += '  <div class="support-archive-header">';
+    html += '    <span class="support-archive-title">📋 动态支持档案</span>';
+    html += '  </div>';
+
+    html += '  <div class="support-module-grid">';
+
+    var moduleOrder = ['communication', 'emotion', 'care', 'work'];
+    var moduleDescs = {
+      communication: '短句沟通、视觉提示、耐心等待',
+      emotion: '焦虑触发、安抚策略、预警信号',
+      care: '过敏管理、用药提醒、作息照护',
+      work: '工作能力、支持需求、就业方向'
+    };
+
+    moduleOrder.forEach(function (key) {
+      var mod = Modules[key];
+      if (!mod) return;
+      var recordCount = DataStore.getRecordsByModule(key).length;
+      html += '<div class="support-module-card" data-module="' + key + '">';
+      html += '  <div class="module-icon-box">' + mod.icon + '</div>';
+      html += '  <div class="module-name">' + mod.label + '</div>';
+      html += '  <div class="module-desc">' + (moduleDescs[key] || '') + ' · ' + recordCount + '条记录</div>';
+      html += '</div>';
+    });
+
+    html += '  </div>'; // .support-module-grid
+    html += '</div>';   // .support-archive-section
+
+    // ==========================================
+    // 4. 志愿者小知识
+    // ==========================================
+    html += '<div class="volunteer-tips-card">';
+    html += '  <div class="tips-title">💡 志愿者小知识</div>';
+    html += '  <ul class="tips-list">';
+    html += '    <li>和' + basicInfo.name + '说话时，请用短句、慢一点，一次说一件事</li>';
+    html += '    <li>给他反应时间，不要催促他说「快点」</li>';
+    html += '    <li>可以用他喜欢的话题开场：公交车、烘焙、猫咪</li>';
+    html += '    <li>如果想碰他或帮他，请先告诉他你要做什么</li>';
+    html += '    <li>他可能对嘈杂环境敏感，请尽量提供安静的空间</li>';
+    html += '    <li>' + basicInfo.name + '海鲜过敏（虾蟹贝类），请严格避免接触</li>';
+    html += '  </ul>';
     html += '</div>';
 
-    profileSection.innerHTML = html;
+    html += '</div>'; // .profile-scroll
 
-    // 绑定退出按钮事件
-    var logoutBtn = document.getElementById('btn-logout');
-    if (logoutBtn) {
-      logoutBtn.addEventListener('click', function () {
-        window.Auth.logout();
-      });
-    }
+    contentArea.innerHTML = html;
 
-    // 绑定模块卡片点击事件 → 跳转 #records?module=xxx
-    profileSection.querySelectorAll('.profile-module-card').forEach(function (card) {
+    // 绑定模块卡片点击 → 跳转到对应记录
+    contentArea.querySelectorAll('.support-module-card').forEach(function (card) {
       card.addEventListener('click', function () {
-        var moduleKey = this.getAttribute('data-module');
-        if (moduleKey) {
-          window.location.hash = 'records?module=' + moduleKey;
-        }
-      });
-      // hover 效果
-      card.addEventListener('mouseenter', function () {
-        this.style.transform = 'translateY(-3px)';
-        this.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
-      });
-      card.addEventListener('mouseleave', function () {
-        this.style.transform = 'translateY(0)';
-        this.style.boxShadow = '0 1px 4px rgba(0,0,0,0.04)';
+        var modKey = this.getAttribute('data-module');
+        window.location.hash = 'records?module=' + modKey;
       });
     });
   }

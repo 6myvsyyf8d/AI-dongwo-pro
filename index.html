@@ -8,6 +8,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/quickcard.css">
+  <link rel="stylesheet" href="css/profile.css">
 </head>
 <body class="mode-login">
 
@@ -263,6 +265,15 @@
       <div id="analytics-content" class="container" style="padding-top:12px;"></div>
     </section>
 
+    <!-- ===== 速读卡 #quickcard ===== -->
+    <section id="quickcard" class="page-section">
+      <div class="qc-page">
+        <div class="qc-container">
+          <div id="quickcard-body"></div>
+        </div>
+      </div>
+    </section>
+
   </main>
 
   <!-- ========== 底部导航 TabBar ========== -->
@@ -287,23 +298,8 @@
     </div>
   </div>
 
-  <!-- ========== 速读卡弹窗 ========== -->
-  <div class="modal-overlay" id="quick-card-modal">
-    <div class="modal-content" style="max-width:540px;">
-      <div class="modal-header">
-        <span class="modal-title">3分钟速读卡</span>
-        <button class="modal-close" id="modal-close-btn">&times;</button>
-      </div>
-      <div class="modal-body">
-        <div class="version-tabs" id="version-tabs"></div>
-        <div id="quick-card-body"></div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-primary" id="btn-print-card">🖨️ 打印</button>
-        <button class="btn btn-outline" id="btn-close-modal">关闭</button>
-      </div>
-    </div>
-  </div>
+  <!-- ========== 速读卡页面 ========== -->
+  <div class="modal-overlay" id="quick-card-modal" style="display:none;"></div>
 
   <!-- 导出PDF库 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>

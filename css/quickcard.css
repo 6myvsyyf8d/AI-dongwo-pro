@@ -1,0 +1,478 @@
+/* ==========================================
+   速读卡 - 单页紧凑版 v2.0
+   像素级还原设计稿
+   ========================================== */
+
+/* --- 速读卡页面容器 --- */
+.qc-page {
+  padding: 0 0 100px;
+  background: var(--bg-page);
+  min-height: 100vh;
+}
+
+.qc-container {
+  max-width: 430px;
+  margin: 0 auto;
+  padding: 14px 16px 0;
+}
+
+/* ==========================================
+   1. 心青年身份卡（渐变紫）
+   沿用首页 hero-identity-card 风格
+   ========================================== */
+.qc-identity {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px;
+  margin-bottom: 12px;
+  border-radius: 24px;
+  color: white;
+  background: linear-gradient(135deg, #7562a6, #9b85b8 56%, #c69fc0);
+  box-shadow: 0 10px 30px rgba(82, 63, 113, .10);
+}
+
+.qc-identity::after {
+  content: "";
+  position: absolute;
+  width: 150px;
+  height: 150px;
+  right: -60px;
+  top: -75px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.13);
+}
+
+.qc-identity-avatar {
+  width: 66px;
+  height: 66px;
+  flex: 0 0 66px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  font-size: 34px;
+  background: rgba(255,255,255,.94);
+  box-shadow: 0 7px 20px rgba(50,34,75,.18);
+  z-index: 1;
+}
+
+.qc-identity-info {
+  flex: 1;
+  z-index: 1;
+  min-width: 0;
+}
+
+.qc-identity-name {
+  font-size: 23px;
+  font-weight: 800;
+  letter-spacing: .5px;
+  color: white;
+}
+
+.qc-identity-meta {
+  margin-top: 5px;
+  font-size: 13px;
+  opacity: .88;
+}
+
+.qc-identity-intro {
+  margin-top: 8px;
+  font-size: 14px;
+  line-height: 1.5;
+  opacity: .98;
+}
+
+/* ==========================================
+   2. "⏱️ 1分钟认识我" 提示横幅
+   浅紫底 #eee8f7
+   ========================================== */
+.qc-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  margin-bottom: 12px;
+  background: #eee8f7;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #5b3e96;
+}
+
+.qc-banner-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+/* ==========================================
+   3. "👀 你可能会看到" — 两列行为卡片
+   ========================================== */
+.qc-section {
+  margin-bottom: 12px;
+}
+
+.qc-section-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.qc-section-title .qc-section-emoji {
+  font-size: 18px;
+}
+
+.qc-two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.qc-behavior-card {
+  background: linear-gradient(145deg, #fff, #fbf8ff);
+  border-radius: 14px;
+  padding: 14px;
+  box-shadow: 0 4px 16px rgba(82, 63, 113, .08);
+  border: 1px solid rgba(119,98,168,0.08);
+}
+
+.qc-behavior-card .qc-behavior-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #5b3e96;
+  margin-bottom: 8px;
+}
+
+.qc-behavior-card .qc-behavior-list {
+  list-style: none;
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+
+.qc-behavior-card .qc-behavior-list li {
+  padding: 2px 0;
+  padding-left: 12px;
+  position: relative;
+}
+
+.qc-behavior-card .qc-behavior-list li::before {
+  content: '·';
+  position: absolute;
+  left: 2px;
+  font-weight: 700;
+  color: #9b85b8;
+}
+
+/* ==========================================
+   4. "🤝 请这样支持我" — 三步编号，绿底 #edf6ee，圆形数字
+   ========================================== */
+.qc-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.qc-step-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: #edf6ee;
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+
+.qc-step-num {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #52C41A;
+  color: white;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.qc-step-text {
+  flex: 1;
+  font-size: 13px;
+  color: #2E7D0F;
+  line-height: 1.6;
+  padding-top: 3px;
+}
+
+/* ==========================================
+   5. "可以这样说" — 左边紫色 4px 竖线
+   ========================================== */
+.qc-phrases {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.qc-phrase-item {
+  padding: 10px 14px;
+  background: #fff;
+  border-radius: 8px;
+  border-left: 4px solid #7562a6;
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.03);
+}
+
+/* ==========================================
+   6. "⚠️ 请避免" — 红底 #fff0ef 警告卡
+   ========================================== */
+.qc-avoid-card {
+  background: #fff0ef;
+  border-radius: 14px;
+  padding: 14px 16px;
+}
+
+.qc-avoid-card .qc-avoid-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #D4654A;
+  margin-bottom: 8px;
+}
+
+.qc-avoid-list {
+  list-style: none;
+  font-size: 13px;
+  color: #8B3A2F;
+  line-height: 1.7;
+}
+
+.qc-avoid-list li {
+  padding: 3px 0;
+  padding-left: 16px;
+  position: relative;
+}
+
+.qc-avoid-list li::before {
+  content: '✕';
+  position: absolute;
+  left: 0;
+  font-size: 11px;
+  font-weight: 700;
+  color: #D4654A;
+}
+
+/* ==========================================
+   7. "💡 孤独症小知识" — 暖色卡 #fff7e8
+   ========================================== */
+.qc-tips-card {
+  background: #fff7e8;
+  border-radius: 14px;
+  padding: 14px 16px;
+}
+
+.qc-tips-card .qc-tips-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #8C6A00;
+  margin-bottom: 8px;
+}
+
+.qc-tips-list {
+  list-style: none;
+  font-size: 13px;
+  color: #6B5D00;
+  line-height: 1.7;
+}
+
+.qc-tips-list li {
+  padding: 3px 0;
+  padding-left: 16px;
+  position: relative;
+}
+
+.qc-tips-list li::before {
+  content: '💡';
+  position: absolute;
+  left: 0;
+  font-size: 11px;
+}
+
+/* ==========================================
+   8. 紧急联系人 + 操作按钮
+   ========================================== */
+.qc-contacts {
+  background: #fff;
+  border-radius: 14px;
+  padding: 14px 16px;
+  box-shadow: 0 4px 16px rgba(82, 63, 113, .08);
+  border: 1px solid rgba(119,98,168,0.08);
+  margin-bottom: 12px;
+}
+
+.qc-contacts-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 10px;
+}
+
+.qc-contact-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.qc-contact-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.qc-contact-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 18px;
+  background: var(--color-primary-light);
+  flex-shrink: 0;
+}
+
+.qc-contact-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.qc-contact-name {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 13px;
+}
+
+.qc-contact-role {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+
+.qc-contact-phone {
+  font-size: 12px;
+  color: var(--color-primary);
+  font-weight: 500;
+}
+
+/* 操作按钮区 */
+.qc-actions {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.qc-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px 16px;
+  border: none;
+  border-radius: 14px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: var(--font-body);
+}
+
+.qc-btn:active {
+  transform: scale(0.97);
+}
+
+.qc-btn-print {
+  background: white;
+  color: var(--color-primary);
+  border: 1.5px solid var(--color-primary);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+.qc-btn-print:hover {
+  background: var(--color-primary-light);
+}
+
+.qc-btn-pdf {
+  background: var(--color-primary);
+  color: white;
+  box-shadow: 0 4px 14px rgba(45, 122, 122, 0.25);
+}
+
+.qc-btn-pdf:hover {
+  background: #3A7BC8;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(45, 122, 122, 0.35);
+}
+
+/* 底部提示 */
+.qc-footer-note {
+  text-align: center;
+  font-size: 11px;
+  color: var(--text-muted);
+  padding: 8px 0;
+}
+
+/* ==========================================
+   打印样式
+   ========================================== */
+@media print {
+  body {
+    background: white !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* 隐藏全局 UI 元素 */
+  .topbar, .bottom-nav, .hero-actions, .card-grid,
+  .alert-banner, .footer, .page-header { display: none !important; }
+
+  /* 所有页面区块隐藏，只显示速读卡 */
+  .page-section { display: none !important; }
+  #quickcard-page { display: block !important; }
+
+  .qc-page {
+    padding: 0 !important;
+    background: white !important;
+  }
+
+  .qc-container {
+    max-width: 100% !important;
+    padding: 0 !important;
+  }
+
+  .qc-identity {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .qc-banner { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .qc-step-item { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .qc-avoid-card { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .qc-tips-card { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+  /* 打印时隐藏按钮 */
+  .qc-actions { display: none !important; }
+  .qc-footer-note { display: none !important; }
+
+  /* 确保分页不截断 */
+  .qc-identity, .qc-banner, .qc-section, .qc-avoid-card,
+  .qc-tips-card, .qc-contacts {
+    page-break-inside: avoid;
+  }
+}

@@ -1421,26 +1421,7 @@ a:hover { text-decoration: underline; }
   body { background: white; }
   .main-content { margin-top: 0; }
 
-  .modal-overlay {
-    position: static;
-    background: none;
-    padding: 0;
-    display: block !important;
-  }
-
-  .modal-content {
-    max-width: 100%;
-    box-shadow: none;
-    border-radius: 0;
-    max-height: none;
-  }
-
-  .quick-card { border-color: #333; }
-  .quick-card-header { background: #333 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .quick-card-section { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-
   .page-section { display: block !important; }
-  .page-section:not(#quick-card-page) { display: none !important; }
 }
 
 /* --- Responsive --- */
