@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/quickcard.css">
   <link rel="stylesheet" href="css/profile.css">
-  <link rel="stylesheet" href="css/chatbot.css">
+  <link rel="stylesheet" href="css/chatbot.css?v=2.0-chat">
   <link rel="stylesheet" href="css/chat-ai.css">
   <link rel="stylesheet" href="css/youth-chat.css">
 </head>
@@ -156,12 +156,12 @@
             <div class="hero-intro" id="hero-intro">喜欢烘焙、对公交车路线了如指掌的安静男孩</div>
           </div>
         </div>
-        <div class="hero-actions">
-          <button class="btn btn-hero-primary" id="btn-quick-card">📋 打开速读卡</button>
-          <button class="btn btn-hero-secondary" id="btn-collect">🤖 AI对话采集</button>
-        </div>
+        <!-- v2.0：认识我卡片（自动渲染） -->
+        <div id="know-me-card-container"></div>
         <div class="alert-banner" id="alert-banner"></div>
         <div class="container" id="latest-activity"></div>
+        <!-- v2.0：演示工作链（自动渲染） -->
+        <div id="demo-workflow-container"></div>
         <div class="card-grid" id="card-grid"></div>
         <div class="footer">AI懂我 · 心智障碍者动态可视化支持档案</div>
       </div>
@@ -379,7 +379,7 @@
   <script src="js/chatbot-providers.js?v=1.0-final"></script>
   <script src="js/chat-markdown.js?v=1.0-final"></script>
   <script src="js/chatbot.js?v=1.0-final"></script>
-  <script src="js/chat-ui.js?v=1.0-final"></script>
+  <script src="js/chat-ui.js?v=2.1-chat"></script>
   <script src="js/youth-tts.js?v=1.0-final"></script>
   <script src="js/youth-chat.js?v=1.0-final"></script>
   <script src="js/charts.js?v=1.0-final"></script>
@@ -389,12 +389,13 @@
   <script src="js/join-request.js?v=1.0-final"></script>
   <script src="js/approvals.js?v=1.0-final"></script>
   <script src="js/archive-code.js?v=1.0-final"></script>
-  <!-- 新模块：政府看板 + 批量导入 -->
+  <!-- 新模块：政府看板 + 批量导入 + 管理页 -->
   <script src="js/government.js?v=1.0-final"></script>
   <script src="js/batch-import.js?v=1.0-final"></script>
+  <script src="js/admin.js?v=1.0-final"></script>
 
   <!-- 主入口（最后加载） -->
-  <script src="js/app.js?v=1.0-final"></script>
+  <script src="js/app.js?v=2.0-chat"></script>
 
 </body>
 </html>
