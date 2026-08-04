@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI懂我 · 分析页</title>
+    <style id="theme-vars">
+/* ==========================================
+   AI懂我 · 看板 UI — Design Tokens
+   Dark / Light Theme v1.0
+   ========================================== */
+
+/* --- CSS Variables: Light Theme (Default) --- */
+:root,
+[data-theme="light"] {
+  /* Backgrounds */
+  --kanban-bg-page: #f5f5f7;
+  --kanban-bg-card: #ffffff;
+  --kanban-bg-header: #ffffff;
+  --kanban-bg-input: #f5f5f7;
+  --kanban-bg-hover: rgba(0, 0, 0, 0.04);
+
+  /* Text */
+  --kanban-text-primary: #1d1d1f;
+  --kanban-text-secondary: #6e6e73;
+  --kanban-text-muted: #aeaeb2;
+  --kanban-text-inverse: #ffffff;
+
+  /* Borders */
+  --kanban-border: #e5e5ea;
+  --kanban-border-light: rgba(0, 0, 0, 0.06);
+
+  /* Accent / Status */
+  --kanban-accent-orange: #e7ad51;
+  --kanban-accent-purple: #9ba5ff;
+  --kanban-accent-green: #4fc083;
+  --kanban-primary: #5e6ad2;
+  --kanban-primary-hover: #4f5bc4;
+  --kanban-primary-light: rgba(94, 106, 210, 0.08);
+
+  /* Sheet / Overlay */
+  --kanban-overlay: rgba(0, 0, 0, 0.5);
+  --kanban-sheet-bg: #ffffff;
+  --kanban-sheet-handle: #d1d1d6;
+
+  /* Form */
+  --kanban-input-border: #e5e5ea;
+  --kanban-input-focus: #5e6ad2;
+
+  /* Feedback */
+  --kanban-error: #e34d4d;
+  --kanban-error-bg: rgba(227, 77, 77, 0.06);
+  --kanban-success: #4fc083;
+  --kanban-toast-bg: rgba(0, 0, 0, 0.85);
+
+  /* Shadows */
+  --kanban-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
+  --kanban-shadow-md: 0 2px 12px rgba(0, 0, 0, 0.08);
+  --kanban-shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.16);
+  --kanban-shadow-sheet: 0 -4px 24px rgba(0, 0, 0, 0.12);
+
+  /* Radius */
+  --kanban-radius-sm: 8px;
+  --kanban-radius-md: 12px;
+  --kanban-radius-lg: 16px;
+  --kanban-radius-xl: 22px;
+  --kanban-radius-full: 9999px;
+
+  /* Column header dots */
+  --kanban-dot-size: 8px;
+}
+
+/* --- CSS Variables: Dark Theme --- */
+[data-theme="dark"] {
+  --kanban-bg-page: #1c1c1e;
+  --kanban-bg-card: #2c2c2e;
+  --kanban-bg-header: #2c2c2e;
+  --kanban-bg-input: #3a3a3c;
+  --kanban-bg-hover: rgba(255, 255, 255, 0.06);
+
+  --kanban-text-primary: #f5f5f7;
+  --kanban-text-secondary: #aeaeb2;
+  --kanban-text-muted: #636366;
+  --kanban-text-inverse: #1d1d1f;
+
+  --kanban-border: #3a3a3c;
+  --kanban-border-light: rgba(255, 255, 255, 0.06);
+
+  --kanban-accent-orange: #e7ad51;
+  --kanban-accent-purple: #9ba5ff;
+  --kanban-accent-green: #4fc083;
+  --kanban-primary: #7b83e8;
+  --kanban-primary-hover: #969df0;
+  --kanban-primary-light: rgba(123, 131, 232, 0.12);
+
+  --kanban-overlay: rgba(0, 0, 0, 0.7);
+  --kanban-sheet-bg: #2c2c2e;
+  --kanban-sheet-handle: #48484a;
+
+  --kanban-input-border: #48484a;
+  --kanban-input-focus: #7b83e8;
+
+  --kanban-error: #e34d4d;
+  --kanban-error-bg: rgba(227, 77, 77, 0.08);
+  --kanban-success: #4fc083;
+  --kanban-toast-bg: rgba(255, 255, 255, 0.9);
+
+  --kanban-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --kanban-shadow-md: 0 2px 12px rgba(0, 0, 0, 0.35);
+  --kanban-shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.5);
+  --kanban-shadow-sheet: 0 -4px 24px rgba(0, 0, 0, 0.4);
+}
+
+/* Brand-prefixed semantic aliases for validation */
+:root,
+[data-theme="light"] {
+  --kanban-background: #f5f5f7;
+  --kanban-foreground: #1d1d1f;
+  --kanban-card: #ffffff;
+  --kanban-card-foreground: #1d1d1f;
+  --kanban-primary: #5e6ad2;
+  --kanban-primary-foreground: #ffffff;
+  --kanban-muted: #f5f5f7;
+  --kanban-muted-foreground: #6e6e73;
+  --kanban-border: #e5e5ea;
+  --kanban-ring: #5e6ad2;
+  --kanban-radius-sm: 8px;
+  --kanban-radius-md: 12px;
+  --kanban-radius-lg: 16px;
+}
+
+[data-theme="dark"] {
+  --kanban-background: #1c1c1e;
+  --kanban-foreground: #f5f5f7;
+  --kanban-card: #2c2c2e;
+  --kanban-card-foreground: #f5f5f7;
+  --kanban-primary: #7b83e8;
+  --kanban-primary-foreground: #ffffff;
+  --kanban-muted: #3a3a3c;
+  --kanban-muted-foreground: #aeaeb2;
+  --kanban-border: #3a3a3c;
+  --kanban-ring: #7b83e8;
+  --kanban-radius-sm: 8px;
+  --kanban-radius-md: 12px;
+  --kanban-radius-lg: 16px;
+}
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-background: var(--kanban-background);
+    --color-foreground: var(--kanban-foreground);
+    --color-card: var(--kanban-card);
+    --color-card-foreground: var(--kanban-card-foreground);
+    --color-primary: var(--kanban-primary);
+    --color-primary-foreground: var(--kanban-primary-foreground);
+    --color-muted: var(--kanban-muted);
+    --color-muted-foreground: var(--kanban-muted-foreground);
+    --color-border: var(--kanban-border);
+    --color-ring: var(--kanban-ring);
+    --radius-sm: var(--kanban-radius-sm);
+    --radius-md: var(--kanban-radius-md);
+    --radius-lg: var(--kanban-radius-lg);
+    --radius-xl: var(--kanban-radius-xl);
+  }
+  @layer base {
+    body { background: var(--kanban-background); color: var(--kanban-foreground); }
+  }
+    </style>
+    <style id="semantic-token-fallback">
+      .bg-background { background-color: var(--kanban-background); }
+      .text-foreground { color: var(--kanban-foreground); }
+      .bg-card { background-color: var(--kanban-card); }
+      .text-primary { color: var(--kanban-primary); }
+      .bg-primary { background-color: var(--kanban-primary); }
+      .bg-muted { background-color: var(--kanban-muted); }
+      .border-border { border-color: var(--kanban-border); }
+    </style>
+    <link rel="stylesheet" href="../../css/analytics.css">
+    <script src="../../js/utils.js"></script>
+    <script src="../../js/constants.js"></script>
+    <script src="../../js/storage.js"></script>
+    <script src="../../js/analytics-engine.js"></script>
+</head>
+<body>
+ <div class="phone-frame">
+  <main>
+  <div class="analytics-page">
+
+    <!-- 1. Top Info Bar -->
+    <div class="analytics-info-bar">
+      <div class="analytics-info-left">
+        <span class="analytics-info-name" id="info-name">小雨</span>
+        <span class="analytics-info-date" id="info-date">2024年8月4日</span>
+      </div>
+      <div class="analytics-info-avatar">🌻</div>
+    </div>
+
+    <!-- 2. Three Tab Switcher -->
+    <div class="analytics-tabs" id="analytics-tabs">
+      <button class="analytics-tab active" data-tab="daily">日报</button>
+      <button class="analytics-tab" data-tab="weekly">周报</button>
+      <button class="analytics-tab" data-tab="monthly">月报</button>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- 3. Daily Report Panel (default visible)                       -->
+    <!-- ============================================================ -->
+    <div class="analytics-panel" id="panel-daily">
+
+      <!-- 3a. Three Metric Cards -->
+      <div class="analytics-metrics" id="daily-metrics">
+        <div class="analytics-metric-card">
+          <span class="analytics-metric-value" id="dm-total">0</span>
+          <span class="analytics-metric-label">今日记录</span>
+        </div>
+        <div class="analytics-metric-card">
+          <span class="analytics-metric-value" id="dm-expression">0</span>
+          <span class="analytics-metric-label">主动表达</span>
+        </div>
+        <div class="analytics-metric-card">
+          <span class="analytics-metric-value" id="dm-attention">0</span>
+          <span class="analytics-metric-label">需要关注</span>
+        </div>
+      </div>
+
+      <!-- 3b. "今天发生了什么" Timeline -->
+      <div class="analytics-section">
+        <h2 class="analytics-section-title">今天发生了什么</h2>
+        <div class="analytics-timeline" id="daily-timeline"></div>
+      </div>
+
+      <!-- 3c. "今日AI小结" Card -->
+      <div class="analytics-ai-card" id="daily-ai-card">
+        <div class="analytics-ai-header">
+          <div class="analytics-ai-icon">💡</div>
+          <span class="analytics-ai-title">今日AI小结</span>
+        </div>
+        <div class="analytics-ai-body" id="daily-ai-body"></div>
+      </div>
+
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- 4. Weekly Report Panel (hidden)                               -->
+    <!-- ============================================================ -->
+    <div class="analytics-panel" id="panel-weekly" style="display:none;">
+
+      <!-- 4a. Metric Row -->
+      <div class="analytics-metrics" id="weekly-metrics">
+        <div class="analytics-metric-card">
+          <span class="analytics-metric-value" id="wm-total">0</span>
+          <span class="analytics-metric-label">有效记录</span>
+        </div>
+        <div class="analytics-metric-card">
+          <span class="analytics-metric-value" id="wm-positive">0</span>
+          <span class="analytics-metric-label">积极表现</span>
+        </div>
+        <div class="analytics-metric-card">
+          <span class="analytics-metric-value" id="wm-attention">0</span>
+          <span class="analytics-metric-label">值得关注</span>
+        </div>
+      </div>
+
+      <!-- 4b. "本周状态变化" CSS Bar Chart -->
+      <div class="analytics-section">
+        <h2 class="analytics-section-title">本周状态变化</h2>
+        <div class="analytics-chart">
+          <div class="analytics-chart-bars" id="weekly-chart-bars"></div>
+        </div>
+      </div>
+
+      <!-- 4c. "本周发现" Pattern Cards -->
+      <div class="analytics-section">
+        <h2 class="analytics-section-title">本周发现</h2>
+        <div class="analytics-patterns" id="weekly-patterns"></div>
+      </div>
+
+      <!-- 4d. "AI观察线索" Card -->
+      <div class="analytics-observation-card" id="weekly-observation">
+        <div class="analytics-observation-title">AI观察线索</div>
+        <div class="analytics-observation-body" id="weekly-obs-body"></div>
+      </div>
+
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- 5. Monthly Report Panel (hidden)                              -->
+    <!-- ============================================================ -->
+    <div class="analytics-panel" id="panel-monthly" style="display:none;">
+
+      <!-- 5a. Metric Row -->
+      <div class="analytics-metrics" id="monthly-metrics">
+        <div class="analytics-metric-card">
+          <span class="analytics-metric-value" id="mm-total">0</span>
+          <span class="analytics-metric-label">有效记录</span>
+        </div>
+        <div class="analytics-metric-card">
+          <span class="analytics-metric-value" id="mm-positive">0</span>
+          <span class="analytics-metric-label">能力进步</span>
+        </div>
+        <div class="analytics-metric-card">
+          <span class="analytics-metric-value" id="mm-progress">0%</span>
+          <span class="analytics-metric-label">目标进度</span>
+        </div>
+      </div>
+
+      <!-- 5b. "支持目标进展" Progress Bars -->
+      <div class="analytics-section">
+        <h2 class="analytics-section-title">支持目标进展</h2>
+        <div class="analytics-progress-list" id="monthly-progress-list"></div>
+      </div>
+
+      <!-- 5c. "本月变化" 2x2 Grid -->
+      <div class="analytics-section">
+        <h2 class="analytics-section-title">本月变化</h2>
+        <div class="analytics-change-grid" id="monthly-change-grid"></div>
+      </div>
+
+      <!-- 5d. "下月建议" Card -->
+      <div class="analytics-suggestion-card" id="monthly-suggestions">
+        <div class="analytics-suggestion-title">下月建议</div>
+        <div class="analytics-suggestion-desc" id="monthly-sugg-desc"></div>
+        <div class="analytics-suggestion-actions">
+          <button class="analytics-suggestion-btn--primary">查看详情</button>
+          <button class="analytics-suggestion-btn--secondary">制定计划</button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 6. Footer -->
+    <div class="analytics-footer">
+      <span class="analytics-footer-text">AI懂我 · 数据分析引擎 · 数据仅供参考</span>
+    </div>
+
+  </div>
+  </main>
+ </div>
+
+<style>
+/* ── Phone Frame & Structural Styles ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  background: #f0edf5;
+  color: #1d1d1f;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 100vh;
+  padding: 20px;
+}
+
+.phone-frame {
+  width: 375px;
+  min-height: 100vh;
+  background: #f5f5f7;
+  border-radius: 20px;
+  box-shadow: 0 2px 12px rgba(82,63,113,0.08), 0 8px 40px rgba(82,63,113,0.12);
+  overflow: hidden;
+}
+
+/* Panel visibility */
+.analytics-panel { display: block; }
+.analytics-panel[style*="display:none"],
+.analytics-panel[style*="display: none"] { display: none; }
+
+/* Section */
+.analytics-section { margin-top: 20px; }
+</style>
+
+<script>
+(function() {
+  'use strict';
+  var AE = window.AnalyticsEngine;
+  var C = window.Constants;
+
+  // ===== Info Bar =====
+  function loadInfoBar() {
+    var name = (C && C.basicInfo && C.basicInfo.name) ? C.basicInfo.name : '小雨';
+    document.getElementById('info-name').textContent = name;
+
+    var now = new Date();
+    var y = now.getFullYear();
+    var m = now.getMonth() + 1;
+    var d = now.getDate();
+    var weekdays = ['日','一','二','三','四','五','六'];
+    document.getElementById('info-date').textContent = y + '年' + m + '月' + d + '日 星期' + weekdays[now.getDay()];
+  }
+
+  // ===== Tab Switching =====
+  var tabs = document.querySelectorAll('.analytics-tab');
+  var panels = {
+    daily: document.getElementById('panel-daily'),
+    weekly: document.getElementById('panel-weekly'),
+    monthly: document.getElementById('panel-monthly')
+  };
+
+  tabs.forEach(function(tab) {
+    tab.addEventListener('click', function() {
+      var target = this.getAttribute('data-tab');
+      tabs.forEach(function(t) { t.classList.remove('active'); });
+      this.classList.add('active');
+      Object.keys(panels).forEach(function(k) { panels[k].style.display = 'none'; });
+      panels[target].style.display = 'block';
+      if (target === 'daily') loadDailyReport();
+      else if (target === 'weekly') loadWeeklyReport();
+      else if (target === 'monthly') loadMonthlyReport();
+    });
+  });
+
+  // ===== Helper: escape html =====
+  function esc(str) {
+    var div = document.createElement('div');
+    div.textContent = str || '';
+    return div.innerHTML;
+  }
+
+  // ===== Helper: get tag class =====
+  function getTagClass(tag) {
+    var t = tag.toLowerCase();
+    if (t.indexOf('独立') > -1 || t.indexOf('完成') > -1) return 'analytics-tag--green';
+    if (t.indexOf('支持') > -1 || t.indexOf('有效') > -1) return 'analytics-tag--orange';
+    if (t.indexOf('进步') > -1 || t.indexOf('积极') > -1) return 'analytics-tag--purple';
+    return 'analytics-tag--purple';
+  }
+
+  // ===== Daily Report =====
+  function loadDailyReport() {
+    var report = AE ? AE.getDailyReport() : null;
+    if (!report) return;
+
+    var s = report.statistics || {};
+    document.getElementById('dm-total').textContent = s.totalRecords || 0;
+    document.getElementById('dm-expression').textContent = s.expressionCount || 0;
+    document.getElementById('dm-attention').textContent = s.needsAttentionCount || 0;
+
+    // Timeline
+    var timeline = report.timeline || [];
+    var tlHtml = '';
+    timeline.forEach(function(r) {
+      var tags = (r.tags || []).map(function(t) {
+        return '<span class="' + getTagClass(t) + '">' + esc(t) + '</span>';
+      }).join('');
+      tlHtml += '<div class="analytics-timeline-item">' +
+        '<div class="analytics-timeline-dot"></div>' +
+        '<div class="analytics-timeline-time">' + esc(r.time || '') + '</div>' +
+        '<div class="analytics-timeline-title">' + esc(r.title || r.content || '') + '</div>' +
+        '<div class="analytics-timeline-desc">' + esc(r.content || '') + '</div>' +
+        (tags ? '<div class="analytics-timeline-tags">' + tags + '</div>' : '') +
+      '</div>';
+    });
+    document.getElementById('daily-timeline').innerHTML = tlHtml || '<div class="analytics-timeline-empty">暂无记录</div>';
+
+    // AI Summary
+    var summary = report.summary || '';
+    var lines = summary.split('\n').filter(function(l) { return l.trim(); });
+    var aiBody = document.getElementById('daily-ai-body');
+    var quoteHtml = '';
+    var paraHtml = '';
+
+    if (lines.length > 0) {
+      quoteHtml = '<div class="analytics-ai-quote">' + esc(lines[0]) + '</div>';
+      for (var i = 1; i < lines.length; i++) {
+        paraHtml += '<p>' + esc(lines[i]) + '</p>';
+      }
+    } else {
+      quoteHtml = '<div class="analytics-ai-quote">AI根据今日记录生成的总结</div>';
+    }
+    aiBody.innerHTML = quoteHtml + paraHtml;
+  }
+
+  // ===== Weekly Report =====
+  function loadWeeklyReport() {
+    var report = AE ? AE.getWeeklyReport() : null;
+    if (!report) return;
+
+    var s = report.statistics || {};
+    document.getElementById('wm-total').textContent = s.totalRecords || 0;
+    document.getElementById('wm-positive').textContent = s.positiveCount || 0;
+    document.getElementById('wm-attention').textContent = s.needsAttentionCount || 0;
+
+    // Bar chart
+    var counts = report.dailyCounts || [0,0,0,0,0,0,0];
+    var labels = ['一','二','三','四','五','六','日'];
+    var maxVal = Math.max.apply(null, counts) || 1;
+    var maxH = 140;
+    var barHtml = '';
+    counts.forEach(function(v, i) {
+      var h = Math.max(4, Math.round((v / maxVal) * maxH));
+      var special = v === maxVal && v > 0 ? ' analytics-chart-bar--special' : '';
+      barHtml += '<div class="analytics-chart-bar-wrap">' +
+        '<span class="analytics-chart-value">' + v + '</span>' +
+        '<div class="analytics-chart-bar' + special + '" style="height:' + h + 'px;"></div>' +
+        '<span class="analytics-chart-label">' + labels[i] + '</span>' +
+      '</div>';
+    });
+    document.getElementById('weekly-chart-bars').innerHTML = barHtml;
+
+    // Patterns
+    var pd = report.patternDetection || {};
+    var patternsHtml = '';
+    var stressPatterns = pd.stressPatterns || [];
+    stressPatterns.forEach(function(p) {
+      patternsHtml += '<div class="analytics-pattern-card">' +
+        '<div class="analytics-pattern-icon">🌀</div>' +
+        '<div class="analytics-pattern-name">' + esc(p.tag || '') + '</div>' +
+        '<div class="analytics-pattern-desc">出现 ' + (p.count || 0) + ' 次</div>' +
+        '<div class="analytics-pattern-count">' + (p.count || 0) + '</div>' +
+      '</div>';
+    });
+    var newAbilities = pd.newAbilities || [];
+    newAbilities.forEach(function(p) {
+      patternsHtml += '<div class="analytics-pattern-card">' +
+        '<div class="analytics-pattern-icon">🌱</div>' +
+        '<div class="analytics-pattern-name">' + esc(p.tag || '') + '</div>' +
+        '<div class="analytics-pattern-desc">新出现的能力标签</div>' +
+        '<div class="analytics-pattern-count">' + (p.count || 0) + '</div>' +
+      '</div>';
+    });
+    var effectiveStrategies = pd.effectiveStrategies || [];
+    effectiveStrategies.forEach(function(p) {
+      patternsHtml += '<div class="analytics-pattern-card">' +
+        '<div class="analytics-pattern-icon">✅</div>' +
+        '<div class="analytics-pattern-name">' + esc(p.title || '') + '</div>' +
+        '<div class="analytics-pattern-desc">' + esc(p.type || '') + '</div>' +
+      '</div>';
+    });
+    document.getElementById('weekly-patterns').innerHTML = patternsHtml || '<div class="analytics-empty-hint">暂无发现</div>';
+
+    // Observation
+    var summary = report.summary || '';
+    var obsLines = summary.split('\n').filter(function(l) { return l.trim(); });
+    var obsHtml = obsLines.map(function(l) { return '<p>' + esc(l) + '</p>'; }).join('');
+    document.getElementById('weekly-obs-body').innerHTML = obsHtml || '<p>暂无AI观察线索</p>';
+  }
+
+  // ===== Monthly Report =====
+  function loadMonthlyReport() {
+    var report = AE ? AE.getMonthlyReport() : null;
+    if (!report) return;
+
+    var s = report.statistics || {};
+    document.getElementById('mm-total').textContent = s.totalRecords || 0;
+    document.getElementById('mm-positive').textContent = s.positiveCount || 0;
+
+    // Progress percentage
+    var expr = s.expressionCount || 0;
+    var pos = s.positiveCount || 0;
+    var totalRelevant = expr + pos;
+    var pct = totalRelevant > 0 ? Math.round((pos / Math.max(totalRelevant, 1)) * 100) : 0;
+    document.getElementById('mm-progress').textContent = pct + '%';
+
+    // Goal progress bars
+    var gp = report.goalProgress || {};
+    var activities = gp.activities || [];
+    var strategies = gp.strategies || [];
+    var progHtml = '';
+
+    // Activity progress
+    var actCount = gp.activityCount || 0;
+    var actMax = Math.max(activities.length, 4);
+    var actPct = actMax > 0 ? Math.round((actCount / actMax) * 100) : 0;
+    progHtml += '<div class="analytics-progress-item">' +
+      '<div class="analytics-progress-header">' +
+        '<span class="analytics-progress-name">活动参与</span>' +
+        '<span class="analytics-progress-pct">' + actPct + '%</span>' +
+      '</div>' +
+      '<div class="analytics-progress-bar"><div class="analytics-progress-fill" style="width:' + actPct + '%;"></div></div>' +
+    '</div>';
+
+    // Strategy progress
+    var strCount = gp.strategyCount || 0;
+    var strMax = Math.max(strategies.length, 3);
+    var strPct = strMax > 0 ? Math.round((strCount / strMax) * 100) : 0;
+    progHtml += '<div class="analytics-progress-item">' +
+      '<div class="analytics-progress-header">' +
+        '<span class="analytics-progress-name">策略应用</span>' +
+        '<span class="analytics-progress-pct">' + strPct + '%</span>' +
+      '</div>' +
+      '<div class="analytics-progress-bar"><div class="analytics-progress-fill" style="width:' + strPct + '%;"></div></div>' +
+    '</div>';
+
+    // Fallback: monthComparison record progress
+    var mc = report.monthComparison || {};
+    if (mc.totalRecords) {
+      var recCurrent = mc.totalRecords.current || 0;
+      var recDiff = mc.totalRecords.diff || 0;
+      var recBase = Math.max(recCurrent - recDiff, recCurrent, 1);
+      var recPct = Math.min(100, Math.round((recCurrent / recBase) * 100));
+      progHtml += '<div class="analytics-progress-item">' +
+        '<div class="analytics-progress-header">' +
+          '<span class="analytics-progress-name">本月记录</span>' +
+          '<span class="analytics-progress-pct">' + recPct + '%</span>' +
+        '</div>' +
+        '<div class="analytics-progress-bar"><div class="analytics-progress-fill" style="width:' + recPct + '%;"></div></div>' +
+      '</div>';
+    }
+
+    document.getElementById('monthly-progress-list').innerHTML = progHtml;
+
+    // Change grid - 2x2
+    var changeFields = [
+      { key: 'totalRecords', label: '本月记录' },
+      { key: 'positiveCount', label: '正面表现' },
+      { key: 'needsAttentionCount', label: '需要关注' },
+      { key: 'expressionCount', label: '主动表达' }
+    ];
+    var changeHtml = '';
+    changeFields.forEach(function(f) {
+      var d = (mc[f.key]) || {};
+      var val = d.current !== undefined ? d.current : 0;
+      var diff = d.diff !== undefined ? d.diff : 0;
+      var sign = diff >= 0 ? '+' : '';
+      var cls = diff >= 0 ? 'analytics-change-diff--up' : 'analytics-change-diff--down';
+      changeHtml += '<div class="analytics-change-card">' +
+        '<span class="analytics-change-label">' + f.label + '</span>' +
+        '<span class="analytics-change-value">' + val + '</span>' +
+        '<span class="analytics-change-diff ' + cls + '">' + sign + diff + '</span>' +
+      '</div>';
+    });
+    document.getElementById('monthly-change-grid').innerHTML = changeHtml;
+
+    // Suggestions
+    var suggestions = report.suggestions || [];
+    var suggText = suggestions.length > 0 ? suggestions[0] : '暂无建议';
+    document.getElementById('monthly-sugg-desc').textContent = suggText;
+  }
+
+  // ===== Init =====
+  loadInfoBar();
+  loadDailyReport();
+
+})();
+</script>
+
+</body>
+</html>
