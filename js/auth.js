@@ -280,25 +280,11 @@
   }
 
   /**
-   * 更新导航栏显示用户信息
+   * 更新导航栏显示用户信息（底部导航无需用户信息展示，保留接口兼容）
    */
   function updateNavBar() {
-    var user = window.DataStore.getCurrentUser() || window.AppState.currentUser;
-    var userInfo = document.getElementById('nav-user-info');
-    if (!userInfo) return;
-
-    if (user) {
-      userInfo.style.display = 'flex';
-      document.getElementById('nav-user-avatar').textContent = user.avatar || '👤';
-      document.getElementById('nav-user-name').textContent = user.name || '用户';
-      var roleLabel = window.Constants.ROLES[user.role] ? window.Constants.ROLES[user.role].label : user.role;
-      var roleColor = window.Constants.ROLES[user.role] ? window.Constants.ROLES[user.role].color : '#4A90D9';
-      var badge = document.getElementById('nav-user-role-badge');
-      badge.textContent = roleLabel;
-      badge.style.background = roleColor;
-    } else {
-      userInfo.style.display = 'none';
-    }
+    // 侧边栏已移除，底部导航不显示用户信息
+    // 保留接口以兼容其他调用方
   }
 
   /**

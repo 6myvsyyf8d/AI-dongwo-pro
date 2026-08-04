@@ -47,9 +47,9 @@
   var privacyLevels = C.privacyLevels;
   var chatScript = C.chatScript;
   var routeMap = C.routeMap;
-  var SIDEBAR_MENU = C.SIDEBAR_MENU;
-  var GOVERNMENT_NAV_ITEMS = C.GOVERNMENT_NAV_ITEMS;
-  var ADMIN_NAV_ITEMS = C.ADMIN_NAV_ITEMS;
+  var MODULE_TAGS = C.MODULE_TAGS;
+  var PRIVACY_LABELS = C.PRIVACY_LABELS;
+  var RECORD_TYPE_TO_MODULE = C.RECORD_TYPE_TO_MODULE;
   var STRATEGY_KB = C.STRATEGY_KB;
   var EMOTION_TO_STRATEGY = C.EMOTION_TO_STRATEGY;
   var DataStore = window.DataStore;
@@ -105,65 +105,135 @@
   }
 
   /**
-   * 渲染侧边栏菜单
+   * 从 hash 中提取纯页面名（去掉 ? 参数）
    */
-  function renderSidebar() {
-    var menuContainer = Utils.dom.get('sidebar-menu');
-    if (!menuContainer) return;
+  function getBasePageName(hash) {
+    var qIndex = hash.indexOf('?');
+    return qIndex === -1 ? hash : hash.substring(0, qIndex);
+  }
+
+  /**
+   * 渲染底部导航 TabBar
+   */
+  function renderBottomNav() {
+    var navContainer = Utils.dom.get('bottom-nav');
+    if (!navContainer) return;
 
     var user = DataStore.getCurrentUser() || appState.currentUser;
     var role = user ? user.role : 'parent';
 
-    // 根据角色选择不同的导航菜单
-    var navItems;
-    if (role === 'government') {
-      navItems = GOVERNMENT_NAV_ITEMS;
-    } else if (role === 'admin') {
-      navItems = ADMIN_NAV_ITEMS;
-    } else {
-      navItems = SIDEBAR_MENU;
-    }
+    // 所有角色共用的5个tab
+    var allTabs = [
+      { route: 'home', icon: '🏠', label: '首页' },
+      { route: 'timeline', icon: '📋', label: '记录' },
+      { route: 'archive', icon: '👤', label: '档案' },
+      { route: 'charts', icon: '📊', label: '分析' },
+      { route: 'profile', icon: '⚙️', label: '管理' }
+    ];
+
+    // 心青年只显示3个tab
+    var visibleTabs = (role === 'youth')
+      ? allTabs.slice(0, 3)
+      : allTabs;
 
     var html = '';
-    navItems.forEach(function (group) {
-      html += '<div class="sidebar-menu-group">';
-      html += '  <div class="sidebar-menu-label">' + group.group + '</div>';
-      group.items.forEach(function (item) {
-        html += '  <div class="sidebar-menu-item" data-route="' + item.hash + '">';
-        html += '    <span class="menu-icon">' + item.icon + '</span>';
-        html += '    <span>' + item.label + '</span>';
-        html += '  </div>';
-      });
-      html += '</div>';
+    visibleTabs.forEach(function (tab) {
+      html += '<button class="nav-tab" data-route="' + tab.route + '">';
+      html += '<span class="nav-tab-icon">' + tab.icon + '</span>';
+      html += tab.label;
+      html += '</button>';
     });
 
-    Utils.dom.html(menuContainer, html);
+    Utils.dom.html(navContainer, html);
 
-    // 绑定菜单点击事件
-    var menuItems = menuContainer.querySelectorAll('.sidebar-menu-item');
-    menuItems.forEach(function (item) {
-      Utils.dom.on(item, 'click', function () {
+    // 心青年3个tab时调整grid列数
+    if (visibleTabs.length === 3) {
+      navContainer.style.gridTemplateColumns = 'repeat(3, 1fr)';
+    } else {
+      navContainer.style.gridTemplateColumns = 'repeat(5, 1fr)';
+    }
+
+    // 绑定点击事件
+    var tabs = navContainer.querySelectorAll('.nav-tab');
+    tabs.forEach(function (tab) {
+      Utils.dom.on(tab, 'click', function () {
         var route = this.getAttribute('data-route');
         if (route) {
           window.location.hash = route;
-          // 移动端关闭侧边栏
-          document.body.classList.remove('sidebar-open');
         }
       });
     });
   }
 
   /**
-   * 高亮当前侧边栏菜单项
+   * 高亮当前底部导航项
    */
-  function highlightSidebarItem(route) {
-    var menuItems = document.querySelectorAll('.sidebar-menu-item');
-    menuItems.forEach(function (item) {
-      item.classList.remove('active');
-      if (item.getAttribute('data-route') === route) {
-        item.classList.add('active');
+  function highlightBottomNav(route) {
+    var tabs = document.querySelectorAll('.nav-tab');
+    tabs.forEach(function (tab) {
+      tab.classList.remove('active');
+      if (tab.getAttribute('data-route') === route) {
+        tab.classList.add('active');
       }
     });
+  }
+
+  /**
+   * 更新顶栏标题和返回按钮
+   */
+  function updateTopbar(pageName) {
+    var titleEl = Utils.dom.get('topbar-title');
+    var backEl = Utils.dom.get('topbar-back');
+    var quickEl = Utils.dom.get('topbar-quick');
+
+    var pageTitles = {
+      home: '首页概览',
+      archive: '完整档案',
+      life: '我喜欢的生活',
+      communication: '沟通说明书',
+      emotion: '情绪与行为支持',
+      care: '照护与医疗提醒',
+      work: '工作支持',
+      relations: '关系地图',
+      timeline: '记录时间轴',
+      profile: '个人中心',
+      collect: '对话采集',
+      charts: '数据可视化',
+      tasks: '每日任务',
+      calendar: '日程日历',
+      analytics: '数据价值',
+      records: '模块记录'
+    };
+
+    if (titleEl) {
+      titleEl.textContent = pageTitles[pageName] || 'AI懂我';
+    }
+    if (backEl) {
+      backEl.style.display = (pageName === 'home') ? 'none' : 'block';
+    }
+    if (quickEl) {
+      quickEl.style.display = (pageName === 'home') ? 'block' : 'none';
+    }
+  }
+
+  /**
+   * 绑定顶栏返回按钮和快捷入口事件
+   */
+  function bindTopbarEvents() {
+    var backEl = Utils.dom.get('topbar-back');
+    var quickEl = Utils.dom.get('topbar-quick');
+    if (backEl) {
+      Utils.dom.on(backEl, 'click', function () {
+        window.location.hash = 'home';
+      });
+    }
+    if (quickEl) {
+      Utils.dom.on(quickEl, 'click', function () {
+        // 触发打开速读卡
+        var btn = Utils.dom.get('btn-quick-card');
+        if (btn) btn.click();
+      });
+    }
   }
 
   /**
@@ -171,13 +241,17 @@
    * @param {string} pageName - 页面名称（如 'home', 'life' 等）
    */
   function navigateTo(pageName) {
+    // 提取纯页面名（去掉 ? 参数如 records?module=xxx）
+    var basePageName = getBasePageName(pageName);
+
     // 如果页面不存在则回到首页
-    if (!routeMap[pageName]) {
+    if (!routeMap[basePageName]) {
       pageName = 'home';
+      basePageName = 'home';
     }
 
     // 切换 body 模式
-    if (pageName === 'login') {
+    if (basePageName === 'login') {
       document.body.classList.add('mode-login');
       document.body.classList.remove('mode-app');
     } else {
@@ -192,22 +266,25 @@
     });
 
     // 显示目标页面
-    var targetSection = document.getElementById(pageName);
+    var targetSection = document.getElementById(basePageName);
     if (targetSection) {
       targetSection.classList.add('active');
     }
 
-    currentPage = pageName;
-    appState.currentPage = pageName;
+    currentPage = basePageName;
+    appState.currentPage = basePageName;
 
-    // 高亮侧边栏菜单
-    highlightSidebarItem(pageName);
+    // 高亮底部导航
+    highlightBottomNav(basePageName);
+
+    // 更新顶栏标题
+    updateTopbar(basePageName);
 
     // 滚动到页面顶部
     window.scrollTo(0, 0);
 
     // 根据页面类型调用对应渲染函数
-    renderPage(pageName);
+    renderPage(basePageName);
 
     // 应用当前角色的隐私设置
     window.Permissions.applyPrivacy(currentRole);
@@ -257,6 +334,7 @@
       case 'calendar': renderCalendar(); break;
       case 'archive': renderArchive(); break;
       case 'analytics': renderAnalytics(); break;
+      case 'records': window.RecordsPage.renderRecordsList(); break;
     }
   }
 
@@ -274,25 +352,14 @@
 
     // 渲染Hero区域的基本信息
     var heroNameEl = document.getElementById('hero-name');
-    var heroAgeEl = document.getElementById('hero-age');
+    var heroMetaEl = document.getElementById('hero-meta');
     var heroIntroEl = document.getElementById('hero-intro');
-    var heroTagsEl = document.getElementById('hero-tags');
     var alertBannerEl = document.getElementById('alert-banner');
     var cardGridEl = document.getElementById('card-grid');
 
     if (heroNameEl) heroNameEl.textContent = basicInfo.name;
-    if (heroAgeEl) heroAgeEl.textContent = basicInfo.age + '岁 · ' + basicInfo.gender;
+    if (heroMetaEl) heroMetaEl.textContent = basicInfo.age + '岁 · ' + basicInfo.gender + ' · 档案持续更新中';
     if (heroIntroEl) heroIntroEl.textContent = basicInfo.intro;
-
-    // 渲染标签
-    if (heroTagsEl) {
-      var tagsHTML = '';
-      var tagTexts = ['烘焙达人', '公交活地图', '安静男孩', '弹琴中', '爱心满满'];
-      tagTexts.forEach(function (t) {
-        tagsHTML += '<span class="tag">' + t + '</span>';
-      });
-      heroTagsEl.innerHTML = tagsHTML;
-    }
 
     // 渲染今日重点提醒 —— 根据角色定制
     if (alertBannerEl) {
@@ -424,7 +491,7 @@
     var existingBanner = document.getElementById('welcome-banner');
     if (existingBanner) existingBanner.remove();
 
-    var heroSection = document.querySelector('.hero-section') || document.getElementById('hero');
+    var heroSection = document.querySelector('.hero-identity-card') || document.getElementById('hero');
     if (!heroSection) return;
 
     var roleName = user ? (ROLES[user.role] ? ROLES[user.role].label : '访客') : '访客';
@@ -1891,28 +1958,14 @@
       currentRole = user.role;
     }
 
-    // 渲染侧边栏菜单
-    renderSidebar();
-
-    // 更新导航栏（侧边栏用户信息）
-    window.Auth.updateNavBar();
+    // 渲染底部导航
+    renderBottomNav();
 
     // 绑定全局事件
     bindGlobalEvents();
 
-    // 绑定移动端侧边栏开关
-    var toggleBtn = Utils.dom.get('sidebar-toggle-mobile');
-    if (toggleBtn) {
-      Utils.dom.on(toggleBtn, 'click', function () {
-        document.body.classList.toggle('sidebar-open');
-      });
-    }
-    var overlay = Utils.dom.get('sidebar-overlay');
-    if (overlay) {
-      Utils.dom.on(overlay, 'click', function () {
-        document.body.classList.remove('sidebar-open');
-      });
-    }
+    // 绑定顶栏事件
+    bindTopbarEvents();
 
     // 初始化路由系统
     initRouter();
@@ -2359,6 +2412,6 @@
   window.renderProfile = window.ProfilePage.renderProfile;
   window.renderLatestActivity = renderLatestActivity;
   window.renderRecordCard = renderRecordCard;
-  window.renderSidebar = renderSidebar;
+  window.renderBottomNav = renderBottomNav;
 
 })();

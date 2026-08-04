@@ -1,5 +1,5 @@
 /**
- * records.js — 添加记录弹窗模块
+ * records.js — 记录管理模块（添加记录弹窗 + 记录列表页）
  * 挂载：window.RecordsPage, window.openAddRecordModal, window.closeAddRecordModal
  * 依赖：window.Utils, window.Constants, window.AppState, window.DataStore
  */
@@ -10,10 +10,135 @@
   var RECORD_TYPES = window.Constants.RECORD_TYPES;
   var MOOD_OPTIONS = window.Constants.MOOD_OPTIONS;
   var EMOTION_OPTIONS = window.Constants.EMOTION_OPTIONS;
+  var MODULE_TAGS = window.Constants.MODULE_TAGS;
+  var PRIVACY_LABELS = window.Constants.PRIVACY_LABELS;
   var DataStore = window.DataStore;
   var appState = window.AppState.appState;
   var currentPage = window.AppState.currentPage;
   var addRecordState = window.AppState.addRecordState;
+
+  /** 模块配置映射 */
+  var MODULE_CONFIG = {
+    communicationGuide: { icon: '💬', label: '沟通与表达', color: '#9B85B8' },
+    emotionSupport: { icon: '🌊', label: '情绪与行为', color: '#D4877B' },
+    careInfo: { icon: '💊', label: '照护与医疗', color: '#A8C9A0' },
+    workInfo: { icon: '💼', label: '工作与生活', color: '#D4A85A' }
+  };
+
+  /**
+   * 从 URL hash 中解析查询参数
+   * 例如 #records?module=communicationGuide → { module: 'communicationGuide' }
+   */
+  function parseHashParams() {
+    var hash = window.location.hash.replace('#', '');
+    var params = {};
+    var qIndex = hash.indexOf('?');
+    if (qIndex === -1) return params;
+    var queryStr = hash.substring(qIndex + 1);
+    queryStr.split('&').forEach(function (pair) {
+      var parts = pair.split('=');
+      if (parts.length === 2) {
+        params[decodeURIComponent(parts[0])] = decodeURIComponent(parts[1]);
+      }
+    });
+    return params;
+  }
+
+  /**
+   * 渲染记录列表页（按模块筛选）
+   */
+  function renderRecordsList() {
+    var recordsSection = document.getElementById('records');
+    if (!recordsSection) {
+      recordsSection = document.createElement('section');
+      recordsSection.id = 'records';
+      recordsSection.className = 'page-section';
+      document.querySelector('.main-content').appendChild(recordsSection);
+    }
+
+    var params = parseHashParams();
+    var moduleKey = params.module || null;
+    var moduleCfg = moduleKey ? MODULE_CONFIG[moduleKey] : null;
+
+    var records = moduleKey ? DataStore.getRecordsByModule(moduleKey) : DataStore.getRecords();
+
+    var html = '';
+    html += '<div class="page-header">';
+    html += '  <button class="back-btn">←</button>';
+    html += '  <span class="page-title">' + (moduleCfg ? moduleCfg.icon + ' ' + moduleCfg.label + ' 记录' : '全部记录') + '</span>';
+    html += '</div>';
+    html += '<div class="container" style="padding:24px;">';
+
+    // 模块信息卡片
+    if (moduleCfg) {
+      html += '<div style="background:#fff;border-radius:12px;padding:16px;margin-bottom:20px;border-left:4px solid ' + moduleCfg.color + ';box-shadow:0 1px 4px rgba(0,0,0,0.04);">';
+      html += '  <div style="font-size:1.1rem;font-weight:600;color:#333;margin-bottom:4px;">' + moduleCfg.icon + ' ' + moduleCfg.label + '</div>';
+      html += '  <div style="font-size:0.85rem;color:#888;">共 ' + records.length + ' 条记录</div>';
+      // 模块标签池展示
+      if (MODULE_TAGS[moduleKey]) {
+        html += '  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">';
+        MODULE_TAGS[moduleKey].forEach(function (tag) {
+          html += '    <span style="background:#f0f0f0;color:#666;font-size:0.75rem;padding:2px 8px;border-radius:10px;">' + tag + '</span>';
+        });
+        html += '  </div>';
+      }
+      html += '</div>';
+    }
+
+    // 记录列表
+    if (records.length === 0) {
+      html += '<div style="background:#fff;border-radius:12px;padding:32px;text-align:center;color:#999;box-shadow:0 1px 4px rgba(0,0,0,0.04);">';
+      html += '  <div style="font-size:2.5rem;margin-bottom:12px;">📝</div>';
+      html += '  <div style="font-size:0.95rem;">暂无记录</div>';
+      html += '  <div style="font-size:0.8rem;margin-top:4px;">点击右下角 + 按钮添加第一条记录</div>';
+      html += '</div>';
+    } else {
+      html += '<div style="display:flex;flex-direction:column;gap:10px;">';
+      records.forEach(function (record) {
+        html += renderRecordListItem(record);
+      });
+      html += '</div>';
+    }
+
+    html += '</div>';
+
+    recordsSection.innerHTML = html;
+  }
+
+  /**
+   * 渲染单条记录列表项
+   */
+  function renderRecordListItem(record) {
+    var typeInfo = RECORD_TYPES[record.type] || { label: '记录', icon: '📝', color: '#999' };
+    var roleInfo = ROLES[record.authorRole] || { color: '#999', avatar: '👤' };
+    var privacyInfo = PRIVACY_LABELS[record.privacy] || { label: record.privacy, color: '#999' };
+    var formatDateDisplay = window.formatDateDisplay;
+
+    var html = '';
+    html += '<div style="background:#fff;border-radius:12px;padding:14px 16px;box-shadow:0 1px 4px rgba(0,0,0,0.04);border-left:3px solid ' + roleInfo.color + ';display:flex;align-items:flex-start;gap:10px;">';
+    html += '  <div style="font-size:1.6rem;flex-shrink:0;">' + (record.authorAvatar || roleInfo.avatar) + '</div>';
+    html += '  <div style="flex:1;min-width:0;">';
+    html += '    <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;flex-wrap:wrap;">';
+    html += '      <span style="font-weight:600;color:#333;font-size:0.9rem;">' + record.author + '</span>';
+    html += '      <span style="font-size:0.7rem;color:#fff;background:' + roleInfo.color + ';padding:1px 6px;border-radius:10px;">' + (ROLES[record.authorRole] ? ROLES[record.authorRole].label : record.authorRole) + '</span>';
+    html += '      <span style="font-size:0.7rem;color:#fff;background:' + privacyInfo.color + ';padding:1px 6px;border-radius:10px;" title="' + privacyInfo.desc + '">' + privacyInfo.label + '</span>';
+    html += '      <span style="font-size:0.75rem;color:#aaa;margin-left:auto;white-space:nowrap;">' + formatDateDisplay(record.date) + ' ' + record.time + '</span>';
+    html += '    </div>';
+    html += '    <div style="font-size:0.8rem;color:#888;margin-bottom:2px;">' + typeInfo.icon + ' ' + typeInfo.label + '</div>';
+    html += '    <div style="font-size:0.88rem;color:#555;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (record.title ? record.title + ' · ' : '') + record.content + '</div>';
+    // 标签展示
+    if (record.tags && record.tags.length > 0) {
+      html += '    <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:6px;">';
+      record.tags.forEach(function (tag) {
+        html += '      <span style="background:#f0f7ff;color:#4A90D9;font-size:0.7rem;padding:1px 6px;border-radius:8px;">' + tag + '</span>';
+      });
+      html += '    </div>';
+    }
+    html += '  </div>';
+    html += '</div>';
+
+    return html;
+  }
 
   /**
    * 打开添加记录弹窗
@@ -355,7 +480,10 @@
     createAddRecordModal: createAddRecordModal,
     renderAddRecordStep1: renderAddRecordStep1,
     renderAddRecordStep2: renderAddRecordStep2,
-    saveRecord: saveRecord
+    saveRecord: saveRecord,
+    renderRecordsList: renderRecordsList,
+    renderRecordListItem: renderRecordListItem,
+    parseHashParams: parseHashParams
   };
 
   // 向后兼容：HTML onclick 处理器直接引用

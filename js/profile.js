@@ -1,7 +1,7 @@
 /**
- * profile.js — 个人中心页面渲染
+ * profile.js — 个人中心 / 档案页面渲染
  * 挂载：window.ProfilePage
- * 依赖：window.Utils, window.Constants, window.AppState, window.DataStore
+ * 依赖：window.Utils, window.Constants, window.AppState, window.DataStore, window.Modules
  */
 (function () {
   'use strict';
@@ -9,6 +9,7 @@
   var ROLES = window.Constants.ROLES;
   var RECORD_TYPES = window.Constants.RECORD_TYPES;
   var DataStore = window.DataStore;
+  var Modules = window.Modules;
   var appState = window.AppState.appState;
 
   /**
@@ -25,6 +26,7 @@
 
     var user = DataStore.getCurrentUser() || appState.currentUser;
     var role = user ? ROLES[user.role] : null;
+    var profile = DataStore.getYouthProfile();
 
     var html = '';
     html += '<div class="page-header">';
@@ -41,6 +43,73 @@
       html += '  <div style="display:inline-block;padding:4px 12px;border-radius:20px;font-size:0.85rem;color:#fff;background:' + role.color + ';margin-bottom:8px;">' + role.label + '</div>';
       html += '  <p style="color:#666;font-size:0.9rem;">' + role.description + '</p>';
       html += '  <p style="color:#aaa;font-size:0.78rem;margin-top:8px;">账号ID: ' + user.id + ' | 注册于 ' + (user.createdAt || '今天') + '</p>';
+      html += '</div>';
+
+      // === 心青年基本信息卡片 ===
+      if (profile && profile.basicInfo) {
+        var bi = profile.basicInfo;
+        html += '<h2 class="section-title">🌟 心青年档案</h2>';
+        html += '<div style="background:#fff;border-radius:16px;padding:20px;margin-bottom:24px;box-shadow:0 2px 8px rgba(0,0,0,0.06);">';
+        html += '  <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">';
+        html += '    <div style="font-size:3rem;">🌻</div>';
+        html += '    <div>';
+        html += '      <div style="font-size:1.1rem;font-weight:700;color:#333;">' + bi.name + '</div>';
+        html += '      <div style="font-size:0.85rem;color:#888;">' + bi.age + '岁 · ' + bi.gender + ' · ' + bi.communication + '</div>';
+        html += '    </div>';
+        html += '  </div>';
+        html += '  <p style="color:#555;font-size:0.9rem;line-height:1.5;">' + bi.intro + '</p>';
+        html += '</div>';
+      }
+
+      // === 四大模块卡片 ===
+      var moduleKeys = ['communicationGuide', 'emotionSupport', 'careInfo', 'workInfo'];
+      var moduleConfigs = {
+        communicationGuide: { icon: '💬', label: '沟通与表达', color: '#9B85B8', key: 'communicationGuide' },
+        emotionSupport: { icon: '🌊', label: '情绪与行为', color: '#D4877B', key: 'emotionSupport' },
+        careInfo: { icon: '💊', label: '照护与医疗', color: '#A8C9A0', key: 'careInfo' },
+        workInfo: { icon: '💼', label: '工作与生活', color: '#D4A85A', key: 'workInfo' }
+      };
+
+      html += '<h2 class="section-title">📋 支持档案模块</h2>';
+      html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:24px;">';
+
+      moduleKeys.forEach(function (mk) {
+        var cfg = moduleConfigs[mk];
+        var moduleRecords = DataStore.getRecordsByModule(mk);
+        var recordCount = moduleRecords.length;
+        html += '<div class="profile-module-card" data-module="' + mk + '" style="background:#fff;border-radius:12px;padding:16px;text-align:center;border-left:4px solid ' + cfg.color + ';box-shadow:0 1px 4px rgba(0,0,0,0.04);cursor:pointer;transition:all 0.2s;">';
+        html += '  <div style="font-size:1.8rem;margin-bottom:6px;">' + cfg.icon + '</div>';
+        html += '  <div style="font-weight:600;font-size:0.9rem;color:#333;margin-bottom:2px;">' + cfg.label + '</div>';
+        html += '  <div style="font-size:0.78rem;color:#999;">' + recordCount + ' 条记录</div>';
+        html += '</div>';
+      });
+
+      html += '</div>';
+
+      // === 喜欢 & 不喜欢快捷视图 ===
+      html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px;">';
+      // 喜欢
+      html += '<div style="background:#fff;border-radius:12px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,0.04);">';
+      html += '  <div style="font-weight:600;color:#52C41A;margin-bottom:10px;font-size:0.9rem;">💚 喜欢的事物</div>';
+      if (profile && profile.likesList) {
+        profile.likesList.forEach(function (item) {
+          html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:0.85rem;color:#555;">';
+          html += '  <span>' + item.icon + '</span><span>' + item.title + '</span>';
+          html += '</div>';
+        });
+      }
+      html += '</div>';
+      // 不喜欢
+      html += '<div style="background:#fff;border-radius:12px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,0.04);">';
+      html += '  <div style="font-weight:600;color:#F5222D;margin-bottom:10px;font-size:0.9rem;">🚫 不喜欢的事物</div>';
+      if (profile && profile.dislikesList) {
+        profile.dislikesList.forEach(function (item) {
+          html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:0.85rem;color:#555;">';
+          html += '  <span>' + item.icon + '</span><span>' + item.title + '</span>';
+          html += '</div>';
+        });
+      }
+      html += '</div>';
       html += '</div>';
 
       // 可记录类型
@@ -75,27 +144,6 @@
       html += '    <div style="font-size:0.8rem;color:#888;">参与角色</div>';
       html += '  </div>';
       html += '</div>';
-
-      // 更多功能入口
-      html += '<h2 class="section-title">更多功能</h2>';
-      var moreCards = [
-        { hash: 'life', icon: '💚', title: '我喜欢的生活', desc: '喜好、日常、作息' },
-        { hash: 'communication', icon: '💬', title: '沟通说明书', desc: '怎么说、注意什么' },
-        { hash: 'emotion', icon: '🌈', title: '情绪与行为', desc: '触发、预警、安抚' },
-        { hash: 'care', icon: '🩺', title: '照护与医疗', desc: '过敏、用药、体检' },
-        { hash: 'work', icon: '💼', title: '工作支持', desc: '能做什么、需要什么' },
-        { hash: 'relations', icon: '👥', title: '关系地图', desc: '核心圈、日常圈' },
-        { hash: 'collect', icon: '🤖', title: '对话采集', desc: 'AI帮您建立档案' }
-      ];
-      html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:24px;">';
-      moreCards.forEach(function (card) {
-        html += '<div class="profile-more-card" data-navigate="' + card.hash + '" style="background:#fff;border-radius:12px;padding:16px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,0.04);cursor:pointer;transition:all 0.2s;">';
-        html += '  <div style="font-size:1.5rem;margin-bottom:6px;">' + card.icon + '</div>';
-        html += '  <div style="font-weight:600;font-size:0.9rem;color:#333;margin-bottom:2px;">' + card.title + '</div>';
-        html += '  <div style="font-size:0.78rem;color:#999;">' + card.desc + '</div>';
-        html += '</div>';
-      });
-      html += '</div>';
     }
 
     // 操作按钮
@@ -115,14 +163,12 @@
       });
     }
 
-    // 绑定"更多功能"卡片点击事件
-    profileSection.querySelectorAll('.profile-more-card').forEach(function(card) {
+    // 绑定模块卡片点击事件 → 跳转 #records?module=xxx
+    profileSection.querySelectorAll('.profile-module-card').forEach(function (card) {
       card.addEventListener('click', function () {
-        var target = this.getAttribute('data-navigate');
-        if (target === 'collect') {
-          window.location.hash = 'collect';
-        } else {
-          window.location.hash = target;
+        var moduleKey = this.getAttribute('data-module');
+        if (moduleKey) {
+          window.location.hash = 'records?module=' + moduleKey;
         }
       });
       // hover 效果
