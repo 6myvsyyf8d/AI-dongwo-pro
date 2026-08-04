@@ -120,9 +120,13 @@
       { route: 'profile', icon: '⚙️', label: '管理' }
     ];
 
-    // 心青年只显示3个tab
+    // 心青年显示：首页、对话、档案
     var visibleTabs = (role === 'youth')
-      ? allTabs.slice(0, 3)
+      ? [
+          { route: 'home', icon: '🏠', label: '首页' },
+          { route: 'youth-chat', icon: '💬', label: '对话' },
+          { route: 'archive', icon: '👤', label: '档案' }
+        ]
       : allTabs;
 
     var html = '';
@@ -197,7 +201,8 @@
       join: '加入家庭',
       approvals: '加入申请审批',
       'archive-code': '档案码',
-      welcome: '欢迎'
+      welcome: '欢迎',
+      'youth-chat': 'AI 聊天'
     };
 
     if (titleEl) {
@@ -254,6 +259,13 @@
     // 如果页面不存在则回到首页
     if (!routeMap[basePage]) {
       basePage = 'home';
+    }
+
+    // 离开 youth-chat 时恢复 viewport + 清理 TTS
+    if (currentPage === 'youth-chat' && basePage !== 'youth-chat') {
+      if (window.YouthChat && window.YouthChat.destroy) {
+        window.YouthChat.destroy();
+      }
     }
 
     // 切换 body 模式
@@ -350,6 +362,18 @@
       case 'join': window.JoinRequestPage.renderJoin(); break;
       case 'approvals': window.ApprovalsPage.renderApprovals(); break;
       case 'archive-code': window.ArchiveCodePage.renderArchiveCode(); break;
+      case 'chat':
+        if (window.ChatUI) window.ChatUI.renderHome();
+        break;
+      case 'chat-conversation':
+        if (window.ChatUI) window.ChatUI.renderConversation();
+        break;
+      case 'chat-review':
+        if (window.ChatUI) window.ChatUI.renderReview();
+        break;
+      case 'youth-chat':
+        if (window.YouthChat) window.YouthChat.render();
+        break;
     }
   }
 
