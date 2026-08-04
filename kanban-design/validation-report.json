@@ -6,28 +6,87 @@
   "terminalBlockingSummary": null,
   "skillProvenance": {
     "name": "solo-design",
-    "version": "2026.07.22.00.00.00",
-    "version_source": "skill-release-manifest.json",
-    "runtime_skill_dir": "/Users/jinjun/.trae-cn/builtin/design/default/skills/solo-design",
+    "version": null,
+    "version_source": "unknown",
+    "runtime_skill_dir": null,
     "recorded_at": null,
     "expected_version": "2026.07.22.00.00.00",
-    "status": "manifest_fallback",
-    "read_status": "ok",
-    "reason": "runtime-orchestration-summary.json missing skillProvenance; used skill-release-manifest.json"
+    "status": "observed_unknown",
+    "read_status": "unknown"
   },
   "operatingMode": "free-explore",
   "renderBlockingErrorCount": 0,
-  "softWarningCount": 5,
+  "softWarningCount": 13,
   "renderBlockingErrors": [],
   "errorSignatures": [],
   "softWarnings": [
+    "[html-head-style] chat-conversation.html: found 1 custom <style> block(s) in <head>. The <head> is owned by apply-html-head-contract.mjs; move custom styles before </body> or re-run apply-html-head-contract.mjs <css-path> <html-file> --replace-head to relocate them.",
+    "[html-head-style] chat-home.html: found 1 custom <style> block(s) in <head>. The <head> is owned by apply-html-head-contract.mjs; move custom styles before </body> or re-run apply-html-head-contract.mjs <css-path> <html-file> --replace-head to relocate them.",
+    "[html-head-style] chat-review.html: found 1 custom <style> block(s) in <head>. The <head> is owned by apply-html-head-contract.mjs; move custom styles before </body> or re-run apply-html-head-contract.mjs <css-path> <html-file> --replace-head to relocate them.",
     "[orchestration-summary] runtime-orchestration-summary.json is missing skillProvenance.name/version/version_source. Version provenance will be reported as observed_unknown by external evaluators.",
     "[html-quality] colors_and_type.css: free-explore brand CSS must use one primary hue only; forbidden secondary/accent brand variables found (--kanban-accent-orange, --kanban-accent-purple, --kanban-accent-green). Use --state-success/warning/error/info only for semantic states.",
     "[html-quality] colors_and_type.css: free-explore radius tokens must stay within the restrained 2/4/8/12/16px scale; oversized or forbidden radius tokens found (--kanban-radius-xl: 22px). Do not use 20px+ radii unless the user explicitly requested large rounded shapes.",
+    "[html-quality] analytics.html: hardcoded colors are forbidden outside <style id=\"theme-vars\">. Use brand CSS variables from the token reference.",
+    "[html-quality] chat-conversation.html: hardcoded colors are forbidden outside <style id=\"theme-vars\">. Use brand CSS variables from the token reference.",
+    "[html-quality] chat-conversation.html: free-explore pages must not use secondary/accent brand variables. Use the single primary hue, neutral tints, or --state-success/warning/error/info for real semantic states.",
+    "[html-quality] chat-home.html: hardcoded colors are forbidden outside <style id=\"theme-vars\">. Use brand CSS variables from the token reference.",
+    "[html-quality] chat-review.html: hardcoded colors are forbidden outside <style id=\"theme-vars\">. Use brand CSS variables from the token reference.",
     "[html-quality] kanban.html: hardcoded colors are forbidden outside <style id=\"theme-vars\">. Use brand CSS variables from the token reference.",
     "[html-quality] kanban.html: free-explore pages must not use secondary/accent brand variables. Use the single primary hue, neutral tints, or --state-success/warning/error/info for real semantic states."
   ],
   "repairPlanHints": [
+    {
+      "errorClass": "hardcoded-color-in-body",
+      "owner": "sub-agent",
+      "repairScope": "targeted-token-replace",
+      "strategy": "targeted_token_replace_once",
+      "affectedFiles": [
+        "analytics.html"
+      ],
+      "repairReportPath": null,
+      "repairAlreadyAttempted": false,
+      "allowSourceRead": "no-full-html-read",
+      "maxValidationRuns": 2
+    },
+    {
+      "errorClass": "hardcoded-color-in-body",
+      "owner": "sub-agent",
+      "repairScope": "targeted-token-replace",
+      "strategy": "targeted_token_replace_once",
+      "affectedFiles": [
+        "chat-conversation.html"
+      ],
+      "repairReportPath": null,
+      "repairAlreadyAttempted": false,
+      "allowSourceRead": "no-full-html-read",
+      "maxValidationRuns": 2
+    },
+    {
+      "errorClass": "hardcoded-color-in-body",
+      "owner": "sub-agent",
+      "repairScope": "targeted-token-replace",
+      "strategy": "targeted_token_replace_once",
+      "affectedFiles": [
+        "chat-home.html"
+      ],
+      "repairReportPath": null,
+      "repairAlreadyAttempted": false,
+      "allowSourceRead": "no-full-html-read",
+      "maxValidationRuns": 2
+    },
+    {
+      "errorClass": "hardcoded-color-in-body",
+      "owner": "sub-agent",
+      "repairScope": "targeted-token-replace",
+      "strategy": "targeted_token_replace_once",
+      "affectedFiles": [
+        "chat-review.html"
+      ],
+      "repairReportPath": null,
+      "repairAlreadyAttempted": false,
+      "allowSourceRead": "no-full-html-read",
+      "maxValidationRuns": 2
+    },
     {
       "errorClass": "hardcoded-color-in-body",
       "owner": "sub-agent",
@@ -44,12 +103,20 @@
   ],
   "repairActionTable": [],
   "errorCount": 0,
-  "warningCount": 5,
+  "warningCount": 13,
   "errors": [],
   "warnings": [
+    "[html-head-style] chat-conversation.html: found 1 custom <style> block(s) in <head>. The <head> is owned by apply-html-head-contract.mjs; move custom styles before </body> or re-run apply-html-head-contract.mjs <css-path> <html-file> --replace-head to relocate them.",
+    "[html-head-style] chat-home.html: found 1 custom <style> block(s) in <head>. The <head> is owned by apply-html-head-contract.mjs; move custom styles before </body> or re-run apply-html-head-contract.mjs <css-path> <html-file> --replace-head to relocate them.",
+    "[html-head-style] chat-review.html: found 1 custom <style> block(s) in <head>. The <head> is owned by apply-html-head-contract.mjs; move custom styles before </body> or re-run apply-html-head-contract.mjs <css-path> <html-file> --replace-head to relocate them.",
     "[orchestration-summary] runtime-orchestration-summary.json is missing skillProvenance.name/version/version_source. Version provenance will be reported as observed_unknown by external evaluators.",
     "[html-quality] colors_and_type.css: free-explore brand CSS must use one primary hue only; forbidden secondary/accent brand variables found (--kanban-accent-orange, --kanban-accent-purple, --kanban-accent-green). Use --state-success/warning/error/info only for semantic states.",
     "[html-quality] colors_and_type.css: free-explore radius tokens must stay within the restrained 2/4/8/12/16px scale; oversized or forbidden radius tokens found (--kanban-radius-xl: 22px). Do not use 20px+ radii unless the user explicitly requested large rounded shapes.",
+    "[html-quality] analytics.html: hardcoded colors are forbidden outside <style id=\"theme-vars\">. Use brand CSS variables from the token reference.",
+    "[html-quality] chat-conversation.html: hardcoded colors are forbidden outside <style id=\"theme-vars\">. Use brand CSS variables from the token reference.",
+    "[html-quality] chat-conversation.html: free-explore pages must not use secondary/accent brand variables. Use the single primary hue, neutral tints, or --state-success/warning/error/info for real semantic states.",
+    "[html-quality] chat-home.html: hardcoded colors are forbidden outside <style id=\"theme-vars\">. Use brand CSS variables from the token reference.",
+    "[html-quality] chat-review.html: hardcoded colors are forbidden outside <style id=\"theme-vars\">. Use brand CSS variables from the token reference.",
     "[html-quality] kanban.html: hardcoded colors are forbidden outside <style id=\"theme-vars\">. Use brand CSS variables from the token reference.",
     "[html-quality] kanban.html: free-explore pages must not use secondary/accent brand variables. Use the single primary hue, neutral tints, or --state-success/warning/error/info for real semantic states."
   ],
@@ -80,17 +147,16 @@
     "terminalState": null,
     "skillProvenance": {
       "name": "solo-design",
-      "version": "2026.07.22.00.00.00",
-      "version_source": "skill-release-manifest.json",
-      "runtime_skill_dir": "/Users/jinjun/.trae-cn/builtin/design/default/skills/solo-design",
+      "version": null,
+      "version_source": "unknown",
+      "runtime_skill_dir": null,
       "recorded_at": null,
       "expected_version": "2026.07.22.00.00.00",
-      "status": "manifest_fallback",
-      "read_status": "ok",
-      "reason": "runtime-orchestration-summary.json missing skillProvenance; used skill-release-manifest.json"
+      "status": "observed_unknown",
+      "read_status": "unknown"
     },
     "renderBlockingErrorCount": 0,
-    "softWarningCount": 5,
+    "softWarningCount": 13,
     "renderBlockingErrors": [],
     "repairActionTable": [],
     "nextCheck": {
@@ -107,13 +173,17 @@
     ]
   },
   "projectFileHashes": {
-    ".design": "4d549444298a6ef8c709e8801ec96d0e76026f5e4ff691aa44903279c531f9dc",
+    ".design": "b9c572c458dbde49832837d6051fbe5c0d39bbe5c2a0e0d6791e8616411027f8",
     "colors_and_type.css": "d1bccca573db0745230ab83fab96387232d31ae0c5e0f64b129035744a1ed968",
-    "runtime-orchestration-summary.json": "cf3a22556eb3b5bcd9d80fca61fdc9e96bf0b6d52a0fe9a33b7c5b19214dcc9c",
+    "runtime-orchestration-summary.json": "9279c99a1bcc98e469ce54f47ac6cd4b3c3392b6bcd7bbb92a7cbb9b9c7d20a1",
+    "pages/analytics.html": "dcc7025ecd35ef938b48512864f7c535d33704e3386c600cc7d9bf39bb4959eb",
+    "pages/chat-conversation.html": "b1616e3906912349f869f188ea01918830e0b09580a7e0b8d96570f349c752fe",
+    "pages/chat-home.html": "87baa2e8a811c6fcb9bf6718f3317aaaea66fffeabcb4d607e78bff5e201f668",
+    "pages/chat-review.html": "dccf6191d0e8db71c6f5ac21279d4d08447bad586203a1b5972e8f4bc331239c",
     "pages/kanban.html": "c1e8d0fc3b28470611333ce15aa231bc11350b4e2ce2abd356d47a453d71bca5"
   },
   "designDir": "/Users/jinjun/Desktop/开发/交互式HTML文件和截图（session）-AI懂我-心智障碍者动态支持档案/kanban-design",
-  "expectedPages": 1,
+  "expectedPages": 5,
   "requireInteractions": null,
-  "checkedAt": "2026-08-04T11:14:16.567Z"
+  "checkedAt": "2026-08-04T11:40:30.098Z"
 }

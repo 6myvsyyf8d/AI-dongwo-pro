@@ -1,9 +1,19 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" class="light">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AI聊聊 · 对话首页</title>
+<style id="theme-vars">
+:root,[data-theme="light"]{--kanban-bg-page:#f5f5f7;--kanban-bg-card:#ffffff;--kanban-bg-header:#ffffff;--kanban-bg-input:#f5f5f7;--kanban-bg-hover:rgba(0,0,0,0.04);--kanban-text-primary:#1d1d1f;--kanban-text-secondary:#6e6e73;--kanban-text-muted:#aeaeb2;--kanban-text-inverse:#ffffff;--kanban-border:#e5e5ea;--kanban-border-light:rgba(0,0,0,0.06);--kanban-accent-orange:#e7ad51;--kanban-accent-purple:#9ba5ff;--kanban-accent-green:#4fc083;--kanban-primary:#5e6ad2;--kanban-primary-hover:#4f5bc4;--kanban-primary-light:rgba(94,106,210,0.08);--kanban-overlay:rgba(0,0,0,0.5);--kanban-sheet-bg:#ffffff;--kanban-sheet-handle:#d1d1d6;--kanban-input-border:#e5e5ea;--kanban-input-focus:#5e6ad2;--kanban-error:#e34d4d;--kanban-error-bg:rgba(227,77,77,0.06);--kanban-success:#4fc083;--kanban-toast-bg:rgba(0,0,0,0.85);--kanban-shadow-sm:0 1px 3px rgba(0,0,0,0.06);--kanban-shadow-md:0 2px 12px rgba(0,0,0,0.08);--kanban-shadow-lg:0 8px 40px rgba(0,0,0,0.16);--kanban-shadow-sheet:0 -4px 24px rgba(0,0,0,0.12);--kanban-radius-sm:8px;--kanban-radius-md:12px;--kanban-radius-lg:16px;--kanban-radius-xl:22px;--kanban-radius-full:9999px;--kanban-dot-size:8px;--kanban-background:#f5f5f7;--kanban-foreground:#1d1d1f;--kanban-card:#ffffff;--kanban-card-foreground:#1d1d1f;--kanban-primary:#5e6ad2;--kanban-primary-foreground:#ffffff;--kanban-muted:#f5f5f7;--kanban-muted-foreground:#6e6e73;--kanban-border:#e5e5ea;--kanban-ring:#5e6ad2;--kanban-radius-sm:8px;--kanban-radius-md:12px;--kanban-radius-lg:16px}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+<style type="text/tailwindcss">
+@theme inline{--color-background:var(--kanban-background);--color-foreground:var(--kanban-foreground);--color-card:var(--kanban-card);--color-card-foreground:var(--kanban-card-foreground);--color-primary:var(--kanban-primary);--color-primary-foreground:var(--kanban-primary-foreground);--color-muted:var(--kanban-muted);--color-muted-foreground:var(--kanban-muted-foreground);--color-border:var(--kanban-border);--color-ring:var(--kanban-ring);--radius-sm:var(--kanban-radius-sm);--radius-md:var(--kanban-radius-md);--radius-lg:var(--kanban-radius-lg)}@layer base{body{background:var(--kanban-background);color:var(--kanban-foreground)}}
+</style>
+<style id="semantic-token-fallback">
+.bg-background{background-color:var(--kanban-background)}.text-foreground{color:var(--kanban-foreground)}.bg-card{background-color:var(--kanban-card)}.text-primary{color:var(--kanban-primary)}.bg-primary{background-color:var(--kanban-primary)}.bg-muted{background-color:var(--kanban-muted)}.border-border{border-color:var(--kanban-border)}
+</style>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -19,10 +29,9 @@
 
   .phone-frame {
     width: 375px;
-    min-height: 812px;
+    min-height: 100vh;
     background: #F7F4FB;
     border-radius: 20px;
-    overflow: hidden;
     box-shadow: 0 2px 12px rgba(82,63,113,0.08), 0 8px 40px rgba(82,63,113,0.12);
     display: flex;
     flex-direction: column;
@@ -253,4 +262,20 @@
   <div class="page-footer">AI懂我 · 心智障碍者动态支持档案</div>
 </div>
 </body>
+<script>
+  // 「开始聊天」→ 跳转对话页
+  document.querySelector('.btn-start-chat')?.addEventListener('click', function() {
+    window.location.href = 'chat-conversation.html';
+  });
+  // 待确认卡 → 跳转整理页
+  document.querySelector('.pending-card')?.addEventListener('click', function(e) {
+    e.preventDefault();
+    window.location.href = 'chat-review.html';
+  });
+  // 查看全部
+  document.querySelector('.view-all-link')?.addEventListener('click', function(e) {
+    e.preventDefault();
+    alert('聊天记录功能即将上线');
+  });
+</script>
 </html>

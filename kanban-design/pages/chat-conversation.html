@@ -1,9 +1,19 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" class="light">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AI聊聊 · 对话界面</title>
+  <style id="theme-vars">
+:root,[data-theme="light"]{--kanban-bg-page:#f5f5f7;--kanban-bg-card:#ffffff;--kanban-bg-header:#ffffff;--kanban-bg-input:#f5f5f7;--kanban-bg-hover:rgba(0,0,0,0.04);--kanban-text-primary:#1d1d1f;--kanban-text-secondary:#6e6e73;--kanban-text-muted:#aeaeb2;--kanban-text-inverse:#ffffff;--kanban-border:#e5e5ea;--kanban-border-light:rgba(0,0,0,0.06);--kanban-accent-orange:#e7ad51;--kanban-accent-purple:#9ba5ff;--kanban-accent-green:#4fc083;--kanban-primary:#5e6ad2;--kanban-primary-hover:#4f5bc4;--kanban-primary-light:rgba(94,106,210,0.08);--kanban-overlay:rgba(0,0,0,0.5);--kanban-sheet-bg:#ffffff;--kanban-sheet-handle:#d1d1d6;--kanban-input-border:#e5e5ea;--kanban-input-focus:#5e6ad2;--kanban-error:#e34d4d;--kanban-error-bg:rgba(227,77,77,0.06);--kanban-success:#4fc083;--kanban-toast-bg:rgba(0,0,0,0.85);--kanban-shadow-sm:0 1px 3px rgba(0,0,0,0.06);--kanban-shadow-md:0 2px 12px rgba(0,0,0,0.08);--kanban-shadow-lg:0 8px 40px rgba(0,0,0,0.16);--kanban-shadow-sheet:0 -4px 24px rgba(0,0,0,0.12);--kanban-radius-sm:8px;--kanban-radius-md:12px;--kanban-radius-lg:16px;--kanban-radius-xl:22px;--kanban-radius-full:9999px;--kanban-dot-size:8px;--kanban-background:#f5f5f7;--kanban-foreground:#1d1d1f;--kanban-card:#ffffff;--kanban-card-foreground:#1d1d1f;--kanban-primary:#5e6ad2;--kanban-primary-foreground:#ffffff;--kanban-muted:#f5f5f7;--kanban-muted-foreground:#6e6e73;--kanban-border:#e5e5ea;--kanban-ring:#5e6ad2;--kanban-radius-sm:8px;--kanban-radius-md:12px;--kanban-radius-lg:16px}
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+  <style type="text/tailwindcss">
+@theme inline{--color-background:var(--kanban-background);--color-foreground:var(--kanban-foreground);--color-card:var(--kanban-card);--color-card-foreground:var(--kanban-card-foreground);--color-primary:var(--kanban-primary);--color-primary-foreground:var(--kanban-primary-foreground);--color-muted:var(--kanban-muted);--color-muted-foreground:var(--kanban-muted-foreground);--color-border:var(--kanban-border);--color-ring:var(--kanban-ring);--radius-sm:var(--kanban-radius-sm);--radius-md:var(--kanban-radius-md);--radius-lg:var(--kanban-radius-lg)}@layer base{body{background:var(--kanban-background);color:var(--kanban-foreground)}}
+  </style>
+  <style id="semantic-token-fallback">
+.bg-background{background-color:var(--kanban-background)}.text-foreground{color:var(--kanban-foreground)}.bg-card{background-color:var(--kanban-card)}.text-primary{color:var(--kanban-primary)}.bg-primary{background-color:var(--kanban-primary)}.bg-muted{background-color:var(--kanban-muted)}.border-border{border-color:var(--kanban-border)}
+  </style>
   <style>
     *, *::before, *::after {
       box-sizing: border-box;
@@ -38,10 +48,9 @@
 
     .phone-frame {
       width: 375px;
-      height: 812px;
+      min-height: 100vh;
       background: var(--bg);
       border-radius: 32px;
-      overflow: hidden;
       display: flex;
       flex-direction: column;
       box-shadow:
@@ -362,9 +371,13 @@
       border: 1.5px solid rgba(94,106,210,0.25);
       color: var(--accent);
       font-size: 13px;
+      font-family: inherit;
       cursor: pointer;
       white-space: nowrap;
       transition: background 0.15s, transform 0.15s;
+      outline: none;
+      -webkit-appearance: none;
+      -webkit-tap-highlight-color: transparent;
     }
 
     .quick-pill:active {
@@ -599,9 +612,9 @@
         <span class="quick-toggle-icon">&#8963;</span>
       </div>
       <div class="quick-row">
-        <span class="quick-pill">＋另一件事</span>
-        <span class="quick-pill">补充刚才</span>
-        <span class="quick-pill">记录进步</span>
+        <button type="button" class="quick-pill">＋另一件事</button>
+        <button type="button" class="quick-pill">补充刚才</button>
+        <button type="button" class="quick-pill">记录进步</button>
       </div>
     </div>
 
@@ -684,6 +697,46 @@
           e.preventDefault();
           sendBtn.click();
         }
+      });
+
+      /* ── Back ── */
+      document.querySelector('.btn-back')?.addEventListener('click', function() {
+        window.location.href = 'chat-home.html';
+      });
+
+      /* ── End button ── */
+      document.querySelector('.btn-end')?.addEventListener('click', function() {
+        if (confirm('确定要结束当前对话吗？已生成的草稿可以在整理页面查看。')) {
+          window.location.href = 'chat-review.html';
+        }
+      });
+
+      /* ── Drafts button ── */
+      document.querySelector('.btn-drafts')?.addEventListener('click', function() {
+        window.location.href = 'chat-review.html';
+      });
+      document.querySelector('.status-bar')?.addEventListener('click', function(e) {
+        if (e.target.closest('.btn-drafts')) return;
+        window.location.href = 'chat-review.html';
+      });
+
+      /* ── Quick toggle ── */
+      var toggle = document.querySelector('.quick-toggle');
+      var quickReplies = document.querySelector('.quick-replies');
+      var toggleIcon = document.querySelector('.quick-toggle-icon');
+      toggle?.addEventListener('click', function() {
+        if (quickReplies) quickReplies.classList.toggle('collapsed');
+        if (toggleIcon) toggleIcon.textContent = quickReplies?.classList.contains('collapsed') ? '⌄' : '⌃';
+      });
+
+      /* ── Plus button ── */
+      document.querySelector('.btn-plus')?.addEventListener('click', function() {
+        editor.focus();
+      });
+
+      /* ── Voice button ── */
+      document.querySelector('.btn-voice')?.addEventListener('click', function() {
+        alert('语音输入即将上线');
       });
     })();
   </script>

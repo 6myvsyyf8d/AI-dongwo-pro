@@ -1,0 +1,119 @@
+/* ==========================================
+   AI懂我 · 对话 AI 标记样式
+   用于 ChatMarkdown 渲染后的气泡内文
+   ========================================== */
+
+/* AI 气泡内 Markdown 样式 */
+.chat-bubble-ai p {
+  margin: 0 0 6px;
+}
+
+.chat-bubble-ai p:last-child {
+  margin-bottom: 0;
+}
+
+.chat-bubble-ai strong {
+  color: #3D3327;
+  font-weight: 700;
+}
+
+.chat-bubble-ai em {
+  color: #6B5D4F;
+}
+
+.chat-bubble-ai ul,
+.chat-bubble-ai ol {
+  margin: 4px 0;
+  padding-left: 18px;
+}
+
+.chat-bubble-ai li {
+  margin-bottom: 2px;
+  font-size: 13.5px;
+}
+
+.chat-bubble-ai code {
+  background: rgba(94, 106, 210, 0.08);
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-family: 'SF Mono', 'Menlo', monospace;
+}
+
+.chat-bubble-ai blockquote {
+  border-left: 2px solid rgba(94, 106, 210, 0.3);
+  padding-left: 10px;
+  margin: 4px 0;
+  color: #8A8F98;
+}
+
+.chat-bubble-ai a {
+  color: var(--chat-purple, #5E6AD2);
+  text-decoration: underline;
+}
+
+.chat-bubble-ai h1,
+.chat-bubble-ai h2,
+.chat-bubble-ai h3,
+.chat-bubble-ai h4 {
+  font-size: 15px;
+  font-weight: 700;
+  margin: 6px 0 4px;
+}
+
+.chat-bubble-ai hr {
+  border: none;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  margin: 8px 0;
+}
+
+/* 用户气泡内样式 */
+.chat-bubble-user a {
+  color: rgba(255, 255, 255, 0.9);
+  text-decoration: underline;
+}
+
+/* 打字机效果（可选） */
+.chat-typing-cursor::after {
+  content: '|';
+  animation: blink 1s step-end infinite;
+  color: var(--chat-purple, #5E6AD2);
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+/* 进度条指示器 */
+.chat-progress-bar {
+  height: 2px;
+  background: rgba(94, 106, 210, 0.15);
+  border-radius: 1px;
+  overflow: hidden;
+  margin: 8px 0;
+}
+
+.chat-progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #7562a6, #5E6AD2);
+  border-radius: 1px;
+  transition: width 0.4s ease;
+}
+
+/* 保存中状态动画 */
+.chat-saving-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--chat-purple, #5E6AD2);
+  margin-left: 4px;
+  animation: savingPulse 1s ease-in-out infinite;
+}
+
+@keyframes savingPulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}

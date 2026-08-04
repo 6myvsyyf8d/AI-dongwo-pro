@@ -15,7 +15,7 @@
           "contentHeight": 900,
           "viewportWidth": 375,
           "sourceHash": "fnv1a-819ec0f4",
-          "measuredAt": 1785842318179
+          "measuredAt": 1785843817422
         }
       },
       "devMetadata": {
@@ -30,15 +30,15 @@
       "version": 1,
       "createdAt": 1754294400000,
       "canvasData": {
-        "x": 430,
+        "x": 309,
         "y": 0,
         "group": 0,
         "layoutSnapshot": {
           "version": 1,
           "contentHeight": 20,
           "viewportWidth": 375,
-          "sourceHash": "fnv1a-108ab150",
-          "measuredAt": 1785842318179
+          "sourceHash": "fnv1a-38e3368f",
+          "measuredAt": 1785843817422
         }
       },
       "devMetadata": {
@@ -53,15 +53,15 @@
       "version": 1,
       "createdAt": 1754294400000,
       "canvasData": {
-        "x": 860,
+        "x": 618,
         "y": 0,
         "group": 0,
         "layoutSnapshot": {
           "version": 1,
           "contentHeight": 20,
           "viewportWidth": 375,
-          "sourceHash": "fnv1a-919d2fd0",
-          "measuredAt": 1785842318179
+          "sourceHash": "fnv1a-300089b4",
+          "measuredAt": 1785843817422
         }
       },
       "devMetadata": {
@@ -76,19 +76,42 @@
       "version": 1,
       "createdAt": 1754294400000,
       "canvasData": {
-        "x": 1290,
+        "x": 927,
         "y": 0,
         "group": 0,
         "layoutSnapshot": {
           "version": 1,
           "contentHeight": 900,
           "viewportWidth": 375,
-          "sourceHash": "fnv1a-cd60da2a",
-          "measuredAt": 1785842318179
+          "sourceHash": "fnv1a-1468a034",
+          "measuredAt": 1785843776327
         }
       },
       "devMetadata": {
         "htmlSrc": "pages/chat-review.html",
+        "interactions": []
+      }
+    },
+    {
+      "id": "page-analytics",
+      "title": "5B-分析页",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1754294400000,
+      "canvasData": {
+        "x": 1236,
+        "y": 0,
+        "group": 0,
+        "layoutSnapshot": {
+          "version": 1,
+          "contentHeight": 20,
+          "viewportWidth": 375,
+          "sourceHash": "fnv1a-28fc1350",
+          "measuredAt": 1785843817422
+        }
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/analytics.html",
         "interactions": []
       }
     }

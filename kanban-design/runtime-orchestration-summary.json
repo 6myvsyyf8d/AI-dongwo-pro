@@ -1,40 +1,97 @@
 {
   "project": {
-    "resolvedLane": "free_exploration",
+    "resolvedLane": "existing_edit_add_comparison",
     "selectedIntentWorkflowRead": true,
+    "deviceType": "mobile",
     "contextRequirementsLoaded": [
-      {"path": "shared-runtime/runtime-boundaries/lane-runtime-contracts.md", "readStatus": "loaded", "bodyRead": true},
-      {"path": "shared-runtime/agent-dispatch-runtime/lane-dispatch-index.md", "readStatus": "loaded", "bodyRead": true},
-      {"path": "delivery-quality/page-rendering-quality-gate.md", "readStatus": "loaded", "bodyRead": true},
-      {"path": "delivery-quality/design-artifact-validation.md", "readStatus": "loaded", "bodyRead": true},
-      {"path": "delivery-quality/delivery-evidence-contract.md", "readStatus": "loaded", "bodyRead": true},
-      {"path": "visual-experience/visual-experience-guidelines.md", "readStatus": "loaded", "bodyRead": true}
+      {
+        "path": "shared-runtime/runtime-boundaries/lane-runtime-contracts.md",
+        "readStatus": "loaded",
+        "bodyRead": true
+      },
+      {
+        "path": "shared-runtime/agent-dispatch-runtime/lane-dispatch-index.md",
+        "readStatus": "loaded",
+        "bodyRead": true
+      },
+      {
+        "path": "delivery-quality/page-rendering-quality-gate.md",
+        "readStatus": "loaded",
+        "bodyRead": true
+      },
+      {
+        "path": "delivery-quality/design-artifact-validation.md",
+        "readStatus": "loaded",
+        "bodyRead": true
+      },
+      {
+        "path": "delivery-quality/delivery-evidence-contract.md",
+        "readStatus": "loaded",
+        "bodyRead": true
+      },
+      {
+        "path": "shared-runtime/agent-dispatch-runtime/shared-page-rendering-kernel.md",
+        "readStatus": "loaded",
+        "bodyRead": true
+      }
     ],
     "contextReadScope": {
       "mainAgent": {
-        "forbiddenReads": ["other intent-workflows/**", "Sub-Agent implementation files before dispatch"]
+        "forbiddenReads": [
+          "other intent-workflows/**",
+          "Sub-Agent implementation files before dispatch"
+        ]
       },
       "pageSubAgent": {
-        "allowedReads": ["current lane page runtime guide", "current lane dispatch contract excerpt", "current Page Packet", "supplementaryReads[] only"],
-        "forbiddenReads": ["SKILL.md full re-read", "other intent-workflows/**", "full runtime-orchestration-summary.json unless explicitly sliced"]
+        "allowedReads": [
+          "current lane page runtime guide",
+          "current lane dispatch contract excerpt",
+          "current Page Packet",
+          "supplementaryReads[] only"
+        ],
+        "forbiddenReads": [
+          "SKILL.md full re-read",
+          "other intent-workflows/**",
+          "full runtime-orchestration-summary.json unless explicitly sliced"
+        ]
       }
     },
     "validationRunDiscipline": {
       "maxFullValidationRuns": 2,
       "softWarningsTriggerRepair": false,
       "blockingRepairMode": "targeted-once",
-      "forbiddenRepairTriggers": ["soft-warning-only", "provenance-warning-only", "style-warning-only"]
+      "forbiddenRepairTriggers": [
+        "soft-warning-only",
+        "provenance-warning-only",
+        "style-warning-only"
+      ]
     },
     "lowValueCallWatchdog": {
       "applies": true,
-      "noProgressSignals": ["no_tool_call", "no_artifact_diff", "no_structured_decision"],
+      "noProgressSignals": [
+        "no_tool_call",
+        "no_artifact_diff",
+        "no_structured_decision"
+      ],
       "noProgressNextAction": "enter_readiness_or_blocked_summary"
     },
     "intentProfile": {
-      "routingReason": "free_exploration: no Library, no restore target, open-ended kanban page creation with stateful interactions",
-      "caseFamily": "free_exploration",
-      "operatingMode": "free-explore",
-      "complexity": "stateful-free-fast"
+      "routingReason": "existing_edit_add_comparison: adding analytics page to existing kanban-design project",
+      "caseFamily": "existing_edit_add_comparison",
+      "operatingMode": "project-add-page",
+      "complexity": "single-page-add"
+    },
+    "sourceProjectLaneHeritage": {
+      "originalLane": "free_exploration",
+      "styleContinuityAnchors": {
+        "colorSystem": "iOS-style neutral palette (#f5f5f7 bg, #ffffff cards, #1d1d1f text). Status dots: orange #e7ad51, purple #9ba5ff, green #4fc083. Primary accent #5e6ad2.",
+        "shapeSystem": "Rounded rectangles: sm 8px, md 12px, lg 16px, xl 22px. Full pill for buttons and tags.",
+        "typographySystem": "System sans-serif. 19px bold for greeting, 13-14px body. Apple-style UI typography.",
+        "spacingSystem": "Apple HIG: 8px base grid, 16px section padding, 12px card gaps.",
+        "componentLanguage": "iOS-like: pill buttons, sheet modals, segmented controls, table-row cards with status indicators.",
+        "surfaceAndDepth": "Flat design with subtle shadows. Cards have 0_1px_3px shadow. Sheet has 0_-4px_24px shadow.",
+        "interactionTone": "Swift and responsive."
+      }
     },
     "cssPreflightEvidence": {
       "applies": true,
@@ -49,17 +106,8 @@
         "semanticMappings": "resolved"
       },
       "retryCount": 0,
-      "blockingReason": null
-    },
-    "styleContinuityAnchors": {
-      "colorSystem": "iOS-style neutral palette (#f5f5f7 bg, #ffffff cards, #1d1d1f text). Status dots: orange #e7ad51, purple #9ba5ff, green #4fc083. Primary accent #5e6ad2.",
-      "shapeSystem": "Rounded rectangles: sm 8px, md 12px, lg 16px, xl 22px. Full pill for buttons and tags.",
-      "typographySystem": "System sans-serif. 19px bold for greeting, 13-14px body. Apple-style UI typography.",
-      "spacingSystem": "Apple HIG: 8px base grid, 16px section padding, 12px card gaps.",
-      "componentLanguage": "iOS-like: pill buttons, sheet modals, segmented controls, table-row cards with status indicators.",
-      "surfaceAndDepth": "Flat design with subtle shadows. Cards have 0_1px_3px shadow. Sheet has 0_-4px_24px shadow.",
-      "imageryAndIconography": "Emoji + Lucide icons. Column headers use emoji (📋🔄✅) per user spec.",
-      "interactionTone": "Swift and responsive. Sheet slides up from bottom. Toast appears 1.5s. Cards move between columns."
+      "blockingReason": null,
+      "prefixMode": "standard"
     },
     "pages": {
       "page-kanban": {
@@ -69,10 +117,70 @@
         "htmlSrc": "pages/kanban.html",
         "pageType": "task-driven",
         "businessScenario": "任务看板管理",
-        "qualityRisks": ["dense-kanban-grid", "sheet-form-complexity"],
+        "qualityRisks": [
+          "dense-kanban-grid",
+          "sheet-form-complexity"
+        ],
         "componentPlan": [],
         "imagePlan": []
+      },
+      "page-chat-home": {
+        "nodeId": "page-chat-home",
+        "slug": "chat-home",
+        "title": "AI聊聊 · 对话首页",
+        "htmlSrc": "pages/chat-home.html",
+        "pageType": "task-driven",
+        "businessScenario": "对话式采集首页",
+        "qualityRisks": [],
+        "componentPlan": [],
+        "imagePlan": []
+      },
+      "page-chat-conversation": {
+        "nodeId": "page-chat-conversation",
+        "slug": "chat-conversation",
+        "title": "AI聊聊 · 对话界面",
+        "htmlSrc": "pages/chat-conversation.html",
+        "pageType": "task-driven",
+        "businessScenario": "对话式采集界面",
+        "qualityRisks": [],
+        "componentPlan": [],
+        "imagePlan": []
+      },
+      "page-chat-review": {
+        "nodeId": "page-chat-review",
+        "slug": "chat-review",
+        "title": "AI聊聊 · 整理确认",
+        "htmlSrc": "pages/chat-review.html",
+        "pageType": "task-driven",
+        "businessScenario": "对话整理确认",
+        "qualityRisks": [],
+        "componentPlan": [],
+        "imagePlan": []
+      },
+      "page-analytics": {
+        "nodeId": "page-analytics",
+        "slug": "analytics",
+        "title": "5B-分析页",
+        "htmlSrc": "pages/analytics.html",
+        "pageType": "information-dense",
+        "businessScenario": "数据分析日报/周报/月报",
+        "qualityRisks": [
+          "dense-metrics",
+          "custom-css-colic",
+          "tab-stateful",
+          "chart-css-only"
+        ],
+        "componentPlan": [],
+        "imagePlan": [],
+        "externalCss": [
+          "css/analytics.css"
+        ]
       }
-    }
-  }
+    },
+    "deviceType": "mobile"
+  },
+  "skillProvenance": {
+    "name": "solo-design"
+  },
+  "pages": []
 }
