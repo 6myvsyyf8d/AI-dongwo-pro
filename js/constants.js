@@ -363,7 +363,8 @@
     'chat': 'chat',
     'chat-conversation': 'chat-conversation',
     'chat-review': 'chat-review',
-    'youth-chat': 'youth-chat'
+    'youth-chat': 'youth-chat',
+    'batch-import': 'batch-import'
   };
 
   /** 侧边栏菜单配置（普通角色：youth/parent/teacher/caregiver） */

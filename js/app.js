@@ -1,7 +1,7 @@
 /**
  * ============================================================
  * AI懂我 - 心智障碍者动态可视化支持档案
- * 小雨虚拟案例原型 v2.0 - 多角色协同记录系统
+ * v1.0-20260804-final - 多角色协同记录系统
  * 主应用脚本 app.js（入口文件）
  * ============================================================
  * 依赖模块（按加载顺序）：
@@ -374,6 +374,9 @@
       case 'youth-chat':
         if (window.YouthChat) window.YouthChat.render();
         break;
+      case 'batch-import':
+        if (window.BatchImport) window.BatchImport.render('batch-import-content');
+        break;
     }
   }
 
@@ -388,6 +391,12 @@
   function renderHome() {
     var user = DataStore.getCurrentUser() || appState.currentUser;
     var role = user ? user.role : 'parent';
+
+    // 政府角色：渲染宏观数据看板
+    if (role === 'government' && window.GovernmentDashboard) {
+      window.GovernmentDashboard.render();
+      return;
+    }
 
     // 渲染Hero区域的基本信息
     var heroNameEl = document.getElementById('hero-name');
@@ -496,6 +505,7 @@
       ],
       admin: [
         { hash: 'archive', icon: '📋', title: '用户管理', desc: '管理系统用户账号' },
+        { hash: 'batch-import', icon: '📥', title: '批量导入', desc: 'CSV批量导入记录数据' },
         { hash: 'analytics', icon: '📈', title: '系统数据', desc: '系统运行数据看板' },
         { hash: 'charts', icon: '📊', title: '数据可视化', desc: '统计图表概览' }
       ]
@@ -2015,8 +2025,6 @@
 
     // 应用当前角色的隐私设置
     window.Permissions.applyPrivacy(currentRole);
-
-    console.log('AI懂我 - PIN码账号系统已初始化');
   }
 
   /* ==========================================================

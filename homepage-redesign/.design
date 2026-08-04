@@ -1,0 +1,40 @@
+{
+  "data": [
+    {
+      "id": "page-home",
+      "title": "AI懂我 · 首页",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1722748800000,
+      "canvasData": {
+        "x": 0,
+        "y": 0,
+        "group": 0,
+        "layoutSnapshot": {
+          "version": 1,
+          "contentHeight": 900,
+          "viewportWidth": 375,
+          "sourceHash": "fnv1a-placeholder",
+          "measuredAt": 1722748800000
+        }
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/index.html",
+        "interactions": []
+      }
+    }
+  ],
+  "config": {
+    "autoLayout": true,
+    "deviceType": "mobile",
+    "projectName": "AI懂我 · 首页优化 (jun)",
+    "designLibrary": {
+      "name": "jun",
+      "id": "UG0GU__HID2B03",
+      "version": "4",
+      "scope": "custom-global",
+      "path": "/Users/jinjun/.trae-cn/design_libraries/UG0GU__HID2B03",
+      "versionSource": "metadata.json"
+    }
+  }
+}

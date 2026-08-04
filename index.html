@@ -319,6 +319,12 @@
     <!-- ===== 心青年无障碍聊天 #youth-chat ===== -->
     <section id="youth-chat" class="page-section"></section>
 
+    <!-- ===== 批量导入 #batch-import ===== -->
+    <section id="batch-import" class="page-section">
+      <div class="page-header"><span class="page-title">批量导入</span></div>
+      <div id="batch-import-content" style="padding-top:12px;"></div>
+    </section>
+
   </main>
 
   <!-- ========== 底部导航 TabBar ========== -->
@@ -347,45 +353,48 @@
   <div class="modal-overlay" id="quick-card-modal" style="display:none;"></div>
 
   <!-- 导出PDF库 -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js?v=1.0.0"></script>
   <!-- 图表库 -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js?v=1.0.0"></script>
 
   <!-- Markdown 解析 & XSS 防护 -->
-  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js?v=1.0.0"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js?v=1.0.0"></script>
 
   <!-- 模块脚本（按依赖顺序加载） -->
-  <script src="js/utils.js"></script>
-  <script src="js/constants.js"></script>
-  <script src="js/modules.js"></script>
-  <script src="js/state.js"></script>
-  <script src="js/storage.js"></script>
-  <script src="js/auth.js"></script>
-  <script src="js/permissions.js"></script>
-  <script src="js/profile.js"></script>
-  <script src="js/records.js"></script>
-  <script src="js/quickcard.js"></script>
-  <script src="js/timeline.js"></script>
+  <script src="js/utils.js?v=1.0-final"></script>
+  <script src="js/constants.js?v=1.0-final"></script>
+  <script src="js/modules.js?v=1.0-final"></script>
+  <script src="js/state.js?v=1.0-final"></script>
+  <script src="js/storage.js?v=1.0-final"></script>
+  <script src="js/auth.js?v=1.0-final"></script>
+  <script src="js/permissions.js?v=1.0-final"></script>
+  <script src="js/profile.js?v=1.0-final"></script>
+  <script src="js/records.js?v=1.0-final"></script>
+  <script src="js/quickcard.js?v=1.0-final"></script>
+  <script src="js/timeline.js?v=1.0-final"></script>
   <!-- 新版对话引擎（chatbot-templates → classifier → providers → markdown → chatbot） -->
-  <script src="js/chatbot-templates.js"></script>
-  <script src="js/chatbot-classifier.js"></script>
-  <script src="js/chatbot-providers.js"></script>
-  <script src="js/chat-markdown.js"></script>
-  <script src="js/chatbot.js"></script>
-  <script src="js/chat-ui.js"></script>
-  <script src="js/youth-tts.js"></script>
-  <script src="js/youth-chat.js"></script>
-  <script src="js/charts.js"></script>
-  <script src="js/analytics-engine.js"></script>
-  <script src="js/welcome.js"></script>
-  <script src="js/grants.js"></script>
-  <script src="js/join-request.js"></script>
-  <script src="js/approvals.js"></script>
-  <script src="js/archive-code.js"></script>
+  <script src="js/chatbot-templates.js?v=1.0-final"></script>
+  <script src="js/chatbot-classifier.js?v=1.0-final"></script>
+  <script src="js/chatbot-providers.js?v=1.0-final"></script>
+  <script src="js/chat-markdown.js?v=1.0-final"></script>
+  <script src="js/chatbot.js?v=1.0-final"></script>
+  <script src="js/chat-ui.js?v=1.0-final"></script>
+  <script src="js/youth-tts.js?v=1.0-final"></script>
+  <script src="js/youth-chat.js?v=1.0-final"></script>
+  <script src="js/charts.js?v=1.0-final"></script>
+  <script src="js/analytics-engine.js?v=1.0-final"></script>
+  <script src="js/welcome.js?v=1.0-final"></script>
+  <script src="js/grants.js?v=1.0-final"></script>
+  <script src="js/join-request.js?v=1.0-final"></script>
+  <script src="js/approvals.js?v=1.0-final"></script>
+  <script src="js/archive-code.js?v=1.0-final"></script>
+  <!-- 新模块：政府看板 + 批量导入 -->
+  <script src="js/government.js?v=1.0-final"></script>
+  <script src="js/batch-import.js?v=1.0-final"></script>
 
   <!-- 主入口（最后加载） -->
-  <script src="js/app.js"></script>
+  <script src="js/app.js?v=1.0-final"></script>
 
 </body>
 </html>
