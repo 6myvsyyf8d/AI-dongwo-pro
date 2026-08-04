@@ -178,7 +178,7 @@
     }
   };
 
-  /** 隐私分级配置（ABCD四级体系） */
+  /** 隐私分级配置（5级体系） */
   var privacyLevels = {
     youth:      ['A', 'B'],
     parent:     ['A', 'B', 'C', 'D'],
@@ -186,33 +186,6 @@
     caregiver:  ['A', 'B', 'C'],
     government: ['A'],
     admin:      ['A', 'B', 'C', 'D']
-  };
-
-  /** 隐私级别标签 */
-  var PRIVACY_LABELS = {
-    A: { label: 'A级·公开', desc: '所有角色可见', color: '#52C41A' },
-    B: { label: 'B级·内部', desc: '心青年+家长+老师可见', color: '#1890FF' },
-    C: { label: 'C级·照护', desc: '心青年+家长+老师+影子老师可见', color: '#FAAD14' },
-    D: { label: 'D级·私密', desc: '仅家长+管理员可见', color: '#F5222D' }
-  };
-
-  /** 模块标签池（每个模块的可用标签） */
-  var MODULE_TAGS = {
-    communicationGuide: ['短句', '慢语速', '耐心等待', '提前告知', '视觉提示', '图片辅助', '选择性提问', '确认理解', '正向引导', '重复确认'],
-    emotionSupport: ['焦虑', '触发因素', '预警信号', '安抚策略', '情绪波动', '感官过载', '自我保护', '恢复平静', '情绪表达', '转移注意力'],
-    careInfo: ['过敏', '用药', '体检', '睡眠', '饮食', '卫生', '锻炼', '身体检查', '作息规律', '个人护理'],
-    workInfo: ['工作任务', '技能训练', '支持需求', '就业准备', '社区适应', '日常活动', '独立生活', '社交技能', '步骤分解', '职业培训']
-  };
-
-  /** 记录类型到档案模块的映射 */
-  var RECORD_TYPE_TO_MODULE = {
-    mood: 'emotionSupport',
-    care: 'careInfo',
-    activity: 'workInfo',
-    communication: 'communicationGuide',
-    emotion: 'emotionSupport',
-    strategy: 'emotionSupport',
-    note: null
   };
 
   /** 角色名称映射（中文） */
@@ -363,7 +336,8 @@
     'calendar': 'calendar',
     'archive': 'archive',
     'analytics': 'analytics',
-    'records': 'records'
+    'records': 'records',
+    'quickcard': 'quickcard'
   };
 
   /** 侧边栏菜单配置（普通角色：youth/parent/teacher/caregiver） */
@@ -553,6 +527,36 @@
     '难过': 'withdrawal'
   };
 
+  /* ==========================================================
+   * 模块标签池 — 每条记录可按模块打标签
+   * ========================================================== */
+
+  var MODULE_TAGS = {
+    communication: ['对话', '短句', '图片卡', '示范', '选择', '比喻', '指令', '反馈', '社交故事', '视觉提示'],
+    emotion: ['焦虑', '开心', '生气', '难过', '兴奋', '安抚', '触发', '预警', '感官', '深压力'],
+    care: ['过敏', '用药', '饮食', '睡眠', '体检', '卫生', '安全', '过敏原', '用药提醒', '作息'],
+    work: ['烘焙', '清洁', '包装', '电子琴', '散步', '绘画', '步骤分解', '任务支持', '就业', '技能']
+  };
+
+  /** 记录类型到档案模块的映射 */
+  var TYPE_TO_MODULE = {
+    mood: 'emotion',
+    emotion: 'emotion',
+    communication: 'communication',
+    care: 'care',
+    activity: 'work',
+    strategy: 'emotion',
+    note: null
+  };
+
+  /** 模块到记录类型的映射矩阵 — 两级选择器用，未列出的组合在UI中置灰 */
+  var RECORD_MATRIX = {
+    communication: ['communication', 'note'],
+    emotion: ['mood', 'emotion', 'strategy', 'note'],
+    care: ['care', 'note'],
+    work: ['activity', 'note']
+  };
+
   // 暴露到全局
   window.Constants = {
     basicInfo: basicInfo,
@@ -578,9 +582,9 @@
     ADMIN_NAV_ITEMS: ADMIN_NAV_ITEMS,
     STRATEGY_KB: STRATEGY_KB,
     EMOTION_TO_STRATEGY: EMOTION_TO_STRATEGY,
-    PRIVACY_LABELS: PRIVACY_LABELS,
     MODULE_TAGS: MODULE_TAGS,
-    RECORD_TYPE_TO_MODULE: RECORD_TYPE_TO_MODULE
+    TYPE_TO_MODULE: TYPE_TO_MODULE,
+    RECORD_MATRIX: RECORD_MATRIX
   };
 
 })();

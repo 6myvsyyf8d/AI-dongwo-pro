@@ -1,5 +1,5 @@
 /**
- * records.js — 记录管理模块（添加记录弹窗 + 记录列表页）
+ * records.js — 添加记录弹窗模块
  * 挂载：window.RecordsPage, window.openAddRecordModal, window.closeAddRecordModal
  * 依赖：window.Utils, window.Constants, window.AppState, window.DataStore
  */
@@ -8,136 +8,22 @@
 
   var ROLES = window.Constants.ROLES;
   var RECORD_TYPES = window.Constants.RECORD_TYPES;
+  var RECORD_MATRIX = window.Constants.RECORD_MATRIX;
   var MOOD_OPTIONS = window.Constants.MOOD_OPTIONS;
   var EMOTION_OPTIONS = window.Constants.EMOTION_OPTIONS;
+  var TYPE_TO_MODULE = window.Constants.TYPE_TO_MODULE;
   var MODULE_TAGS = window.Constants.MODULE_TAGS;
-  var PRIVACY_LABELS = window.Constants.PRIVACY_LABELS;
+  var privacyLevels = window.Constants.privacyLevels;
+  var Modules = window.Modules;
   var DataStore = window.DataStore;
   var appState = window.AppState.appState;
   var currentPage = window.AppState.currentPage;
   var addRecordState = window.AppState.addRecordState;
+  var recordsPageState = window.AppState.recordsPageState;
 
-  /** 模块配置映射 */
-  var MODULE_CONFIG = {
-    communicationGuide: { icon: '💬', label: '沟通与表达', color: '#9B85B8' },
-    emotionSupport: { icon: '🌊', label: '情绪与行为', color: '#D4877B' },
-    careInfo: { icon: '💊', label: '照护与医疗', color: '#A8C9A0' },
-    workInfo: { icon: '💼', label: '工作与生活', color: '#D4A85A' }
-  };
-
-  /**
-   * 从 URL hash 中解析查询参数
-   * 例如 #records?module=communicationGuide → { module: 'communicationGuide' }
-   */
-  function parseHashParams() {
-    var hash = window.location.hash.replace('#', '');
-    var params = {};
-    var qIndex = hash.indexOf('?');
-    if (qIndex === -1) return params;
-    var queryStr = hash.substring(qIndex + 1);
-    queryStr.split('&').forEach(function (pair) {
-      var parts = pair.split('=');
-      if (parts.length === 2) {
-        params[decodeURIComponent(parts[0])] = decodeURIComponent(parts[1]);
-      }
-    });
-    return params;
-  }
-
-  /**
-   * 渲染记录列表页（按模块筛选）
-   */
-  function renderRecordsList() {
-    var recordsSection = document.getElementById('records');
-    if (!recordsSection) {
-      recordsSection = document.createElement('section');
-      recordsSection.id = 'records';
-      recordsSection.className = 'page-section';
-      document.querySelector('.main-content').appendChild(recordsSection);
-    }
-
-    var params = parseHashParams();
-    var moduleKey = params.module || null;
-    var moduleCfg = moduleKey ? MODULE_CONFIG[moduleKey] : null;
-
-    var records = moduleKey ? DataStore.getRecordsByModule(moduleKey) : DataStore.getRecords();
-
-    var html = '';
-    html += '<div class="page-header">';
-    html += '  <button class="back-btn">←</button>';
-    html += '  <span class="page-title">' + (moduleCfg ? moduleCfg.icon + ' ' + moduleCfg.label + ' 记录' : '全部记录') + '</span>';
-    html += '</div>';
-    html += '<div class="container" style="padding:24px;">';
-
-    // 模块信息卡片
-    if (moduleCfg) {
-      html += '<div style="background:#fff;border-radius:12px;padding:16px;margin-bottom:20px;border-left:4px solid ' + moduleCfg.color + ';box-shadow:0 1px 4px rgba(0,0,0,0.04);">';
-      html += '  <div style="font-size:1.1rem;font-weight:600;color:#333;margin-bottom:4px;">' + moduleCfg.icon + ' ' + moduleCfg.label + '</div>';
-      html += '  <div style="font-size:0.85rem;color:#888;">共 ' + records.length + ' 条记录</div>';
-      // 模块标签池展示
-      if (MODULE_TAGS[moduleKey]) {
-        html += '  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">';
-        MODULE_TAGS[moduleKey].forEach(function (tag) {
-          html += '    <span style="background:#f0f0f0;color:#666;font-size:0.75rem;padding:2px 8px;border-radius:10px;">' + tag + '</span>';
-        });
-        html += '  </div>';
-      }
-      html += '</div>';
-    }
-
-    // 记录列表
-    if (records.length === 0) {
-      html += '<div style="background:#fff;border-radius:12px;padding:32px;text-align:center;color:#999;box-shadow:0 1px 4px rgba(0,0,0,0.04);">';
-      html += '  <div style="font-size:2.5rem;margin-bottom:12px;">📝</div>';
-      html += '  <div style="font-size:0.95rem;">暂无记录</div>';
-      html += '  <div style="font-size:0.8rem;margin-top:4px;">点击右下角 + 按钮添加第一条记录</div>';
-      html += '</div>';
-    } else {
-      html += '<div style="display:flex;flex-direction:column;gap:10px;">';
-      records.forEach(function (record) {
-        html += renderRecordListItem(record);
-      });
-      html += '</div>';
-    }
-
-    html += '</div>';
-
-    recordsSection.innerHTML = html;
-  }
-
-  /**
-   * 渲染单条记录列表项
-   */
-  function renderRecordListItem(record) {
-    var typeInfo = RECORD_TYPES[record.type] || { label: '记录', icon: '📝', color: '#999' };
-    var roleInfo = ROLES[record.authorRole] || { color: '#999', avatar: '👤' };
-    var privacyInfo = PRIVACY_LABELS[record.privacy] || { label: record.privacy, color: '#999' };
-    var formatDateDisplay = window.formatDateDisplay;
-
-    var html = '';
-    html += '<div style="background:#fff;border-radius:12px;padding:14px 16px;box-shadow:0 1px 4px rgba(0,0,0,0.04);border-left:3px solid ' + roleInfo.color + ';display:flex;align-items:flex-start;gap:10px;">';
-    html += '  <div style="font-size:1.6rem;flex-shrink:0;">' + (record.authorAvatar || roleInfo.avatar) + '</div>';
-    html += '  <div style="flex:1;min-width:0;">';
-    html += '    <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;flex-wrap:wrap;">';
-    html += '      <span style="font-weight:600;color:#333;font-size:0.9rem;">' + record.author + '</span>';
-    html += '      <span style="font-size:0.7rem;color:#fff;background:' + roleInfo.color + ';padding:1px 6px;border-radius:10px;">' + (ROLES[record.authorRole] ? ROLES[record.authorRole].label : record.authorRole) + '</span>';
-    html += '      <span style="font-size:0.7rem;color:#fff;background:' + privacyInfo.color + ';padding:1px 6px;border-radius:10px;" title="' + privacyInfo.desc + '">' + privacyInfo.label + '</span>';
-    html += '      <span style="font-size:0.75rem;color:#aaa;margin-left:auto;white-space:nowrap;">' + formatDateDisplay(record.date) + ' ' + record.time + '</span>';
-    html += '    </div>';
-    html += '    <div style="font-size:0.8rem;color:#888;margin-bottom:2px;">' + typeInfo.icon + ' ' + typeInfo.label + '</div>';
-    html += '    <div style="font-size:0.88rem;color:#555;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (record.title ? record.title + ' · ' : '') + record.content + '</div>';
-    // 标签展示
-    if (record.tags && record.tags.length > 0) {
-      html += '    <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:6px;">';
-      record.tags.forEach(function (tag) {
-        html += '      <span style="background:#f0f7ff;color:#4A90D9;font-size:0.7rem;padding:1px 6px;border-radius:8px;">' + tag + '</span>';
-      });
-      html += '    </div>';
-    }
-    html += '  </div>';
-    html += '</div>';
-
-    return html;
+  // 初始化 prefillContent（如果不存在）
+  if (addRecordState && addRecordState.prefillContent === undefined) {
+    addRecordState.prefillContent = null;
   }
 
   /**
@@ -408,6 +294,16 @@
         this.querySelector('input').checked = true;
       });
     });
+
+    // 预填内容（来自快捷标签点击）
+    if (addRecordState.prefillContent) {
+      var contentField = bodyEl.querySelector('textarea[name="content"]');
+      if (contentField) {
+        contentField.value = addRecordState.prefillContent;
+        contentField.focus();
+      }
+      addRecordState.prefillContent = null;
+    }
   }
 
   /**
@@ -426,6 +322,12 @@
       type: type,
       content: formData.get('content') || ''
     };
+
+    // 自动映射档案模块
+    var moduleKey = TYPE_TO_MODULE[type] || null;
+    if (moduleKey) record.module = moduleKey;
+    record.privacy = 'B';
+    record.tags = [];
 
     if (formData.get('title')) record.title = formData.get('title');
     if (formData.get('mood')) record.mood = formData.get('mood');
@@ -473,6 +375,307 @@
     window.showToast('✅ 记录添加成功！');
   }
 
+  /**
+   * 解析 hash 中的查询参数，如 #records?module=communication
+   * @returns {Object} { page: 'records', params: { module: 'communication' } }
+   */
+  function parseHashParams() {
+    var raw = window.location.hash.replace('#', '') || 'home';
+    var qIndex = raw.indexOf('?');
+    var page = qIndex === -1 ? raw : raw.substring(0, qIndex);
+    var params = {};
+    if (qIndex !== -1) {
+      var qs = raw.substring(qIndex + 1);
+      qs.split('&').forEach(function (pair) {
+        var parts = pair.split('=');
+        if (parts.length === 2) {
+          params[decodeURIComponent(parts[0])] = decodeURIComponent(parts[1]);
+        }
+      });
+    }
+    return { page: page, params: params };
+  }
+
+  /**
+   * 渲染单条记录卡片（记录列表用）
+   */
+  function renderOneRecordCard(record) {
+    var typeInfo = RECORD_TYPES[record.type] || { label: '记录', icon: '📝', color: '#999' };
+    var roleInfo = ROLES[record.authorRole] || { color: '#999', avatar: '👤' };
+    var moduleKey = record.module || '';
+    var moduleInfo = Modules[moduleKey] || null;
+    var moduleColor = moduleInfo ? moduleInfo.color : '#ccc';
+
+    // 日期显示
+    var dateDisplay = '';
+    if (record.date) {
+      var parts = record.date.split('-');
+      if (parts.length === 3) {
+        dateDisplay = parseInt(parts[1], 10) + '/' + parseInt(parts[2], 10);
+      } else {
+        dateDisplay = record.date;
+      }
+    }
+
+    // 内容摘要（截断50字）
+    var contentPreview = record.content || '';
+    if (contentPreview.length > 50) {
+      contentPreview = contentPreview.substring(0, 50) + '...';
+    }
+
+    var html = '';
+    html += '<div style="background:#fff;border-radius:10px;padding:0;box-shadow:0 1px 4px rgba(0,0,0,0.04);display:flex;overflow:hidden;">';
+    // 左色条
+    html += '  <div style="width:4px;background:' + moduleColor + ';flex-shrink:0;"></div>';
+    // 内容
+    html += '  <div style="flex:1;padding:12px 14px;min-width:0;">';
+    // 顶行：类型图标 + 作者 + 角色 + 时间
+    html += '    <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;flex-wrap:wrap;">';
+    html += '      <span style="font-size:0.8rem;padding:1px 8px;border-radius:10px;background:' + typeInfo.color + '15;color:' + typeInfo.color + ';white-space:nowrap;">' + typeInfo.icon + ' ' + typeInfo.label + '</span>';
+    html += '      <span style="font-size:0.8rem;color:#333;font-weight:500;">' + (record.author || '未知') + '</span>';
+    html += '      <span style="font-size:0.7rem;color:#fff;background:' + roleInfo.color + ';padding:1px 6px;border-radius:8px;white-space:nowrap;">' + (roleInfo.label || record.authorRole) + '</span>';
+    html += '      <span style="font-size:0.72rem;color:#aaa;margin-left:auto;white-space:nowrap;">' + dateDisplay + ' ' + (record.time || '') + '</span>';
+    html += '    </div>';
+    // 内容摘要
+    html += '    <div style="font-size:0.85rem;color:#555;line-height:1.4;">';
+    if (record.title) {
+      html += '<span style="font-weight:500;color:#333;">' + record.title + '</span> · ';
+    }
+    html += contentPreview + '</div>';
+    // 模块标签（如果有）
+    if (moduleInfo && !recordsPageState.selectedModule) {
+      html += '    <div style="margin-top:4px;">';
+      html += '      <span style="font-size:0.7rem;padding:1px 8px;border-radius:10px;background:' + moduleColor + '12;color:' + moduleColor + ';">' + moduleInfo.icon + ' ' + moduleInfo.label + '</span>';
+      html += '    </div>';
+    }
+    html += '  </div>';
+    html += '</div>';
+    return html;
+  }
+
+  /**
+   * 渲染记录列表页面 — 含两级选择器、快捷标签、权限过滤
+   * @param {string} filterModule - 可选，按模块 key 过滤
+   */
+  function renderRecordsPage(filterModule) {
+    var recordsSection = document.getElementById('records');
+    if (!recordsSection) {
+      recordsSection = document.createElement('section');
+      recordsSection.id = 'records';
+      recordsSection.className = 'page-section';
+      var mainContent = document.querySelector('.main-content');
+      if (mainContent) mainContent.appendChild(recordsSection);
+    }
+
+    // 初始化模块选择（从 URL 参数）
+    if (filterModule && !recordsPageState.selectedModule) {
+      recordsPageState.selectedModule = filterModule;
+    }
+
+    var currentUser = DataStore.getCurrentUser() || appState.currentUser;
+    var currentRole = currentUser ? currentUser.role : 'parent';
+    var allowedPrivacies = (privacyLevels || {})[currentRole] || ['A', 'B', 'C', 'D'];
+
+    var records = DataStore.getRecords();
+
+    // 按模块过滤
+    if (recordsPageState.selectedModule) {
+      records = records.filter(function (r) { return r.module === recordsPageState.selectedModule; });
+    }
+
+    // 按记录类型过滤
+    if (recordsPageState.selectedType) {
+      records = records.filter(function (r) { return r.type === recordsPageState.selectedType; });
+    }
+
+    // 按日期降序排列
+    records.sort(function (a, b) {
+      return (b.date + b.time).localeCompare(a.date + a.time);
+    });
+
+    var moduleInfo = recordsPageState.selectedModule ? Modules[recordsPageState.selectedModule] : null;
+
+    var html = '';
+    html += '<div class="page-header">';
+    html += '  <button class="back-btn">←</button>';
+    html += '  <span class="page-title">' + (moduleInfo ? moduleInfo.icon + ' ' + moduleInfo.label + ' · 记录列表' : '全部记录') + '</span>';
+    html += '</div>';
+    html += '<div class="container" style="padding:24px;">';
+
+    // ====== 两级选择器 ======
+    html += '<div style="background:#fff;border-radius:12px;padding:16px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,0.04);">';
+
+    // 第一级：模块选择
+    html += '  <div style="font-size:0.82rem;color:#999;margin-bottom:8px;font-weight:500;">第一步：选择模块</div>';
+    html += '  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">';
+    var moduleKeys = ['communication', 'emotion', 'care', 'work'];
+    moduleKeys.forEach(function (mKey) {
+      var mod = Modules[mKey];
+      if (!mod) return;
+      var isSelected = recordsPageState.selectedModule === mKey;
+      html += '    <button class="module-chip' + (isSelected ? ' active' : '') + '" data-module="' + mKey + '" style="';
+      html += 'padding:8px 16px;border-radius:20px;border:1.5px solid ' + (isSelected ? mod.color : '#ddd') + ';';
+      html += 'background:' + (isSelected ? mod.color + '15' : '#fff') + ';';
+      html += 'color:' + (isSelected ? mod.color : '#666') + ';';
+      html += 'font-size:0.85rem;cursor:pointer;transition:all 0.2s;font-weight:' + (isSelected ? '600' : '400') + ';">';
+      html += mod.icon + ' ' + mod.label + '</button>';
+    });
+    html += '    <button class="module-chip' + (!recordsPageState.selectedModule ? ' active' : '') + '" data-module="" style="';
+    html += 'padding:8px 16px;border-radius:20px;border:1.5px solid ' + (!recordsPageState.selectedModule ? '#888' : '#ddd') + ';';
+    html += 'background:' + (!recordsPageState.selectedModule ? '#f5f5f5' : '#fff') + ';';
+    html += 'color:' + (!recordsPageState.selectedModule ? '#333' : '#666') + ';';
+    html += 'font-size:0.85rem;cursor:pointer;transition:all 0.2s;font-weight:' + (!recordsPageState.selectedModule ? '600' : '400') + ';">全部模块</button>';
+    html += '  </div>';
+
+    // 第二级：记录类型选择（仅当已选模块时显示）
+    if (recordsPageState.selectedModule) {
+      var supportedTypes = RECORD_MATRIX[recordsPageState.selectedModule] || [];
+      html += '  <div style="font-size:0.82rem;color:#999;margin-bottom:8px;font-weight:500;">第二步：选择记录类型</div>';
+      html += '  <div style="display:flex;gap:8px;flex-wrap:wrap;">';
+
+      Object.keys(RECORD_TYPES).forEach(function (tKey) {
+        var t = RECORD_TYPES[tKey];
+        var isValid = supportedTypes.indexOf(tKey) !== -1;
+        var isTypeSelected = recordsPageState.selectedType === tKey;
+
+        html += '    <button class="type-chip' + (isTypeSelected ? ' active' : '') + (!isValid ? ' disabled' : '') + '" ';
+        if (isValid) html += 'data-type="' + tKey + '" ';
+        html += 'style="';
+        html += 'padding:6px 14px;border-radius:16px;border:1.5px solid ' + (isTypeSelected && isValid ? t.color : '#e0e0e0') + ';';
+        html += 'background:' + (isTypeSelected && isValid ? t.color + '12' : '#fafafa') + ';';
+        html += 'color:' + (isTypeSelected && isValid ? t.color : (isValid ? '#555' : '#ccc')) + ';';
+        html += 'font-size:0.82rem;cursor:' + (isValid ? 'pointer' : 'default') + ';transition:all 0.2s;';
+        if (!isValid) html += 'opacity:0.4;';
+        html += 'font-weight:' + (isTypeSelected && isValid ? '600' : '400') + ';">';
+        html += t.icon + ' ' + t.label;
+        if (!isValid) html += ' <span style="font-size:0.65rem;">—</span>';
+        html += '</button>';
+      });
+
+      html += '  </div>';
+    }
+
+    html += '</div>';
+
+    // ====== 快捷标签（仅当已选模块时显示）======
+    if (recordsPageState.selectedModule && moduleInfo && MODULE_TAGS[recordsPageState.selectedModule]) {
+      html += '<div style="background:#fff;border-radius:12px;padding:16px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,0.04);">';
+      html += '  <div style="font-size:0.82rem;color:#999;margin-bottom:8px;font-weight:500;">🏷️ 快捷标签 · 点击填入内容</div>';
+      html += '  <div style="display:flex;gap:8px;flex-wrap:wrap;">';
+      MODULE_TAGS[recordsPageState.selectedModule].forEach(function (tag) {
+        html += '    <button class="quick-tag-btn" data-tag="' + tag + '" style="';
+        html += 'background:' + moduleInfo.color + '10;';
+        html += 'color:' + moduleInfo.color + ';';
+        html += 'border:1px solid ' + moduleInfo.color + '30;';
+        html += 'padding:5px 14px;border-radius:20px;font-size:0.8rem;';
+        html += 'cursor:pointer;transition:all 0.2s;">' + tag + '</button>';
+      });
+      html += '  </div>';
+      html += '</div>';
+    }
+
+    // ====== 记录统计信息头 ======
+    if (moduleInfo) {
+      html += '<div style="background:linear-gradient(135deg,' + moduleInfo.color + '18,' + moduleInfo.color + '06);';
+      html += 'border-left:4px solid ' + moduleInfo.color + ';border-radius:0 10px 10px 0;';
+      html += 'padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;">';
+      html += '  <div style="font-size:0.85rem;color:#666;">';
+      html += '    共 <strong style="color:' + moduleInfo.color + ';">' + records.length + '</strong> 条记录';
+      if (recordsPageState.selectedType) {
+        html += ' · ' + (RECORD_TYPES[recordsPageState.selectedType] || {}).icon + ' ' + (RECORD_TYPES[recordsPageState.selectedType] || {}).label;
+      }
+      html += '  </div>';
+      if (recordsPageState.selectedType || recordsPageState.selectedModule) {
+        html += '  <button id="btn-clear-records-filter" style="background:none;border:1px solid #ddd;color:#888;padding:4px 12px;border-radius:14px;font-size:0.78rem;cursor:pointer;">清除筛选</button>';
+      }
+      html += '</div>';
+    }
+
+    // ====== 记录列表 ======
+    if (records.length === 0) {
+      html += '<div style="background:#fff;border-radius:12px;padding:32px;text-align:center;color:#999;font-size:0.9rem;box-shadow:0 1px 4px rgba(0,0,0,0.04);">';
+      html += '  <div style="font-size:2rem;margin-bottom:8px;">📭</div>';
+      html += '  暂无相关记录，点击右下角 + 添加第一条记录吧！';
+      html += '</div>';
+    } else {
+      html += '<div style="display:flex;flex-direction:column;gap:10px;">';
+      records.forEach(function (record) {
+        var recordPrivacy = record.privacy || 'B';
+        var canView = allowedPrivacies.indexOf(recordPrivacy) !== -1;
+
+        if (canView) {
+          html += renderOneRecordCard(record);
+        } else {
+          html += '<div style="background:#fafafa;border:1px dashed #e0e0e0;border-radius:10px;padding:14px 16px;display:flex;align-items:center;gap:10px;">';
+          html += '  <span style="font-size:1.3rem;">🔒</span>';
+          html += '  <div style="flex:1;">';
+          html += '    <span style="color:#bbb;font-size:0.82rem;font-weight:500;">无权限查看</span>';
+          html += '    <span style="color:#ccc;font-size:0.72rem;margin-left:8px;">隐私级别：' + recordPrivacy + '</span>';
+          html += '  </div>';
+          html += '  <span style="font-size:0.72rem;color:#ccc;white-space:nowrap;">' + (record.date || '') + '</span>';
+          html += '</div>';
+        }
+      });
+      html += '</div>';
+    }
+
+    html += '</div>'; // close container
+
+    recordsSection.innerHTML = html;
+
+    // 绑定事件
+    bindRecordsPageEvents(recordsSection);
+  }
+
+  /**
+   * 绑定记录页交互事件
+   */
+  function bindRecordsPageEvents(section) {
+    // 模块选择按钮
+    section.querySelectorAll('.module-chip').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var modKey = this.getAttribute('data-module');
+        recordsPageState.selectedModule = modKey || null;
+        recordsPageState.selectedType = null;
+        recordsPageState.tagFilter = null;
+        renderRecordsPage();
+      });
+    });
+
+    // 记录类型选择按钮（排除 disabled）
+    section.querySelectorAll('.type-chip:not(.disabled)').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var tKey = this.getAttribute('data-type');
+        if (recordsPageState.selectedType === tKey) {
+          recordsPageState.selectedType = null;
+        } else {
+          recordsPageState.selectedType = tKey;
+        }
+        renderRecordsPage();
+      });
+    });
+
+    // 快捷标签按钮 — 打开添加记录弹窗并预填内容
+    section.querySelectorAll('.quick-tag-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var tag = this.getAttribute('data-tag');
+        addRecordState.prefillContent = tag;
+        openAddRecordModal();
+      });
+    });
+
+    // 清除筛选按钮
+    var clearBtn = section.querySelector('#btn-clear-records-filter');
+    if (clearBtn) {
+      clearBtn.addEventListener('click', function () {
+        recordsPageState.selectedModule = null;
+        recordsPageState.selectedType = null;
+        recordsPageState.tagFilter = null;
+        renderRecordsPage();
+      });
+    }
+  }
+
   // 暴露到全局
   window.RecordsPage = {
     openAddRecordModal: openAddRecordModal,
@@ -481,8 +684,8 @@
     renderAddRecordStep1: renderAddRecordStep1,
     renderAddRecordStep2: renderAddRecordStep2,
     saveRecord: saveRecord,
-    renderRecordsList: renderRecordsList,
-    renderRecordListItem: renderRecordListItem,
+    renderRecordsPage: renderRecordsPage,
+    renderOneRecordCard: renderOneRecordCard,
     parseHashParams: parseHashParams
   };
 

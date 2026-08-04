@@ -53,6 +53,13 @@
   /** 日历状态 */
   var calendarState = { currentYear: 0, currentMonth: 0, selectedDate: null };
 
+  /** 记录页筛选状态 — 两级选择器 */
+  var recordsPageState = {
+    selectedModule: null,
+    selectedType: null,
+    tagFilter: null
+  };
+
   function getState() {
     return appState;
   }
@@ -75,6 +82,7 @@
     timelineFilters: timelineFilters,
     regRole: regRole,
     calendarState: calendarState,
+    recordsPageState: recordsPageState,
     getState: getState,
     setState: setState
   };
