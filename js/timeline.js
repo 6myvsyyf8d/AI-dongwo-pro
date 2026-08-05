@@ -160,11 +160,6 @@
 
     var html = '';
 
-    // 页面标题和筛选器
-    html += '<div class="page-header">';
-    html += '  <button class="back-btn">←</button>';
-    html += '  <span class="page-title">动态档案 · 时间轴</span>';
-    html += '</div>';
     html += '<div class="container" style="padding:24px;">';
 
     // === 照护档案区域（置顶）===

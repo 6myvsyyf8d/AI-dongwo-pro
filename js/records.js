@@ -513,10 +513,6 @@
     var moduleInfo = recordsPageState.selectedModule ? Modules[recordsPageState.selectedModule] : null;
 
     var html = '';
-    html += '<div class="page-header">';
-    html += '  <button class="back-btn">←</button>';
-    html += '  <span class="page-title">' + (moduleInfo ? moduleInfo.icon + ' ' + moduleInfo.label + ' · 记录列表' : '全部记录') + '</span>';
-    html += '</div>';
     html += '<div class="container" style="padding:24px;">';
 
     // ====== 两级选择器 ======
