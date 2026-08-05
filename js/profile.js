@@ -703,7 +703,12 @@
     }
     html += '</div>';
 
-    // 3. 退出登录
+    // 3. 重新查看使用引导
+    html += '<div style="padding:8px 0;text-align:center;">';
+    html += '<a href="#" id="btn-reonboard" style="color:var(--color-primary);font-size:0.85rem;text-decoration:none;">重新查看使用引导</a>';
+    html += '</div>';
+
+    // 4. 退出登录
     html += '<div style="padding:0 0 32px;text-align:center;">';
     html += '<button id="btn-logout-inline" style="padding:12px 48px;border:1px solid #F5222D;background:#fff;color:#F5222D;border-radius:24px;font-size:0.9rem;cursor:pointer;">退出登录</button>';
     html += '</div>';
@@ -716,6 +721,14 @@
     if (logoutBtn) {
       logoutBtn.addEventListener('click', function () {
         window.Auth.logout();
+      });
+    }
+    var reonboardBtn = document.getElementById('btn-reonboard');
+    if (reonboardBtn) {
+      reonboardBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        if (window.Onboarding) window.Onboarding.resetOnboarding();
+        window.location.hash = 'quick-start';
       });
     }
   }

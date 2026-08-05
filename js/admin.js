@@ -33,6 +33,21 @@
     } else {
       renderMemberView(contentArea, user);
     }
+
+    // 所有角色均显示"重新查看使用引导"
+    var existingFooter = contentArea.querySelector('.admin-footer');
+    if (!existingFooter) {
+      var footer = document.createElement('div');
+      footer.className = 'admin-footer';
+      footer.style.cssText = 'text-align:center;padding:16px 0 32px;';
+      footer.innerHTML = '<a href="#" id="btn-reonboard-admin" style="color:var(--color-primary);font-size:0.85rem;text-decoration:none;">重新查看使用引导</a>';
+      contentArea.appendChild(footer);
+      document.getElementById('btn-reonboard-admin').addEventListener('click', function(e) {
+        e.preventDefault();
+        if (window.Onboarding) window.Onboarding.resetOnboarding();
+        window.location.hash = 'quick-start';
+      });
+    }
   }
 
   /* ==========================================================
