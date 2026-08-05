@@ -293,6 +293,8 @@
     'tasks': 'tasks',
     'calendar': 'calendar',
     'archive': 'archive',
+    'archive-topics': 'archive-topics',
+    'archive-status': 'archive-status',
     'analytics': 'analytics',
     'records': 'records',
     'quickcard': 'quickcard',
@@ -335,6 +337,8 @@
     'timeline': 'archive',
     'records': 'archive',
     'quickcard': 'archive',
+    'archive-topics': 'archive',
+    'archive-status': 'archive',
     // 📊 分析
     'charts': 'charts',
     'analytics': 'charts',
@@ -373,7 +377,7 @@
     'teacher': 'home',
     'caregiver': 'archive',
     'government': 'analytics',
-    'admin': 'home'
+    'admin': 'profile'
   };
 
   /** 侧边栏菜单配置（普通角色：parent/teacher/caregiver） */

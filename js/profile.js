@@ -228,12 +228,14 @@
   /**
    * 渲染完整档案页 —— #archive
    *
-   * 设计逻辑：
-   *   1. 先展示优势和偏好，不以诊断开场
-   *   2. 模块是进入记录的入口，不是装饰
-   *   3. 摘要可浏览，敏感详情按权限展开
-   *   4. 不同角色看到同一人物的不同切片
-   *   5. 速读卡入口放在身份卡右上角
+   * 设计逻辑（规则第七节）：
+   *   1. 当前档案对象 — 名字/头像/当前支持场景
+   *   2. 先认识我 — 兴趣、优势、愿望、希望别人怎样支持我
+   *   3. 当前摘要 — 3-7条当前最重要的信息
+   *   4. 最近变化 — 近阶段最重要的2-4条，标明时间范围
+   *   5. 待确认和资料提醒 — 只有确有内容时显示
+   *   6. 入口 — 主题档案、时间轴、速读卡、档案状态
+   *   7. 信息来源图例
    */
   function renderProfile() {
     var contentArea = document.getElementById('archive-content');
@@ -248,17 +250,15 @@
     // ============================================
     // 1. 人物身份卡 —— 快速认识这个人
     // ============================================
-    html += '<div class="archive-id-card">';
+    html += '<div class="archive-id-card" style="margin-bottom:20px;">';
     // 速读卡入口 —— 右上角
     html += '  <button class="archive-quickcard-btn" id="archive-quickcard-btn" title="速读卡">';
     html += '    <span class="qc-btn-icon">📋</span>';
     html += '    <span class="qc-btn-text">速读卡</span>';
     html += '  </button>';
-    // 头像区域
     html += '  <div class="archive-avatar">';
     html += '    <div class="archive-avatar-inner">🌻</div>';
     html += '  </div>';
-    // 信息区
     html += '  <div class="archive-id-body">';
     html += '    <div class="archive-id-name">' + basicInfo.name + '</div>';
     html += '    <div class="archive-id-stage">';
@@ -271,232 +271,167 @@
     html += '</div>';
 
     // ============================================
-    // 2. 关于我 —— 优势在先，支持在后
+    // 2. 先认识我 —— 优势在先，支持在后
     // ============================================
-    html += '<div class="archive-about-section">';
+    html += '<div class="archive-about-section" style="margin-bottom:20px;">';
     html += '  <div class="archive-section-header">';
-    html += '    <span class="archive-section-title">🌻 关于我</span>';
-    html += '    <span class="archive-section-sub">先认识我，再支持我</span>';
+    html += '    <span class="archive-section-title">🌻 先认识我</span>';
+    html += '    <span class="archive-section-sub">优势、兴趣、沟通偏好</span>';
     html += '  </div>';
-
-    // 四个维度卡片：喜欢、不安、支持方式、愿望
     html += '  <div class="archive-about-grid">';
-
-    // 我喜欢和擅长 —— 优势视角优先
+    // 我喜欢
     html += '    <div class="archive-about-card about-card-likes">';
-    html += '      <div class="about-card-header">';
-    html += '        <span class="about-card-emoji">💚</span>';
-    html += '        <span class="about-card-label">我喜欢的</span>';
-    html += '      </div>';
+    html += '      <div class="about-card-header"><span class="about-card-emoji">💚</span><span class="about-card-label">我喜欢的</span></div>';
     html += '      <div class="about-card-items">';
-     likesList.forEach(function (item) {
-       html += '        <div class="about-item show-preview" data-privacy="B">';
+    likesList.forEach(function (item) {
+      html += '        <div class="about-item show-preview" data-privacy="B">';
       html += '          <span class="about-item-emoji">' + item.icon + '</span>';
       html += '          <span class="about-item-text"><strong>' + item.title + '</strong><small>' + item.desc + '</small></span>';
       html += '        </div>';
     });
     html += '      </div>';
     html += '    </div>';
-
-    // 我容易不安 —— 同理心视角
+    // 我容易不安
     html += '    <div class="archive-about-card about-card-dislikes">';
-    html += '      <div class="about-card-header">';
-    html += '        <span class="about-card-emoji">⚠️</span>';
-    html += '        <span class="about-card-label">我容易不安</span>';
-    html += '      </div>';
+    html += '      <div class="about-card-header"><span class="about-card-emoji">⚠️</span><span class="about-card-label">我容易不安</span></div>';
     html += '      <div class="about-card-items">';
     dislikesList.forEach(function (item, i) {
       var cls = i < 2 ? ' show-preview' : '';
-      var privacy = item.icon === '🦐' ? 'C' : 'B';
-      html += '        <div class="about-item' + cls + '" data-privacy="' + privacy + '">';
+      html += '        <div class="about-item' + cls + '" data-privacy="B">';
       html += '          <span class="about-item-emoji">' + item.icon + '</span>';
       html += '          <span class="about-item-text"><strong>' + item.title + '</strong><small>' + item.desc + '</small></span>';
       html += '        </div>';
     });
     html += '      </div>';
-    // 展开更多按钮
     if (dislikesList.length > 2) {
       html += '      <button class="about-expand-btn" data-target="dislikes">查看全部 ' + dislikesList.length + ' 条</button>';
     }
     html += '    </div>';
-
-    // 请这样支持我
+    // 请这样支持我（沟通指南一句话概览）
     html += '    <div class="archive-about-card about-card-support about-card-wide">';
-    html += '      <div class="about-card-header">';
-    html += '        <span class="about-card-emoji">🤝</span>';
-    html += '        <span class="about-card-label">请这样支持我</span>';
-    html += '      </div>';
+    html += '      <div class="about-card-header"><span class="about-card-emoji">🤝</span><span class="about-card-label">请这样支持我</span></div>';
     html += '      <div class="about-card-items">';
-    communicationGuide.best.forEach(function (tip) {
-      html += '        <div class="about-item">';
-      html += '          <span class="about-item-check">•</span>';
-      html += '          <span class="about-item-text">' + tip + '</span>';
-      html += '        </div>';
+    communicationGuide.best.slice(0, 3).forEach(function (tip) {
+      html += '        <div class="about-item"><span class="about-item-check">•</span><span class="about-item-text">' + tip + '</span></div>';
     });
+    if (communicationGuide.best.length > 3) {
+      html += '        <a href="#communication" style="font-size:0.82rem;color:#4A90D9;text-decoration:none;">查看完整沟通说明书 →</a>';
+    }
     html += '      </div>';
     html += '    </div>';
-
-    // 我的愿望
+    // 愿望
     html += '    <div class="archive-about-card about-card-wish about-card-wide">';
-    html += '      <div class="about-card-header">';
-    html += '        <span class="about-card-emoji">⭐</span>';
-    html += '        <span class="about-card-label">我的愿望</span>';
-    html += '      </div>';
-    html += '      <div class="about-card-items">';
-    workInfo.canDo.forEach(function (wish) {
-      html += '        <div class="about-item">';
-    html += '          <span class="about-item-check">•</span>';
-    html += '          <span class="about-item-text">' + wish + '</span>';
-    html += '        </div>';
-    });
-    html += '      </div>';
+    html += '      <div class="about-card-header"><span class="about-card-emoji">⭐</span><span class="about-card-label">我的愿望</span></div>';
     if (aboutMe && aboutMe.aspiration) {
-      html += '      <div class="about-aspiration">' + aboutMe.aspiration + '</div>';
+      html += '      <div class="about-card-items"><div class="about-item"><span class="about-item-text">' + aboutMe.aspiration + '</span></div></div>';
     }
     html += '    </div>';
-
-    html += '  </div>'; // .archive-about-grid
-    html += '</div>';   // .archive-about-section
-
-    // ============================================
-    // 3. 四类支持模块 —— 进入记录详情入口
-    // ============================================
-    html += '<div class="archive-modules-section">';
-    html += '  <div class="archive-section-header">';
-    html += '    <span class="archive-section-title">📋 支持模块</span>';
-    html += '    <span class="archive-section-sub">点击查看详情记录</span>';
     html += '  </div>';
-    html += '  <div class="archive-module-grid">';
-
-    var moduleOrder = ['communication', 'emotion', 'care', 'work'];
-    var moduleMetas = {
-      communication: { summary: '短句沟通 · 视觉提示 · 耐心等待', highlight: '' },
-      emotion: { summary: '压力信号 · 支持方法 · 经验验证', highlight: '' },
-      care: { summary: '过敏管理 · 作息照护', highlight: careInfo && careInfo.allergy ? '海鲜过敏' : '' },
-      work: { summary: '工作能力 · 支持需求 · 就业方向', highlight: '' }
-    };
-
-    moduleOrder.forEach(function (key) {
-      var mod = Modules[key];
-      if (!mod) return;
-      var records = DataStore.getRecordsByModule(key);
-      var recordCount = records.length;
-      var meta = moduleMetas[key] || { summary: '', highlight: '' };
-      var recentRecord = records.length > 0 ? records[0] : null;
-
-      html += '<div class="archive-module-card" data-navigate="' + key + '">';
-      // 模块头部
-      html += '  <div class="module-card-header">';
-      html += '    <div class="module-card-icon" style="background:' + mod.color + '1a;color:' + mod.color + ';">' + mod.icon + '</div>';
-      html += '    <div class="module-card-head-text">';
-      html += '      <div class="module-card-name">' + mod.label + '</div>';
-      html += '      <div class="module-card-count">' + recordCount + ' 条记录</div>';
-      html += '    </div>';
-      html += '    <div class="module-card-arrow">›</div>';
-      html += '  </div>';
-      // 模块摘要
-      html += '  <div class="module-card-summary">' + meta.summary + '</div>';
-      // 最近一条记录摘要
-      if (recentRecord) {
-        var recText = recentRecord.title || recentRecord.content || '';
-        var recDate = window.formatDateDisplay ? window.formatDateDisplay(recentRecord.date) : recentRecord.date;
-        html += '  <div class="module-card-recent">';
-        html += '    <span class="recent-rec-label">最近</span>';
-        html += '    <span class="recent-rec-text">' + recText.substring(0, 28) + (recText.length > 28 ? '…' : '') + '</span>';
-        html += '    <span class="recent-rec-date">' + recDate + '</span>';
-        html += '  </div>';
-      }
-      // 高亮标签
-      if (meta.highlight) {
-        html += '  <div class="module-card-highlight">⚠️ ' + meta.highlight + '</div>';
-      }
-      html += '</div>';
-    });
-
-    html += '  </div>'; // .archive-module-grid
-    html += '</div>';   // .archive-modules-section
+    html += '</div>';
 
     // ============================================
-    // 4. 最近变化 + 档案完整度
+    // 3. 当前摘要 —— 3-7条当前最重要的信息
     // ============================================
-    html += '<div class="archive-recent-section">';
-    html += '  <div class="archive-section-header">';
-    html += '    <span class="archive-section-title">🕐 最近变化</span>';
-    html += '  </div>';
-
     var allRecords = DataStore.getRecords();
-    var recentRecords = allRecords.slice(0, 3);
-
-    var moduleColors = {
-      communication: '#9B85B8', emotion: '#D4877B', care: '#A8C9A0', work: '#D4A85A'
-    };
-    var modLabels = {
-      communication: '沟通', emotion: '情绪', care: '照护', work: '工作'
-    };
-
-    if (recentRecords.length > 0) {
-      recentRecords.forEach(function (r) {
-        var modKey = r.module || 'communication';
-        var color = moduleColors[modKey] || '#999';
-        var label = modLabels[modKey] || modKey;
-        var text = r.title || r.content || '';
-        var dateDisplay = window.formatDateDisplay ? window.formatDateDisplay(r.date) : r.date;
-        var author = r.author || '';
-
-        html += '<div class="archive-recent-item" data-navigate="records?module=' + modKey + '">';
-        html += '  <div class="recent-item-dot" style="background:' + color + ';"></div>';
+    var summaryItems = buildCurrentSummary(allRecords, role);
+    if (summaryItems.length > 0) {
+      html += '<div class="archive-recent-section" style="margin-bottom:20px;">';
+      html += '  <div class="archive-section-header">';
+      html += '    <span class="archive-section-title">📌 当前摘要</span>';
+      html += '  </div>';
+      summaryItems.forEach(function (item) {
+        html += '<div class="archive-recent-item" data-navigate="' + item.link + '" style="margin-bottom:10px;">';
+        html += '  <div class="recent-item-dot" style="background:' + item.color + ';"></div>';
         html += '  <div class="recent-item-body">';
         html += '    <div class="recent-item-meta">';
-        html += '      <span class="recent-item-tag ' + modKey + '">' + label + '</span>';
-        html += '      <span class="recent-item-date">' + dateDisplay + '</span>';
+        html += '      <span class="recent-item-tag" style="border-color:' + item.color + ';color:' + item.color + ';">' + item.label + '</span>';
+        html += '      <span class="recent-item-date">' + item.source + '</span>';
         html += '    </div>';
-        html += '    <div class="recent-item-text">' + text + '</div>';
-        if (author) {
-          html += '    <div class="recent-item-author">记录人：' + author + '</div>';
-        }
+        html += '    <div class="recent-item-text">' + item.text + '</div>';
+        html += '  </div>';
+        html += '</div>';
+      });
+      html += '</div>';
+    }
+
+    // ============================================
+    // 4. 最近变化 —— 2-4条，标明时间范围
+    // ============================================
+    var recentChanges = buildRecentChanges(allRecords);
+    html += '<div class="archive-recent-section" style="margin-bottom:20px;">';
+    html += '  <div class="archive-section-header">';
+    html += '    <span class="archive-section-title">🕐 最近变化</span>';
+    html += '    <span class="archive-section-sub">近7天</span>';
+    html += '  </div>';
+    if (recentChanges.length > 0) {
+      recentChanges.forEach(function (change) {
+        html += '<div class="archive-recent-item" data-navigate="' + change.link + '">';
+        html += '  <div class="recent-item-dot" style="background:' + change.color + ';"></div>';
+        html += '  <div class="recent-item-body">';
+        html += '    <div class="recent-item-meta">';
+        html += '      <span class="recent-item-tag">' + change.label + '</span>';
+        html += '      <span class="recent-item-date">' + change.dateDisplay + '</span>';
+        html += '    </div>';
+        html += '    <div class="recent-item-text">' + change.text + '</div>';
         html += '  </div>';
         html += '</div>';
       });
     } else {
-      html += '<div class="archive-recent-empty">📝 还没有动态记录，开始记录吧</div>';
+      html += '<div class="archive-recent-empty">📝 近7天暂无新的记录</div>';
     }
     html += '</div>';
 
     // ============================================
-    // 5. 档案完整度
+    // 5. 待确认和资料提醒 —— 确有内容时才显示
     // ============================================
-    var completenessItems = [
-      { key: 'basicInfo', label: '基本信息', filled: !!basicInfo },
-      { key: 'likes',     label: '喜欢与擅长', filled: likesList && likesList.length > 0 },
-      { key: 'anxiety',   label: '不安与触发', filled: dislikesList && dislikesList.length > 0 },
-      { key: 'comm',      label: '沟通指南', filled: communicationGuide && communicationGuide.best && communicationGuide.best.length > 0 },
-      { key: 'emotion',   label: '情绪支持', filled: emotionSupport && emotionSupport.soothing && emotionSupport.soothing.length > 0 },
-      { key: 'care',      label: '照护信息', filled: careInfo && careInfo.allergy },
-      { key: 'records',   label: '动态记录', filled: allRecords.length > 0 }
-    ];
-    var filledCount = completenessItems.filter(function (c) { return c.filled; }).length;
-    var totalCount = completenessItems.length;
-    var pct = Math.round(filledCount / totalCount * 100);
+    var pendingItems = buildPendingAlerts(allRecords);
+    if (pendingItems.length > 0) {
+      html += '<div class="archive-recent-section" style="margin-bottom:20px;">';
+      html += '  <div class="archive-section-header">';
+      html += '    <span class="archive-section-title">🔔 待确认与提醒</span>';
+      html += '  </div>';
+      pendingItems.forEach(function (alert) {
+        html += '<div style="display:flex;align-items:center;gap:8px;background:' + alert.bg + ';border-radius:10px;padding:10px 14px;margin-bottom:8px;font-size:0.85rem;color:#555;">';
+        html += '  <span>' + alert.icon + '</span>';
+        html += '  <span style="flex:1;">' + alert.text + '</span>';
+        if (alert.link) {
+          html += '  <a href="#' + alert.link + '" style="font-size:0.8rem;color:#4A90D9;text-decoration:none;white-space:nowrap;">查看 →</a>';
+        }
+        html += '</div>';
+      });
+      html += '</div>';
+    }
 
-    html += '<div class="archive-completeness">';
-    html += '  <div class="completeness-head">';
-    html += '    <span class="completeness-label">📊 档案完整度</span>';
-    html += '    <span class="completeness-pct">' + pct + '%</span>';
+    // ============================================
+    // 6. 入口 —— 主题档案、时间轴、速读卡、档案状态
+    // ============================================
+    html += '<div class="archive-recent-section" style="margin-bottom:20px;">';
+    html += '  <div class="archive-section-header">';
+    html += '    <span class="archive-section-title">📂 深入查看</span>';
     html += '  </div>';
-    html += '  <div class="completeness-track">';
-    html += '    <div class="completeness-fill" style="width:' + pct + '%;"></div>';
-    html += '  </div>';
-    html += '  <div class="completeness-items">';
-    completenessItems.forEach(function (c) {
-      html += '    <span class="completeness-chip ' + (c.filled ? 'chip-filled' : 'chip-missing') + '">' + (c.filled ? '✓' : '○') + ' ' + c.label + '</span>';
+    html += '  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">';
+
+    var entryItems = [
+      { hash: 'archive-topics', icon: '📋', label: '主题档案', desc: '6个主题分类' },
+      { hash: 'timeline',       icon: '📅', label: '时间轴',   desc: '按时间查看' },
+      { hash: 'quickcard',      icon: '⚡', label: '速读卡',   desc: '关键信息一览' },
+      { hash: 'archive-status', icon: '🔍', label: '档案状态', desc: '资料完整度' }
+    ];
+    entryItems.forEach(function (entry) {
+      html += '<div class="archive-entry-card" data-navigate="' + entry.hash + '" style="background:#fff;border-radius:14px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,0.04);cursor:pointer;text-align:center;">';
+      html += '  <div style="font-size:1.6rem;margin-bottom:6px;">' + entry.icon + '</div>';
+      html += '  <div style="font-weight:600;font-size:0.9rem;color:var(--text-primary);">' + entry.label + '</div>';
+      html += '  <div style="font-size:0.78rem;color:var(--text-muted);">' + entry.desc + '</div>';
+      html += '</div>';
     });
+
     html += '  </div>';
     html += '</div>';
 
     // ============================================
-    // 6. 信息来源图例
+    // 7. 信息来源图例
     // ============================================
-    html += '<div class="archive-source-legend">';
+    html += '<div class="archive-source-legend" style="margin-bottom:16px;">';
     html += '  <span class="legend-label">📋 信息来源说明：</span>';
     html += '  <span class="source-badge self">💬 心青年自己说的</span>';
     html += '  <span class="source-badge observer">👁️ 支持者观察到的</span>';
@@ -518,10 +453,9 @@
       });
     }
 
-    // 关于我 —— 展开更多
+    // 展开更多
     contentArea.querySelectorAll('.about-expand-btn').forEach(function (btn) {
       btn.addEventListener('click', function () {
-        var target = this.getAttribute('data-target');
         var card = this.closest('.archive-about-card');
         if (card) {
           card.querySelectorAll('.about-item').forEach(function (item) {
@@ -532,26 +466,167 @@
       });
     });
 
-    // 模块卡片点击 → 跳转到模块页面
-    contentArea.querySelectorAll('.archive-module-card[data-navigate]').forEach(function (card) {
+    // 入口卡片
+    contentArea.querySelectorAll('.archive-entry-card[data-navigate]').forEach(function (card) {
       card.addEventListener('click', function () {
-        var modKey = this.getAttribute('data-navigate');
-        window.location.hash = modKey;
+        window.location.hash = this.getAttribute('data-navigate');
       });
     });
 
-    // 最近更新项点击 → 跳转到记录列表
+    // 摘要/变化项点击下钻
     contentArea.querySelectorAll('.archive-recent-item[data-navigate]').forEach(function (item) {
       item.addEventListener('click', function () {
         window.location.hash = this.getAttribute('data-navigate');
       });
     });
 
-    // 权限过滤：根据当前角色隐藏隐私元素
-    var currentRole = user ? user.role : 'parent';
+    // 权限过滤
     if (window.Permissions && window.Permissions.applyPrivacy) {
-      window.Permissions.applyPrivacy(currentRole);
+      window.Permissions.applyPrivacy(role);
     }
+  }
+
+  /**
+   * 构建当前摘要 — L1，3-7条当前最重要的信息（规则驱动）
+   */
+  function buildCurrentSummary(allRecords, role) {
+    var items = [];
+    var careInfoLocal = DataStore.getCareInfo();
+
+    // 1. 过敏信息
+    if (careInfoLocal && careInfoLocal.allergy && careInfoLocal.allergy.items) {
+      items.push({
+        label: '照护', color: '#F5222D', source: '权威信息',
+        text: '过敏：' + careInfoLocal.allergy.items + '（' + careInfoLocal.allergy.level + '）',
+        link: 'care'
+      });
+    }
+
+    // 2. 沟通偏好
+    var commRecords = DataStore.getRecordsByModule('communication');
+    if (commRecords && commRecords.length > 0) {
+      var latestComm = commRecords[0];
+      items.push({
+        label: '沟通', color: '#722ED1', source: '最近记录',
+        text: (latestComm.title || '') + (latestComm.title ? ' · ' : '') + (latestComm.content || '').substring(0, 40),
+        link: 'communication'
+      });
+    }
+
+    // 3. 情绪状态
+    var emotionRecords = allRecords.filter(function (r) { return r.type === 'emotion' || r.type === 'mood'; });
+    if (emotionRecords.length > 0) {
+      var latestEmotion = emotionRecords[0];
+      var moodText = latestEmotion.mood || latestEmotion.emotion_type || '';
+      items.push({
+        label: '情绪', color: '#F5222D', source: '最近心情',
+        text: '最近记录：' + (moodText || latestEmotion.content || '查看详情'),
+        link: 'emotion'
+      });
+    }
+
+    // 4. 近期策略效果
+    var strategyRecords = allRecords.filter(function (r) { return r.type === 'strategy' && r.effectiveness >= 4; });
+    if (strategyRecords.length > 0) {
+      var bestStrategy = strategyRecords[0];
+      items.push({
+        label: '策略', color: '#52C41A', source: '效果验证',
+        text: '"' + (bestStrategy.title || bestStrategy.content || '').substring(0, 30) + '"效果较好',
+        link: 'emotion'
+      });
+    }
+
+    // 5. 照护提醒
+    if (careInfoLocal && careInfoLocal.sleep) {
+      items.push({
+        label: '照护', color: '#1890FF', source: '常规提醒',
+        text: '作息：' + careInfoLocal.sleep,
+        link: 'care'
+      });
+    }
+
+    // 限制3-7条
+    return items.slice(0, 7);
+  }
+
+  /**
+   * 构建最近变化 — L2，2-4条，近7天（规则驱动）
+   */
+  function buildRecentChanges(allRecords) {
+    var today = new Date();
+    var sevenDaysAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+    var sevenDStr = sevenDaysAgo.getFullYear() + '-' + String(sevenDaysAgo.getMonth() + 1).padStart(2, '0') + '-' + String(sevenDaysAgo.getDate()).padStart(2, '0');
+
+    var recent = allRecords.filter(function (r) { return r.date >= sevenDStr; });
+    if (recent.length === 0) return [];
+
+    var modules = ['communication', 'emotion', 'care', 'work'];
+    var modColors = { communication: '#722ED1', emotion: '#F5222D', care: '#52C41A', work: '#FAAD14' };
+    var modLabels = { communication: '沟通', emotion: '情绪', care: '照护', work: '工作' };
+
+    var changes = [];
+    // 每个模块取最近1条
+    modules.forEach(function (modKey) {
+      var modRecords = recent.filter(function (r) { return r.module === modKey; });
+      if (modRecords.length > 0) {
+        var r = modRecords[0];
+        changes.push({
+          label: modLabels[modKey] || modKey,
+          color: modColors[modKey] || '#999',
+          text: (r.title || '') + (r.title ? ' · ' : '') + (r.content || '').substring(0, 50),
+          dateDisplay: window.formatDateDisplay ? window.formatDateDisplay(r.date) : r.date,
+          link: 'records?module=' + modKey
+        });
+      }
+    });
+
+    return changes.slice(0, 4);
+  }
+
+  /**
+   * 构建待确认与资料提醒 — 确有内容时才显示
+   */
+  function buildPendingAlerts(allRecords) {
+    var alerts = [];
+    var medConflict = DataStore.validateMedicalConsistency ? DataStore.validateMedicalConsistency() : null;
+    if (medConflict) {
+      alerts.push({ icon: '⚠️', text: '医疗信息存在冲突需要核实', bg: '#FFF2F0', link: 'care' });
+    }
+
+    // 检查AI草稿
+    try {
+      var raw = localStorage.getItem('ai_dongwo_chat_sessions');
+      if (raw) {
+        var sessions = JSON.parse(raw);
+        var pendingCount = 0;
+        sessions.forEach(function (s) {
+          if (s.reviewItems) {
+            s.reviewItems.forEach(function (item) {
+              if (!item.confirmed) pendingCount++;
+            });
+          }
+        });
+        if (pendingCount > 0) {
+          alerts.push({ icon: '📝', text: pendingCount + ' 条AI草稿等待确认', bg: '#F6F0FF', link: 'chat-review' });
+        }
+      }
+    } catch (e) { /* ignore */ }
+
+    // 长期无更新的模块（超过2周无记录但有历史记录的模块）
+    var today = new Date();
+    var twoWeeksAgo = new Date(today.getTime() - 14 * 24 * 60 * 60 * 1000);
+    var twoWeeksStr = twoWeeksAgo.getFullYear() + '-' + String(twoWeeksAgo.getMonth() + 1).padStart(2, '0') + '-' + String(twoWeeksAgo.getDate()).padStart(2, '0');
+
+    ['communication', 'emotion', 'care', 'work'].forEach(function (modKey) {
+      var records = DataStore.getRecordsByModule(modKey);
+      var recentCount = records.filter(function (r) { return r.date >= twoWeeksStr; }).length;
+      if (recentCount === 0 && records.length > 0) {
+        var labels = { communication: '沟通', emotion: '情绪', care: '照护', work: '工作' };
+        alerts.push({ icon: '⏰', text: labels[modKey] + '信息超过2周未更新', bg: '#FFF7E6', link: modKey });
+      }
+    });
+
+    return alerts;
   }
 
   /**
