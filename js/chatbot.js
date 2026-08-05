@@ -183,15 +183,21 @@
 
     /**
      * 将所有已确认的草稿写入 DataStore.records
+     * @param {Array} [draftIds] - 可选，指定草稿 ID 列表；不传则处理全部
      * @returns {Array} 已写入的记录数组
      */
-    commitDrafts: function () {
+    commitDrafts: function (draftIds) {
       var self = this;
       var currentUser = DataStore.getCurrentUser();
       var committed = [];
+      var targetIds = draftIds && draftIds.length > 0 ? draftIds : null;
 
       self.drafts.forEach(function (draft) {
+        // 幂等：只处理已确认且未入档的草稿
         if (draft.status !== 'confirmed') return;
+        if (draft.archivedRecordId) return;
+        // 如果传了 draftIds，仅处理列表内的
+        if (targetIds && targetIds.indexOf(draft.id) === -1) return;
 
         var record = {
           type: draft.type,
@@ -207,15 +213,23 @@
           tags: draft.tags || [],
           privacy: draft.privacy || 'B',
           source: 'ai_chat',
-          sessionId: self.id
+          sessionId: self.id,
+          _draftId: draft.id
         };
 
-        var saved = DataStore.addRecord(record);
-        committed.push(saved);
+        try {
+          var saved = DataStore.addRecord(record);
+          committed.push(saved);
 
-        // 标记草稿为已提交
-        draft.status = 'committed';
-        draft.committedAt = new Date().toISOString();
+          // 回填 archivedRecordId，状态改为 archived
+          draft.archivedRecordId = saved.id;
+          draft.status = 'archived';
+          draft.archivedAt = new Date().toISOString();
+          draft.reviewerName = currentUser ? currentUser.name : '';
+        } catch (e) {
+          console.error('commitDrafts: addRecord 失败', e);
+          // 不修改草稿状态，保留 confirmed 可重试
+        }
       });
 
       if (committed.length > 0) {
