@@ -275,9 +275,10 @@
         + '  <div class="chat-review-list" id="review-list">';
 
       _drafts.forEach(function (draft, idx) {
-        var isConfirmed = draft.status === 'confirmed';
+        var isConfirmed = draft.status === 'confirmed' || draft.status === 'archived' || draft.status === 'committed';
+        var isArchived = draft.status === 'archived' || draft.status === 'committed';
         var cardClass = isConfirmed ? 'confirmed' : 'pending';
-        var statusText = isConfirmed ? '已确认' : '待确认';
+        var statusText = isArchived ? '已入档' : (isConfirmed ? '已确认' : '待确认');
         var moduleInfo = _getModuleInfo(draft.module);
         var timeStr = _formatMsgDate(draft.createdAt || draft.timestamp);
         var sourcePreview = (draft.sourceText || '').substring(0, 60);
@@ -295,7 +296,7 @@
           + '    <div class="chat-review-draft-title">' + _escapeHtml(draft.title || '未命名记录') + '</div>';
 
         if (isConfirmed) {
-          html += '    <div class="chat-review-draft-confirmed-note">已确认，等待统一保存</div>';
+          html += '    <div class="chat-review-draft-confirmed-note">' + (isArchived ? '已写入档案' : '已确认，等待统一保存') + '</div>';
         } else {
           html += '    <div class="chat-review-draft-summary">' + _escapeHtml(draft.content || '暂无摘要') + '</div>';
           // 来源对话预览
@@ -324,7 +325,7 @@
           // 操作按钮
           + '  <div class="chat-review-draft-actions">'
           + '    <button class="chat-review-btn-expand" data-action="expand" data-draft-id="' + draft.id + '">展开编辑</button>';
-        if (!isConfirmed) {
+        if (!isArchived) {
           html += '    <button class="chat-review-btn-modify" data-action="modify" data-draft-id="' + draft.id + '">修改</button>'
             + '    <button class="chat-review-btn-confirm" data-action="confirm" data-draft-id="' + draft.id + '">确认保存</button>'
             + '    <button class="chat-review-btn-discard" data-action="discard" data-draft-id="' + draft.id + '">放弃</button>';
@@ -1292,6 +1293,9 @@
     var draftId = card.getAttribute('data-draft-id');
     if (!_activeSession || !draftId) return;
 
+    var draft = _activeSession.drafts.find(function (d) { return d.id === draftId; });
+    if (!draft || draft.status !== 'pending') return;
+
     var fields = card.querySelectorAll('.chat-review-draft-field-input');
     var updates = {};
     fields.forEach(function (el) {
@@ -1305,9 +1309,15 @@
       _activeSession.editDraft(draftId, updates);
     }
     _activeSession.confirmDraft(draftId);
+    // 精确入档：仅处理当前草稿
+    var results = _activeSession.commitDrafts([draftId]);
 
     _refreshReviewUI();
-    _showToast('已确认保存');
+    if (results.length > 0) {
+      _showToast('已写入档案');
+    } else {
+      _showToast('入档失败，请重试');
+    }
   }
 
   function _handleConfirmAll() {
@@ -1317,11 +1327,21 @@
     }
 
     var pendingDrafts = _activeSession.drafts.filter(function (d) { return d.status === 'pending'; });
+    if (pendingDrafts.length === 0) {
+      _showToast('没有待确认的草稿');
+      return;
+    }
+
     pendingDrafts.forEach(function (d) {
       _activeSession.confirmDraft(d.id);
     });
+    // 批量入档
+    var results = _activeSession.commitDrafts();
 
-    _showSuccessDialog(pendingDrafts.length);
+    if (results.length < pendingDrafts.length) {
+      _showToast('部分记录入档失败，请重试');
+    }
+    _showSuccessDialog(results.length);
   }
 
   function _showDraftMenu(e, card) {
