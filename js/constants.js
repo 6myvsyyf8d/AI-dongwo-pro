@@ -293,6 +293,8 @@
     'tasks': 'tasks',
     'calendar': 'calendar',
     'archive': 'archive',
+    'archive-topics': 'archive-topics',
+    'archive-status': 'archive-status',
     'analytics': 'analytics',
     'records': 'records',
     'quickcard': 'quickcard',
@@ -335,6 +337,8 @@
     'timeline': 'archive',
     'records': 'archive',
     'quickcard': 'archive',
+    'archive-topics': 'archive',
+    'archive-status': 'archive',
     // 📊 分析
     'charts': 'charts',
     'analytics': 'charts',
@@ -350,6 +354,24 @@
     // 无归属
     'login': null,
     'welcome': null
+  };
+
+  /**
+   * 返回逐级层级映射：子页面 → 直接父级页面（用于返回按钮）
+   * 与 PAGE_PARENT（一级菜单归属）分开维护
+   */
+  var PAGE_BACK_PARENT = {
+    'archive-topics': 'archive',
+    'archive-status': 'archive',
+    'life': 'archive-topics',
+    'communication': 'archive-topics',
+    'emotion': 'archive-topics',
+    'care': 'archive-topics',
+    'work': 'archive-topics',
+    'relations': 'archive-topics',
+    'timeline': 'archive',
+    'quickcard': 'archive',
+    'records': 'archive'
   };
 
   /**
@@ -373,7 +395,7 @@
     'teacher': 'home',
     'caregiver': 'archive',
     'government': 'analytics',
-    'admin': 'home'
+    'admin': 'profile'
   };
 
   /** 侧边栏菜单配置（普通角色：parent/teacher/caregiver） */
@@ -915,6 +937,7 @@
     EMOTION_OPTIONS: EMOTION_OPTIONS,
     routeMap: routeMap,
     PAGE_PARENT: PAGE_PARENT,
+    PAGE_BACK_PARENT: PAGE_BACK_PARENT,
     ROLE_NAV_TABS: ROLE_NAV_TABS,
     ROLE_DEFAULT_PAGES: ROLE_DEFAULT_PAGES,
     SIDEBAR_MENU: SIDEBAR_MENU,

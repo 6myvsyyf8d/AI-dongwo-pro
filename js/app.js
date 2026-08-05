@@ -48,6 +48,7 @@
   var privacyLevels = C.privacyLevels;
   var routeMap = C.routeMap;
   var PAGE_PARENT = C.PAGE_PARENT;
+  var PAGE_BACK_PARENT = C.PAGE_BACK_PARENT || {};
   var ROLE_NAV_TABS = C.ROLE_NAV_TABS;
   var ROLE_DEFAULT_PAGES = C.ROLE_DEFAULT_PAGES;
   var STRATEGY_KB = C.STRATEGY_KB;
@@ -170,9 +171,10 @@
   var MODULE_SUB_NAV = {
     'archive': [
       { hash: 'archive', label: '总览' },
-      { hash: 'archive-themes', label: '主题档案' },
+      { hash: 'archive-topics', label: '主题档案' },
       { hash: 'timeline', label: '时间轴' },
-      { hash: 'quickcard', label: '速读卡' }
+      { hash: 'quickcard', label: '速读卡' },
+      { hash: 'archive-status', label: '档案状态' }
     ]
   };
 
@@ -197,7 +199,7 @@
     var html = '';
     items.forEach(function (item) {
       var isActive = (item.hash === pageName) ||
-        (item.hash === 'archive-themes' && themePages.indexOf(pageName) !== -1);
+        (item.hash === 'archive-topics' && themePages.indexOf(pageName) !== -1);
       html += '<button class="sub-nav-tab' + (isActive ? ' active' : '') + '" data-hash="' + item.hash + '">';
       html += item.label;
       html += '</button>';
@@ -208,10 +210,7 @@
     subNav.querySelectorAll('.sub-nav-tab').forEach(function (tab) {
       tab.addEventListener('click', function () {
         var hash = this.getAttribute('data-hash');
-        if (hash === 'archive-themes') {
-          // TODO: 主题档案入口 — 第二期补完整页面
-          window.location.hash = 'archive';
-        } else if (hash) {
+        if (hash) {
           window.location.hash = hash;
         }
       });
@@ -246,10 +245,12 @@
       'chat-review': '整理确认',
       home: '今日',
       archive: '档案总览',
+      'archive-topics': '主题档案',
+      'archive-status': '档案状态',
       life: '我喜欢的生活',
       communication: '沟通说明书',
       emotion: '情绪与行为支持',
-      care: '照护与医疗提醒',
+      care: '照护与医疗',
       work: '工作支持',
       relations: '关系地图',
       timeline: '记录时间轴',
@@ -277,10 +278,15 @@
     // 对话页面自带顶栏，隐藏全局顶栏
     var isChatPage = (pageName === 'chat' || pageName === 'chat-conversation' || pageName === 'chat-review');
     if (backEl) {
-      // 一级 Tab 页面（无父级或父级=自身）和对话页隐藏返回按钮
+      // 返回按钮使用 PAGE_BACK_PARENT（直接父级），隐藏逻辑仍参考 PAGE_PARENT
       var parent = PAGE_PARENT[pageName];
+      var backParent = PAGE_BACK_PARENT[pageName] || parent;
       var isTopLevel = (!parent || parent === pageName);
       backEl.style.display = (pageName === 'home' || isTopLevel || isChatPage) ? 'none' : 'block';
+      // 返回按钮写描述性文案，如"← 返回 主题档案"
+      if (backParent && backParent !== pageName && !isChatPage) {
+        backEl.textContent = '← 返回 ' + (pageTitles[backParent] || backParent);
+      }
     }
     if (quickEl) {
       quickEl.style.display = (pageName === 'home') ? 'block' : 'none';
@@ -299,10 +305,10 @@
     var quickEl = Utils.dom.get('topbar-quick');
     if (backEl) {
       Utils.dom.on(backEl, 'click', function () {
-        var parent = PAGE_PARENT[currentPage];
-        // 如果当前页有父级且不是父级自身，回父级；否则回首页
-        if (parent && parent !== currentPage) {
-          window.location.hash = parent;
+        var backParent = PAGE_BACK_PARENT[currentPage] || PAGE_PARENT[currentPage];
+        // 如果当前页有直接父级（无论是否一级页面），回父级；否则回首页
+        if (backParent && backParent !== currentPage) {
+          window.location.hash = backParent;
         } else {
           window.location.hash = 'home';
         }
@@ -444,6 +450,16 @@
       case 'tasks': renderTasks(); break;
       case 'calendar': renderCalendar(); break;
       case 'archive': window.ProfilePage.renderProfile(); break;
+      case 'archive-topics':
+        if (window.ArchivePage && window.ArchivePage.renderArchiveTopics) {
+          window.ArchivePage.renderArchiveTopics();
+        }
+        break;
+      case 'archive-status':
+        if (window.ArchivePage && window.ArchivePage.renderArchiveStatus) {
+          window.ArchivePage.renderArchiveStatus();
+        }
+        break;
       case 'analytics': renderAnalytics(); break;
       case 'quickcard': window.QuickCard.renderPage(); break;
       case 'welcome': window.WelcomePage.renderWelcome(); break;
@@ -2036,9 +2052,9 @@
     document.addEventListener('click', function (e) {
       var backBtn = e.target.closest('.back-btn');
       if (backBtn) {
-        var parent = PAGE_PARENT[currentPage];
-        if (parent && parent !== currentPage) {
-          window.location.hash = parent;
+        var backParent = PAGE_BACK_PARENT[currentPage] || PAGE_PARENT[currentPage];
+        if (backParent && backParent !== currentPage) {
+          window.location.hash = backParent;
         } else {
           window.location.hash = 'home';
         }
