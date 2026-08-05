@@ -436,7 +436,8 @@
 
     // 隐藏页面内重复标题（topbar 已提供页面名称）
     // 保留登录页和对话页的标题（这些页面没有 topbar）
-    var hidePageHeader = !(isChatPage || basePage === 'login');
+    var isChat = (basePage === 'chat' || basePage === 'chat-conversation' || basePage === 'chat-review');
+    var hidePageHeader = !(isChat || basePage === 'login');
     document.querySelectorAll('.page-header').forEach(function (h) {
       h.style.display = hidePageHeader ? 'none' : '';
     });
@@ -1126,7 +1127,7 @@
     html += '</div>';
 
     html += '</div>';
-    contentArea.innerHTML = (opts.prependHtml || '') + html;
+    contentArea.innerHTML = html;
 
     // 首次渲染 L2 和 L4
     renderL2Content(0, records);
