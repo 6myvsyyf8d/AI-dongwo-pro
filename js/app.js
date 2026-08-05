@@ -1655,9 +1655,167 @@
     return events;
   }
 
-  // 占位函数——后续主题逐 commit 替换为真实逻辑
-  function buildEmotionL1(records) { return [{ text: '情绪主题四层模型将在下一个 commit 完成', source: '', statusLabel: '待确认', statusClass: 'source-observer' }]; }
-  function buildEmotionL3(records) { return []; }
+  // ============ #emotion L1 当前摘要 ============
+  function buildEmotionL1(records) {
+    var items = [];
+    var cutoff7 = dateDaysAgo(7);
+    var emotionRecs = records.filter(function(r) { return r.type === 'emotion'; });
+
+    // 1. 当前情绪状态 —— 近7天心情概览
+    var moodRecs = records.filter(function(r) { return r.type === 'mood'; });
+    var recentMood = moodRecs.filter(function(r) { return r.date >= cutoff7; }).sort(function(a, b) { return b.date.localeCompare(a.date); });
+    if (recentMood.length > 0) {
+      var moodLabels = { happy: '开心', calm: '平静', anxious: '焦虑', sad: '难过', excited: '兴奋' };
+      var moodCount = {};
+      recentMood.forEach(function(r) { var m = r.mood || ''; moodCount[m] = (moodCount[m] || 0) + 1; });
+      var topMoods = Object.keys(moodCount).sort(function(a, b) { return moodCount[b] - moodCount[a]; }).slice(0, 2);
+      var topText = topMoods.map(function(m) { return moodLabels[m] || m; }).join('、');
+      items.push({
+        text: '近7天心情以「' + topText + '」为主（共' + recentMood.length + '天记录）',
+        source: '近7天心情记录', statusLabel: '已确认', statusClass: 'source-confirmed'
+      });
+    }
+
+    // 2. 已识别的触发因素 —— 从情绪事件中提取
+    var triggers = [];
+    var envChange = emotionRecs.filter(function(r) { return (r.content || '').indexOf('换') >= 0 || (r.content || '').indexOf('新') >= 0 || (r.content || '').indexOf('临时') >= 0; });
+    if (envChange.length >= 2) triggers.push('环境/计划变化（如换教室、新老师、菜单更换）');
+    var noise = emotionRecs.filter(function(r) { return (r.content || '').indexOf('嘈杂') >= 0 || (r.content || '').indexOf('人多') >= 0 || (r.content || '').indexOf('打雷') >= 0; });
+    if (noise.length >= 2) triggers.push('噪音或人多环境（打雷、机构嘈杂）');
+    var weather = emotionRecs.filter(function(r) { return (r.content || '').indexOf('下雨') >= 0 && ((r.content || '').indexOf('躁') >= 0 || (r.content || '').indexOf('走') >= 0); });
+    if (weather.length >= 1) triggers.push('雨天无法户外活动时易烦躁');
+    var excited = emotionRecs.filter(function(r) { return r.emotion_type === '兴奋'; });
+    if (excited.length >= 2) triggers.push('期待外出/比赛时情绪高涨，可能影响作息');
+    if (triggers.length > 0) {
+      items.push({
+        text: '已识别触发因素：' + triggers.slice(0, 3).join('；'),
+        source: '来源：多角色观察 · 近6个月', statusLabel: '已确认', statusClass: 'source-confirmed'
+      });
+    }
+
+    // 3. 被记录为有帮助的安抚方式
+    var calmingMethods = [];
+    var quiet = emotionRecs.filter(function(r) { return (r.content || '').indexOf('安静') >= 0; });
+    if (quiet.length >= 2) calmingMethods.push('去安静环境待一会儿');
+    var music = emotionRecs.filter(function(r) { return (r.content || '').indexOf('音乐') >= 0 || (r.content || '').indexOf('电子琴') >= 0; });
+    if (music.length >= 2) calmingMethods.push('转移注意到音乐/电子琴');
+    var momComfort = emotionRecs.filter(function(r) { return (r.content || '').indexOf('妈妈') >= 0 && ((r.content || '').indexOf('安抚') >= 0 || (r.content || '').indexOf('好转') >= 0); });
+    if (momComfort.length >= 1) calmingMethods.push('联系妈妈（电话/看照片）');
+    var preview = emotionRecs.filter(function(r) { return (r.content || '').indexOf('提前') >= 0 && (r.content || '').indexOf('熟悉') >= 0; });
+    if (preview.length >= 1) calmingMethods.push('提前熟悉新环境/新安排');
+    if (calmingMethods.length > 0) {
+      var calmerAuthor = quiet.length > 0 ? quiet[0].author : (music.length > 0 ? music[0].author : '');
+      items.push({
+        text: '被记录为有帮助的安抚方式：' + calmingMethods.slice(0, 4).join('、'),
+        source: '来源：' + (calmerAuthor || '多角色') + ' · 观察记录', statusLabel: '已确认', statusClass: 'source-confirmed'
+      });
+    }
+
+    return items.slice(0, 6);
+  }
+
+  // ============ #emotion L3 关键事件 ============
+  function buildEmotionL3(records) {
+    var events = [];
+    var cutoff30 = dateDaysAgo(30);
+    var cutoff60 = dateDaysAgo(60);
+    var cutoff90 = dateDaysAgo(90);
+    var moodRecs = records.filter(function(r) { return r.type === 'mood'; }).sort(function(a, b) { return a.date.localeCompare(b.date); });
+    var emotionRecs = records.filter(function(r) { return r.type === 'emotion'; });
+
+    // 1. 首次记录
+    if (records.length > 0) {
+      var first = records[records.length - 1];
+      events.push({
+        icon: '🆕', typeLabel: '首次记录',
+        text: '第一条情绪记录：' + ((first.content || '').substring(0, 40)),
+        dateDisplay: formatDateDisplay(first.date),
+        source: '来源：' + (first.author || '系统')
+      });
+    }
+
+    // 2. 连续情绪记录 → "值得关注、待人工确认"（仅标记需关注的类型）
+    var attentionMoods = { anxious: '焦虑', sad: '难过' };
+    var streakMoods = {};
+    moodRecs.forEach(function(r) {
+      var m = r.mood;
+      if (!streakMoods[m]) streakMoods[m] = { count: 0, start: r.date, end: r.date };
+      streakMoods[m].count++;
+      streakMoods[m].end = r.date;
+    });
+    Object.keys(streakMoods).forEach(function(m) {
+      var s = streakMoods[m];
+      if (s.count >= 3 && attentionMoods[m]) {
+        events.push({
+          icon: '👁️', typeLabel: '值得关注',
+          text: '近30天「' + attentionMoods[m] + '」出现 ' + s.count + ' 天，待人工确认是否存在规律',
+          dateDisplay: s.start + ' ~ ' + s.end,
+          source: '来源：系统统计 · 仅作提示，非诊断性结论'
+        });
+      }
+    });
+
+    // 3. 明显变化 —— 情绪波动相关记录增加
+    var recentEmotion = emotionRecs.filter(function(r) { return r.date >= cutoff30; });
+    var olderEmotion = emotionRecs.filter(function(r) { return r.date < cutoff30; });
+    if (recentEmotion.length > olderEmotion.length && olderEmotion.length > 0) {
+      events.push({
+        icon: '📈', typeLabel: '明显变化',
+        text: '近30天情绪事件记录 ' + recentEmotion.length + ' 条，较前段（' + olderEmotion.length + ' 条）有所增加，近阶段情绪波动相关记录增加',
+        dateDisplay: '近30天 vs 更早',
+        source: '来源：系统'
+      });
+    }
+
+    // 4. 信息冲突待核实
+    var moodHappy = moodRecs.filter(function(r) { return r.mood === 'happy' && r.date >= cutoff30; });
+    var moodSad = moodRecs.filter(function(r) { return r.mood === 'sad' && r.date >= cutoff30; });
+    if (moodHappy.length > 0 && moodSad.length > 0) {
+      events.push({
+        icon: '⚠️', typeLabel: '信息冲突待核实',
+        text: '近30天心情记录中「开心」和「难过」并存，不同场景下的情绪反应差异较大，建议综合观察',
+        dateDisplay: '近30天', source: '来源：系统'
+      });
+    }
+
+    // 5. 新触发因素识别（查全部记录，不限类型）
+    var catTriggers = records.filter(function(r) { return r.date >= cutoff90 && ((r.content || '').indexOf('猫') >= 0 || (r.content || '').indexOf('动物') >= 0); });
+    if (catTriggers.length >= 2) {
+      events.push({
+        icon: '💡', typeLabel: '新触发因素',
+        text: '近3个月 ' + catTriggers.length + ' 次记录显示：接触小动物（猫）时情绪积极，可能是新的正向触发因素',
+        dateDisplay: formatDateDisplay(catTriggers[catTriggers.length - 1].date) + ' ~ ' + formatDateDisplay(catTriggers[0].date),
+        source: '来源：照护者观察'
+      });
+    }
+
+    // 6. 长期未复核
+    var oldEmotion = emotionRecs.filter(function(r) { return r.date < cutoff60; });
+    if (oldEmotion.length > 0) {
+      var oldest = oldEmotion.reduce(function(a, b) { return a.date < b.date ? a : b; });
+      events.push({
+        icon: '⏰', typeLabel: '超过复核周期',
+        text: '有 ' + oldEmotion.length + ' 条情绪事件记录超过60天未复核，建议确认内容是否仍然准确',
+        dateDisplay: formatDateDisplay(oldest.date) + ' ~ ' + formatDateDisplay(cutoff60),
+        source: '来源：系统提醒'
+      });
+    }
+
+    // 7. 安抚方式被多次记录为有帮助
+    var calmMusic = records.filter(function(r) { return ((r.content || '').indexOf('音乐') >= 0 || (r.content || '').indexOf('电子琴') >= 0 || (r.content || '').indexOf(' 琴') >= 0) && ((r.content || '').indexOf('平静') >= 0 || (r.content || '').indexOf('好转') >= 0 || (r.content || '').indexOf('放松') >= 0 || (r.content || '').indexOf('恢复') >= 0); });
+    if (calmMusic.length >= 2) {
+      events.push({
+        icon: '✅', typeLabel: '多次记录为有帮助',
+        text: '「播放音乐/转移注意到电子琴」在 ' + calmMusic.length + ' 次不同情境下被记录为有助于情绪平稳',
+        dateDisplay: formatDateDisplay(calmMusic[calmMusic.length - 1].date) + ' ~ ' + formatDateDisplay(calmMusic[0].date),
+        source: '来源：多角色记录'
+      });
+    }
+
+    return events;
+  }
+
+  // 剩余占位函数——后续主题逐 commit 替换为真实逻辑
   function buildCareL1(records) { return [{ text: '照护主题四层模型将在后续 commit 完成', source: '', statusLabel: '待确认', statusClass: 'source-observer' }]; }
   function buildCareL3(records) { return []; }
   function buildWorkL1(records) { return [{ text: '工作主题四层模型将在后续 commit 完成', source: '', statusLabel: '待确认', statusClass: 'source-observer' }]; }
@@ -1670,18 +1828,16 @@
    * ========================================================== */
 
   /**
-   * 渲染情绪与行为支持页面 - 流程图 + 彩色卡片
+   * 渲染情绪与行为支持页面 — 四层模型
    */
   function renderEmotion() {
-    // v2.0：使用新的压力信号与支持方法渲染
-    if (window.ProfilePage && window.ProfilePage.renderEmotionSupport) {
-      window.ProfilePage.renderEmotionSupport();
-      return;
-    }
-    // fallback
     var contentArea = document.getElementById('emotion-content');
     if (!contentArea) return;
-    contentArea.innerHTML = '<div class="empty-state"><div class="empty-icon">🌊</div><div class="empty-text">加载中...</div></div>';
+    renderTopicFourLayer(contentArea, 'emotion', {
+      l1Title: '📌 当前摘要',
+      l1Sub: '当前已确认的情绪状态、已识别的触发因素与被记录为有帮助的安抚方式',
+      emptyText: '暂无情绪记录'
+    });
   }
 
   /* ==========================================================
