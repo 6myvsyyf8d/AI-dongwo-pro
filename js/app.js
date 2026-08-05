@@ -1635,14 +1635,10 @@
 
   function buildLifeL3(records) {
     var events = [];
+    var cutoff60 = dateDaysAgo(60);
     if (records.length > 0) {
       var first = records[records.length - 1];
       events.push({ icon: '🆕', typeLabel: '首次记录', text: '第一次记录生活偏好：' + (first.content || '').substring(0, 40), dateDisplay: formatDateDisplay(first.date), source: '来源：' + first.author });
-    }
-    // 同类活动多次出现
-    var busRecords = records.filter(function(r) { return r.content.indexOf('公交车') >= 0 || r.content.indexOf('火车') >= 0; });
-    if (busRecords.length >= 3) {
-      events.push({ icon: '🔁', typeLabel: '较稳定兴趣线索', text: '关于交通工具的兴趣在 ' + busRecords.length + ' 次记录中被提及（不同时间、不同场景），为较稳定兴趣线索，待确认后可进入 L1', dateDisplay: busRecords[0].date + ' ~ ' + busRecords[busRecords.length - 1].date, source: '来源：多角色观察' });
     }
     // 明显变化
     var cutoff90 = dateDaysAgo(90);
@@ -1651,7 +1647,27 @@
     if (recent.length >= 3 && old.length > 0) {
       events.push({ icon: '📈', typeLabel: '明显变化', text: '近3个月新增 ' + recent.length + ' 条生活记录，包括新爱好（拍照）和新周末活动', dateDisplay: '近3个月', source: '来源：系统' });
     }
-    events.push({ icon: '🔒', typeLabel: '信息稳定', text: '近30天内生活偏好记录无明显冲突', dateDisplay: '近30天', source: '来源：系统' });
+    // 信息冲突
+    var conflictFound = false;
+    for (var i = 0; i < records.length && !conflictFound; i++) {
+      for (var j = i + 1; j < records.length && !conflictFound; j++) {
+        if (records[i].author !== records[j].author && records[i].date === records[j].date) { conflictFound = true; }
+      }
+    }
+    if (!conflictFound) {
+      events.push({ icon: '🔒', typeLabel: '信息一致', text: '近30天内生活偏好记录无明显冲突', dateDisplay: '近30天', source: '来源：系统' });
+    }
+    // 长期未复核
+    var oldRecs = records.filter(function(r) { return r.date < cutoff60; });
+    if (oldRecs.length > 0) {
+      var oldest = oldRecs.reduce(function(a, b) { return a.date < b.date ? a : b; });
+      events.push({ icon: '⏰', typeLabel: '超过复核周期', text: '有 ' + oldRecs.length + ' 条生活记录超过60天未复核，建议确认内容是否仍然准确', dateDisplay: formatDateDisplay(oldest.date) + ' ~ ' + formatDateDisplay(cutoff60), source: '来源：系统提醒' });
+    }
+    // 同类兴趣多次被记录
+    var busRecords = records.filter(function(r) { return r.content.indexOf('公交车') >= 0 || r.content.indexOf('火车') >= 0; });
+    if (busRecords.length >= 3) {
+      events.push({ icon: '🔁', typeLabel: '同类兴趣多次被记录', text: '关于交通工具的兴趣在 ' + busRecords.length + ' 次记录中被提及（不同时间、不同场景），为较稳定兴趣线索，待确认后可进入 L1', dateDisplay: busRecords[busRecords.length - 1].date + ' ~ ' + busRecords[0].date, source: '来源：多角色观察' });
+    }
     return events;
   }
 
@@ -1991,13 +2007,13 @@
       });
     }
 
-    // 2. 明显变化
-    var recentActs = records.filter(function(r) { return r.date >= cutoff30 && r.type === 'activity'; });
-    var olderActs = records.filter(function(r) { return r.date < cutoff30 && r.type === 'activity'; });
-    if (recentActs.length > olderActs.length && olderActs.length > 0) {
+    // 2. 明显变化（全部记录，不限于 activity 类型）
+    var recentItems = records.filter(function(r) { return r.date >= cutoff30; });
+    var olderItems = records.filter(function(r) { return r.date < cutoff30; });
+    if (recentItems.length > olderItems.length && olderItems.length > 0) {
       events.push({
         icon: '📈', typeLabel: '明显变化',
-        text: '近30天有 ' + recentActs.length + ' 条活动记录，较前段（' + olderActs.length + ' 条）有所增加',
+        text: '近30天有 ' + recentItems.length + ' 条工作记录，较前段（' + olderItems.length + ' 条）有所增加',
         dateDisplay: '近30天 vs 更早', source: '来源：系统'
       });
     }
@@ -2098,8 +2114,8 @@
   // ============ #relations L3 关键事件 ============
   function buildRelationsL3(records) {
     var events = [];
+    var cutoff30 = dateDaysAgo(30);
     var cutoff60 = dateDaysAgo(60);
-    var relInfo = window.Constants.relationsInfo;
 
     // 1. 首次记录
     if (records.length > 0) {
@@ -2112,46 +2128,57 @@
       });
     }
 
-    // 2. 关系变化（新增或变动）
-    var changeRecs = records.filter(function(r) { return (r.title || '').indexOf('关系圈更新') >= 0 || (r.title || '').indexOf('新') >= 0 && (r.content || '').indexOf('老师') >= 0; });
-    changeRecs.forEach(function(r) {
+    // 2. 明显变化
+    var recentItems = records.filter(function(r) { return r.date >= cutoff30; });
+    var olderItems = records.filter(function(r) { return r.date < cutoff30; });
+    if (recentItems.length > olderItems.length && olderItems.length > 0) {
       events.push({
-        icon: '🔄', typeLabel: '关系变化',
-        text: (r.title || '') + '：' + (r.content || '').substring(0, 60),
-        dateDisplay: formatDateDisplay(r.date), source: '来源：' + r.author
-      });
-    });
-
-    // 3. 互动模式多次被记录
-    var initRecs = records.filter(function(r) { return (r.title || '').indexOf('互动') >= 0 && ((r.content || '').indexOf('主动') >= 0 || (r.content || '').indexOf('分享') >= 0); });
-    if (initRecs.length >= 2) {
-      events.push({
-        icon: '💬', typeLabel: '互动模式',
-        text: '主动分享/互动行为在 ' + initRecs.length + ' 次记录中出现，可能是正在发展的社交模式',
-        dateDisplay: initRecs[initRecs.length - 1].date + ' ~ ' + initRecs[0].date,
-        source: '来源：多角色观察'
+        icon: '📈', typeLabel: '明显变化',
+        text: '近30天有 ' + recentItems.length + ' 条关系记录，较前段（' + olderItems.length + ' 条）有所增加',
+        dateDisplay: '近30天 vs 更早', source: '来源：系统'
       });
     }
 
-    // 4. 回避事件
-    var avoidRecs = records.filter(function(r) { return (r.title || '').indexOf('回避') >= 0 || (r.title || '').indexOf('社交压力') >= 0; });
-    avoidRecs.forEach(function(r) {
+    // 3. 信息冲突
+    var conflictRecords = {};
+    records.forEach(function(r) {
+      if (!conflictRecords[r.date]) conflictRecords[r.date] = [];
+      conflictRecords[r.date].push(r);
+    });
+    var conflictDates = 0;
+    Object.keys(conflictRecords).forEach(function(d) {
+      var authors = {};
+      conflictRecords[d].forEach(function(r) { authors[r.author] = true; });
+      if (Object.keys(authors).length > 1) conflictDates++;
+    });
+    if (conflictDates === 0 && records.length > 0) {
       events.push({
-        icon: '⚠️', typeLabel: '需注意的社交情境',
+        icon: '🔒', typeLabel: '信息一致',
+        text: '无同一日期多角色记录冲突',
+        dateDisplay: '全时段', source: '来源：系统'
+      });
+    }
+
+    // 4. 新关系或关系变化
+    var changeRecs = records.filter(function(r) { return (r.title || '').indexOf('关系圈更新') >= 0; });
+    changeRecs.forEach(function(r) {
+      events.push({
+        icon: '🔄', typeLabel: '新关系或关系变化',
         text: (r.title || '') + '：' + (r.content || '').substring(0, 60),
         dateDisplay: formatDateDisplay(r.date), source: '来源：' + r.author
       });
     });
 
-    // 5. 信任建立进展
-    var trustRecs = records.filter(function(r) { return (r.title || '').indexOf('信任') >= 0; });
-    trustRecs.forEach(function(r) {
+    // 5. 互动偏好多次被描述
+    var prefRecs = records.filter(function(r) { return (r.title || '').indexOf('互动') >= 0 || (r.title || '').indexOf('社交偏好') >= 0 || (r.title || '').indexOf('边界需求') >= 0; });
+    if (prefRecs.length >= 2) {
       events.push({
-        icon: '🤝', typeLabel: '信任建立',
-        text: (r.content || '').substring(0, 60),
-        dateDisplay: formatDateDisplay(r.date), source: '来源：' + r.author
+        icon: '💬', typeLabel: '互动偏好多次被描述',
+        text: '关于社交互动偏好/边界在 ' + prefRecs.length + ' 次记录中被提及',
+        dateDisplay: prefRecs[prefRecs.length - 1].date + ' ~ ' + prefRecs[0].date,
+        source: '来源：多角色观察'
       });
-    });
+    }
 
     // 6. 长期未复核
     var oldRecs = records.filter(function(r) { return r.date < cutoff60; });
