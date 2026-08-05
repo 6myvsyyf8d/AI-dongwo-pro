@@ -4575,3 +4575,256 @@ a:hover { text-decoration: underline; }
   font-size: 0.82rem;
   color: var(--text-muted);
 }
+
+/* ==========================================
+   沟通说明书四层模型（L1-L4）
+   ========================================== */
+
+.comm-four-layer {
+  padding: 0 0 24px;
+}
+
+.comm-layer {
+  margin-bottom: 24px;
+  padding: 0;
+}
+
+.comm-layer-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.comm-layer-sub {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+/* --- L1 当前摘要 --- */
+.comm-l1-item {
+  background: #fff;
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+}
+
+.comm-l1-text {
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  line-height: 1.6;
+  margin-bottom: 8px;
+}
+
+.comm-l1-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 0.78rem;
+}
+
+.comm-source-badge {
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+.comm-source-badge.source-self       { background: #E8F5E9; color: #2E7D32; }
+.comm-source-badge.source-confirmed  { background: #E3F2FD; color: #1565C0; }
+.comm-source-badge.source-observer   { background: #FFF3E0; color: #E65100; }
+
+.comm-source-info {
+  color: var(--text-muted);
+  flex: 1;
+}
+
+.comm-view-evidence {
+  color: var(--color-primary);
+  text-decoration: none;
+  font-size: 0.78rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* --- L2 最近变化 --- */
+.comm-time-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.comm-time-tab {
+  padding: 6px 16px;
+  border: 1px solid #ddd;
+  border-radius: 20px;
+  background: #fff;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.comm-time-tab.active {
+  background: var(--color-primary);
+  color: #fff;
+  border-color: var(--color-primary);
+}
+
+.comm-l2-summary {
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: 12px;
+}
+.comm-l2-summary p { margin: 0; }
+
+.comm-l2-items {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.comm-l2-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  border-radius: 10px;
+  padding: 10px 14px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+  font-size: 0.85rem;
+}
+
+.comm-l2-item-text {
+  flex: 1;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.comm-l2-item-date {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.comm-l2-eff {
+  background: #E8F5E9;
+  color: #2E7D32;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+/* --- L3 关键事件 --- */
+.comm-l3-item {
+  background: #fff;
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+}
+
+.comm-l3-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.comm-l3-icon { font-size: 1.1rem; }
+.comm-l3-type { font-weight: 600; font-size: 0.85rem; color: var(--text-primary); }
+.comm-l3-date { font-size: 0.78rem; color: var(--text-muted); margin-left: auto; }
+
+.comm-l3-text {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: 6px;
+}
+
+.comm-l3-source {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+/* --- L4 全部记录 --- */
+.comm-l4-group {
+  margin-bottom: 16px;
+}
+
+.comm-l4-group-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 0;
+  cursor: pointer;
+  border-bottom: 1px solid #eee;
+}
+
+.comm-l4-group-icon { font-size: 1rem; }
+.comm-l4-group-label { font-weight: 600; font-size: 0.9rem; color: var(--text-primary); }
+.comm-l4-group-count { font-size: 0.78rem; color: var(--text-muted); flex: 1; }
+.comm-l4-toggle { font-size: 0.85rem; color: var(--text-muted); }
+
+.comm-l4-group-body { padding: 4px 0; }
+
+.comm-l4-day {
+  margin-bottom: 8px;
+}
+
+.comm-l4-day-header {
+  font-weight: 600;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  padding: 4px 0 6px;
+}
+
+.comm-l4-record {
+  display: flex;
+  gap: 8px;
+  padding: 10px 0;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.comm-l4-type {
+  font-size: 1rem;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.comm-l4-record-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.comm-l4-record-title {
+  font-weight: 600;
+  font-size: 0.88rem;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.comm-l4-record-text {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.comm-l4-record-meta {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+/* 通用 */
+.comm-empty {
+  text-align: center;
+  padding: 24px;
+  color: var(--text-muted);
+  font-size: 0.88rem;
+}
