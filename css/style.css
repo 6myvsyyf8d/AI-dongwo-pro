@@ -1692,6 +1692,7 @@ a:hover { text-decoration: underline; }
 .role-select-card[data-role="teacher"]::before { background: linear-gradient(90deg, #52C41A, #73D13D); }
 .role-select-card[data-role="caregiver"]::before { background: linear-gradient(90deg, #722ED1, #9254DE); }
 .role-select-card[data-role="volunteer"]::before { background: linear-gradient(90deg, #13C2C2, #36CFC9); }
+.role-select-card[data-role="temp_supporter"]::before { background: linear-gradient(90deg, #FA8C16, #FFB347); }
 
 .role-select-card:hover {
   transform: translateY(-6px);
@@ -1708,6 +1709,7 @@ a:hover { text-decoration: underline; }
 .role-select-card[data-role="teacher"]:hover { border-color: rgba(82,196,26,0.3); }
 .role-select-card[data-role="caregiver"]:hover { border-color: rgba(114,46,209,0.3); }
 .role-select-card[data-role="volunteer"]:hover { border-color: rgba(19,194,194,0.3); }
+.role-select-card[data-role="temp_supporter"]:hover { border-color: rgba(250,140,22,0.3); }
 
 .role-select-card .role-avatar {
   font-size: 2.8rem;

@@ -27,6 +27,7 @@
       { id: 'u_sample_parent', name: '妈妈', role: 'parent', pin: '2222', avatar: '👨\u200d👩\u200d👧', createdAt: window.getTodayString() },
       { id: 'u_sample_teacher', name: '李老师', role: 'teacher', pin: '3333', avatar: '📚', createdAt: window.getTodayString() },
       { id: 'u_sample_caregiver', name: '张阿姨', role: 'caregiver', pin: '4444', avatar: '🤝', createdAt: window.getTodayString() },
+      { id: 'u_sample_supporter', name: '临时支持者', role: 'temp_supporter', pin: '8888', avatar: '🤲', createdAt: window.getTodayString() },
       { id: 'u_gov_admin', name: '政府管理员', role: 'government', pin: '6666', avatar: '🏛️', createdAt: window.getTodayString() },
       { id: 'u_sys_admin', name: '系统管理员', role: 'admin', pin: '9999', avatar: '🛡️', createdAt: window.getTodayString() }
     ];
