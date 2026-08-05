@@ -293,7 +293,8 @@
           + ' · 审核时间：' + now.toLocaleString('zh-CN')
           + ' · 来源：临时支持者快速记录';
 
-        var recordId = window.DataStore.addRecord(recType, {
+        var recordId = window.DataStore.addRecord({
+          type: recType,
           title: '临时支持者记录',
           content: l4Content,
           author: draft.authorName || '临时支持者',

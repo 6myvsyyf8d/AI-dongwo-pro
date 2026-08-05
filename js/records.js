@@ -21,6 +21,12 @@
   var addRecordState = window.AppState.addRecordState;
   var recordsPageState = window.AppState.recordsPageState;
 
+  // 回退初始化（防止 recordsPageState 未初始化时崩溃）
+  if (!recordsPageState) {
+    window.AppState.recordsPageState = { selectedModule: null, selectedType: null };
+    recordsPageState = window.AppState.recordsPageState;
+  }
+
   // 初始化 prefillContent（如果不存在）
   if (addRecordState && addRecordState.prefillContent === undefined) {
     addRecordState.prefillContent = null;
@@ -479,7 +485,7 @@
     if (!recordsSection) {
       recordsSection = document.createElement('section');
       recordsSection.id = 'records';
-      recordsSection.className = 'page-section';
+      recordsSection.className = 'page-section active';
       var mainContent = document.querySelector('.main-content');
       if (mainContent) mainContent.appendChild(recordsSection);
     }
