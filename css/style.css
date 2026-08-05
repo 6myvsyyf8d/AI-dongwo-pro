@@ -168,11 +168,14 @@ a:hover { text-decoration: underline; }
 }
 
 .topbar-back {
-  font-size: 30px;
+  font-size: 14px;
   color: var(--color-primary);
   cursor: pointer;
   font-family: var(--font-display);
   line-height: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .topbar-title {
@@ -180,6 +183,9 @@ a:hover { text-decoration: underline; }
   font-weight: 700;
   font-size: 17px;
   color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .topbar-quick {

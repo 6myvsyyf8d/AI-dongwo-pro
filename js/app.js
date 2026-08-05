@@ -287,7 +287,7 @@
       'chat-review': '整理确认',
       home: '今日',
       archive: '档案总览',
-      'archive-topics': '主题档案',
+      'archive-topics': '档案 · 主题',
       'archive-status': '档案状态',
       life: '我喜欢的生活',
       communication: '沟通说明书',
@@ -327,9 +327,9 @@
       var backParent = PAGE_BACK_PARENT[pageName] || parent;
       var isTopLevel = (!parent || parent === pageName);
       backEl.style.display = (pageName === 'home' || isTopLevel || isChatPage) ? 'none' : 'block';
-      // 返回按钮写描述性文案，如"← 返回 主题档案"
+      // 返回按钮简洁文案，避免溢出
       if (backParent && backParent !== pageName && !isChatPage) {
-        backEl.textContent = '← 返回 ' + (pageTitles[backParent] || backParent);
+        backEl.textContent = '← 返回';
       }
     }
     if (quickEl) {
