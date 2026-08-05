@@ -1071,145 +1071,6 @@ a:hover { text-decoration: underline; }
   font-weight: 500;
 }
 
-/* --- Chat Interface (对话式采集) --- */
-.chat-layout {
-  display: flex;
-  gap: var(--space-md);
-  height: calc(100vh - 200px);
-  min-height: 500px;
-}
-
-.chat-panel {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  background: white;
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-card);
-  overflow: hidden;
-}
-
-.chat-panel-header {
-  padding: var(--space-md);
-  border-bottom: 1px solid rgba(0,0,0,0.06);
-  font-weight: 600;
-  font-size: 0.92rem;
-}
-
-.chat-messages {
-  flex: 1;
-  overflow-y: auto;
-  padding: var(--space-md);
-}
-
-.chat-bubble {
-  max-width: 80%;
-  padding: 10px 14px;
-  border-radius: var(--radius-md);
-  margin-bottom: var(--space-sm);
-  font-size: 0.88rem;
-  line-height: 1.6;
-  animation: slideUp 0.3s ease;
-}
-
-@keyframes slideUp {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.chat-bubble.ai {
-  background: var(--bg-page);
-  color: var(--text-primary);
-  align-self: flex-start;
-  border-bottom-left-radius: 4px;
-}
-
-.chat-bubble.user {
-  background: var(--color-primary);
-  color: white;
-  align-self: flex-end;
-  margin-left: auto;
-  border-bottom-right-radius: 4px;
-}
-
-.chat-input-area {
-  padding: var(--space-md);
-  border-top: 1px solid rgba(0,0,0,0.06);
-  display: flex;
-  gap: var(--space-sm);
-}
-
-.chat-input-area input {
-  flex: 1;
-  padding: 10px 14px;
-  border: 1.5px solid rgba(0,0,0,0.12);
-  border-radius: var(--radius-md);
-  font-size: 0.88rem;
-  outline: none;
-  font-family: var(--font-body);
-  transition: var(--transition);
-}
-
-.chat-input-area input:focus {
-  border-color: var(--color-primary);
-}
-
-.chat-options {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-xs);
-  margin-top: var(--space-sm);
-}
-
-.chat-option-btn {
-  text-align: left;
-  padding: 8px 14px;
-  border: 1.5px solid rgba(74,144,217,0.3);
-  border-radius: var(--radius-sm);
-  background: var(--color-primary-light);
-  color: var(--color-primary);
-  font-size: 0.82rem;
-  cursor: pointer;
-  transition: var(--transition);
-  font-family: var(--font-body);
-}
-
-.chat-option-btn:hover {
-  background: var(--color-primary);
-  color: white;
-}
-
-/* AI Categorization Panel */
-.categorize-panel {
-  flex: 0 0 300px;
-}
-
-.categorize-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-sm);
-}
-
-.categorize-item {
-  background: var(--color-success-bg);
-  border: 1px solid rgba(82,196,26,0.2);
-  border-radius: var(--radius-sm);
-  padding: var(--space-sm);
-  animation: slideUp 0.3s ease;
-}
-
-.categorize-item .cat-label {
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: #2E7D0F;
-  margin-bottom: 4px;
-}
-
-.categorize-item .cat-content {
-  font-size: 0.82rem;
-  color: var(--text-secondary);
-}
-
 /* --- Version Tabs (版本切换) --- */
 .version-tabs {
   display: flex;
@@ -1432,20 +1293,6 @@ a:hover { text-decoration: underline; }
 
   .two-col, .three-col {
     grid-template-columns: 1fr;
-  }
-
-  .chat-layout {
-    flex-direction: column;
-    height: auto;
-    min-height: 600px;
-  }
-
-  .categorize-panel {
-    flex: none;
-  }
-
-  .chat-panel {
-    min-height: 350px;
   }
 
   .hero-identity-card .hero-name { font-size: 1.3rem; }
@@ -2250,6 +2097,79 @@ a:hover { text-decoration: underline; }
 .profile-stat .stat-label {
   font-size: 0.78rem;
   color: var(--text-muted);
+}
+
+/* --- 医疗信息冲突警告 --- */
+.medical-conflict-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: linear-gradient(135deg, #FFF1F0 0%, #FFCCC7 100%);
+  border: 1.5px solid #F5222D;
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+  animation: mc-shake 0.4s ease-out;
+}
+@keyframes mc-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-4px); }
+  40% { transform: translateX(4px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(3px); }
+}
+.mc-banner-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.mc-banner-body {
+  flex: 1;
+  min-width: 0;
+}
+.mc-banner-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #CF1322;
+  margin-bottom: 4px;
+}
+.mc-banner-detail {
+  font-size: 0.8rem;
+  color: #820014;
+  line-height: 1.5;
+  margin-bottom: 10px;
+}
+.mc-banner-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.mc-btn-fix {
+  padding: 6px 14px;
+  background: #F5222D;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.mc-btn-fix:hover {
+  background: #CF1322;
+}
+.mc-btn-dismiss {
+  padding: 6px 14px;
+  background: transparent;
+  color: #820014;
+  border: 1px solid #F5222D;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.mc-btn-dismiss:hover {
+  background: #FFF1F0;
 }
 
 /* --- 每日任务页面 — Outlook 风格 --- */

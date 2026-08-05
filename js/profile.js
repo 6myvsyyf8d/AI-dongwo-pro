@@ -217,7 +217,7 @@
     // 策略有效性评价入口
     html += '<div style="text-align:center;padding:20px 0;">';
     html += '<div style="font-size:0.85rem;color:var(--text-muted);margin-bottom:8px;">有新的支持经验？记录并验证后加入知识库</div>';
-    html += '<button class="btn btn-outline" style="padding:10px 24px;border-radius:20px;" onclick="window.location.hash=\'collect\'">🤖 AI对话采集新经验</button>';
+    html += '<button class="btn btn-outline" style="padding:10px 24px;border-radius:20px;" onclick="window.location.hash=\'chat\'">💬 打开 AI聊聊</button>';
     html += '</div>';
 
     html += '</div>';

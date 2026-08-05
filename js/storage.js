@@ -1102,7 +1102,45 @@
       if (backup.familyRelations) this.saveFamilyRelations(backup.familyRelations);
       if (backup.auditLog) this.saveAuditLog(backup.auditLog);
       return true;
+    },
+
+    // ========== 照护信息 ==========
+
+    _getCareDefaults: function() {
+      return {
+        allergy: { items: '无', level: '无' },
+        medicine: '无',
+        checkup: '无',
+        special: '无',
+        sleep: '无'
+      };
+    },
+
+    getCareInfo: function() {
+      var data = this.load();
+      if (!data || !data.careInfo) return this._getCareDefaults();
+      return data.careInfo;
+    },
+
+    forceUpdateCareInfo: function(updates) {
+      var data = this.load() || {};
+      if (!data.careInfo) data.careInfo = this._getCareDefaults();
+      Object.keys(updates).forEach(function(k) {
+        data.careInfo[k] = updates[k];
+      });
+      this.save(data);
+    },
+
+    validateMedicalConsistency: function() {
+      var ci = this.getCareInfo();
+      var tasks = this.getTasks();
+      var medCount = tasks.filter(function(t) { return t.category === 'medication' && t.isActive !== false; }).length;
+      if (ci.medicine === '无' && medCount > 0) {
+        return { type: 'medicine_mismatch', message: '档案标注为"无用药"，但系统中存在 ' + medCount + ' 项用药任务' };
+      }
+      return null;
     }
+
   };
 
   window.DataStore = DataStore;

@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/quickcard.css">
   <link rel="stylesheet" href="css/profile.css">
-  <link rel="stylesheet" href="css/chatbot.css?v=2.0-chat">
+  <link rel="stylesheet" href="css/chatbot.css?v=3.0-clean">
   <link rel="stylesheet" href="css/chat-ai.css">
   <link rel="stylesheet" href="css/youth-chat.css">
 </head>
@@ -215,29 +215,6 @@
       <div class="container" id="profile-content" style="padding-top:12px;"></div>
     </section>
 
-    <!-- ===== 对话式采集 #collect ===== -->
-    <section id="collect" class="page-section">
-      <div class="page-header"><span class="page-title">对话式信息采集</span></div>
-      <div class="container-wide" id="collect-content" style="padding-top:12px;">
-        <div class="chat-layout">
-          <div class="chat-panel">
-            <div class="chat-panel-header">🤖 AI懂我 · 对话采集</div>
-            <div class="chat-messages" id="chat-messages"></div>
-            <div id="chat-options-area"></div>
-          </div>
-          <div class="chat-panel categorize-panel">
-            <div class="chat-panel-header">📋 AI 实时归类</div>
-            <div class="categorize-list" id="categorize-list" style="padding:16px;overflow-y:auto;flex:1;">
-              <div class="empty-state">
-                <div class="empty-icon">📝</div>
-                <div class="empty-text">对话开始后，AI将实时归类采集到的信息</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
     <!-- ===== 数据可视化 #charts ===== -->
     <section id="charts" class="page-section">
       <div class="page-header"><span class="page-title">数据可视化</span></div>
@@ -353,49 +330,49 @@
   <div class="modal-overlay" id="quick-card-modal" style="display:none;"></div>
 
   <!-- 导出PDF库 -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js?v=1.0.0"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <!-- 图表库 -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js?v=1.0.0"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
   <!-- Markdown 解析 & XSS 防护 -->
-  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js?v=1.0.0"></script>
-  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js?v=1.0.0"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
 
   <!-- 模块脚本（按依赖顺序加载） -->
-  <script src="js/utils.js?v=1.0-final"></script>
-  <script src="js/constants.js?v=1.0-final"></script>
-  <script src="js/modules.js?v=1.0-final"></script>
-  <script src="js/state.js?v=1.0-final"></script>
-  <script src="js/storage.js?v=1.0-final"></script>
-  <script src="js/auth.js?v=1.0-final"></script>
-  <script src="js/permissions.js?v=1.0-final"></script>
-  <script src="js/profile.js?v=1.0-final"></script>
-  <script src="js/records.js?v=1.0-final"></script>
-  <script src="js/quickcard.js?v=1.0-final"></script>
-  <script src="js/timeline.js?v=1.0-final"></script>
+  <script src="js/utils.js?v=3.0-clean"></script>
+  <script src="js/constants.js?v=3.0-clean"></script>
+  <script src="js/modules.js?v=3.0-clean"></script>
+  <script src="js/state.js?v=3.0-clean"></script>
+  <script src="js/storage.js?v=3.0-clean"></script>
+  <script src="js/auth.js?v=3.0-clean"></script>
+  <script src="js/permissions.js?v=3.0-clean"></script>
+  <script src="js/profile.js?v=3.0-clean"></script>
+  <script src="js/records.js?v=3.0-clean"></script>
+  <script src="js/quickcard.js?v=3.0-clean"></script>
+  <script src="js/timeline.js?v=3.0-clean"></script>
   <!-- 新版对话引擎（chatbot-templates → classifier → providers → markdown → chatbot） -->
-  <script src="js/chatbot-templates.js?v=1.0-final"></script>
-  <script src="js/chatbot-classifier.js?v=1.0-final"></script>
-  <script src="js/chatbot-providers.js?v=1.0-final"></script>
-  <script src="js/chat-markdown.js?v=1.0-final"></script>
-  <script src="js/chatbot.js?v=1.0-final"></script>
-  <script src="js/chat-ui.js?v=2.1-chat"></script>
-  <script src="js/youth-tts.js?v=1.0-final"></script>
-  <script src="js/youth-chat.js?v=1.0-final"></script>
-  <script src="js/charts.js?v=1.0-final"></script>
-  <script src="js/analytics-engine.js?v=1.0-final"></script>
-  <script src="js/welcome.js?v=1.0-final"></script>
-  <script src="js/grants.js?v=1.0-final"></script>
-  <script src="js/join-request.js?v=1.0-final"></script>
-  <script src="js/approvals.js?v=1.0-final"></script>
-  <script src="js/archive-code.js?v=1.0-final"></script>
+  <script src="js/chatbot-templates.js?v=3.0-clean"></script>
+  <script src="js/chatbot-classifier.js?v=3.0-clean"></script>
+  <script src="js/chatbot-providers.js?v=3.0-clean"></script>
+  <script src="js/chat-markdown.js?v=3.0-clean"></script>
+  <script src="js/chatbot.js?v=3.0-clean"></script>
+  <script src="js/chat-ui.js?v=3.0-clean"></script>
+  <script src="js/youth-tts.js?v=3.0-clean"></script>
+  <script src="js/youth-chat.js?v=3.0-clean"></script>
+  <script src="js/charts.js?v=3.0-clean"></script>
+  <script src="js/analytics-engine.js?v=3.0-clean"></script>
+  <script src="js/welcome.js?v=3.0-clean"></script>
+  <script src="js/grants.js?v=3.0-clean"></script>
+  <script src="js/join-request.js?v=3.0-clean"></script>
+  <script src="js/approvals.js?v=3.0-clean"></script>
+  <script src="js/archive-code.js?v=3.0-clean"></script>
   <!-- 新模块：政府看板 + 批量导入 + 管理页 -->
-  <script src="js/government.js?v=1.0-final"></script>
-  <script src="js/batch-import.js?v=1.0-final"></script>
-  <script src="js/admin.js?v=1.0-final"></script>
+  <script src="js/government.js?v=3.0-clean"></script>
+  <script src="js/batch-import.js?v=3.0-clean"></script>
+  <script src="js/admin.js?v=3.0-clean"></script>
 
   <!-- 主入口（最后加载） -->
-  <script src="js/app.js?v=2.0-chat"></script>
+  <script src="js/app.js?v=3.0-clean"></script>
 
 </body>
 </html>

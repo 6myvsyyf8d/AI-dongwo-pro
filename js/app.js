@@ -38,18 +38,17 @@
   var likesList = C.likesList;
   var dislikesList = C.dislikesList;
   var communicationGuide = C.communicationGuide;
+  var DataStore = window.DataStore;
   var emotionSupport = C.emotionSupport;
-  var careInfo = C.careInfo;
+  var careInfo = DataStore.getCareInfo();
   var workInfo = C.workInfo;
   var dailyRoutine = C.dailyRoutine;
   var relationsInfo = C.relationsInfo;
   var quickCardVersions = C.quickCardVersions;
   var privacyLevels = C.privacyLevels;
-  var chatScript = C.chatScript;
   var routeMap = C.routeMap;
   var STRATEGY_KB = C.STRATEGY_KB;
   var EMOTION_TO_STRATEGY = C.EMOTION_TO_STRATEGY;
-  var DataStore = window.DataStore;
   var appState = window.AppState.appState;
   var currentPage = window.AppState.currentPage;
   var currentRole = window.AppState.currentRole;
@@ -194,7 +193,6 @@
       timeline: '记录时间轴',
       records: '记录列表',
       profile: '个人中心',
-      collect: '对话采集',
       charts: '数据可视化',
       tasks: '每日任务',
       calendar: '日程日历',
@@ -356,9 +354,6 @@
       case 'timeline':
         window.TimelinePage.renderTimeline();
         break;
-      case 'collect':
-        window.ChatBot.renderCollectPage();
-        break;
       case 'login':
         window.Auth.renderRoleSelect();
         break;
@@ -438,6 +433,13 @@
         }
       }
       alertBannerEl.innerHTML = alertHTML;
+
+      // 医疗信息冲突检测 — 在提醒区追加红色冲突条
+      var medConflict = DataStore.validateMedicalConsistency();
+      if (medConflict && (role === 'parent' || role === 'admin')) {
+        alertBannerEl.innerHTML += '<div class="alert-item danger" style="display:flex;align-items:center;gap:8px;cursor:pointer;" onclick="window.location.hash=\'care\';">' +
+          '<span>⚠️</span><span>医疗信息冲突：用药数据不一致，点击查看</span></div>';
+      }
     }
 
     // 渲染导航卡片 —— 根据角色定制
@@ -462,8 +464,6 @@
             window.location.hash = 'quickcard';
           } else if (action === 'add-mood') {
             window.RecordsPage.createAddRecordModal(user, role, 'mood');
-          } else if (target === 'collect') {
-            navigateTo('collect');
           } else {
             window.location.hash = target;
           }
@@ -927,7 +927,26 @@
     var contentArea = document.getElementById('care-content');
     if (!contentArea) return;
 
+    // 重新读取权威数据源
+    careInfo = DataStore.getCareInfo();
+
     var html = '';
+
+    // 医疗信息冲突警告
+    var conflict = DataStore.validateMedicalConsistency();
+    if (conflict) {
+      html += '<div class="medical-conflict-banner">';
+      html += '  <div class="mc-banner-icon">⚠️</div>';
+      html += '  <div class="mc-banner-body">';
+      html += '    <div class="mc-banner-title">医疗信息冲突</div>';
+      html += '    <div class="mc-banner-detail">档案标注为"无用药"，但系统中存在用药相关数据，可能造成照护事故。</div>';
+      html += '    <div class="mc-banner-actions">';
+      html += '      <button class="mc-btn-fix" onclick="fixMedicalConflict()">更新档案用药信息</button>';
+      html += '      <button class="mc-btn-dismiss" onclick="this.closest(\'.medical-conflict-banner\').remove()">稍后处理</button>';
+      html += '    </div>';
+      html += '  </div>';
+      html += '</div>';
+    }
 
     // 过敏警告（置顶醒目）—— A级公开，所有角色可见
     html += '<div class="allergy-warning" data-privacy="A">';
@@ -1930,9 +1949,6 @@
       if (e.target.id === 'btn-quick-card' || e.target.closest('#btn-quick-card')) {
         window.location.hash = 'quickcard';
       }
-      if (e.target.id === 'btn-collect' || e.target.closest('#btn-collect')) {
-        window.ChatBot.navigateToCollect();
-      }
       // 弹窗关闭按钮
       if (e.target.id === 'modal-close-btn' || e.target.id === 'btn-close-modal' || e.target.closest('#modal-close-btn') || e.target.closest('#btn-close-modal')) {
         // 由各弹窗模块自行处理关闭
@@ -2370,6 +2386,49 @@
   };
 
   /* ==========================================================
+   * 医疗信息冲突修复
+   * ========================================================== */
+  window.fixMedicalConflict = function () {
+    var ci = DataStore.getCareInfo();
+    if (!ci) return;
+    // 从系统数据中推断正确的用药信息
+    var tasks = DataStore.getTasks().filter(function (t) {
+      return t.category === 'medication' && t.isActive !== false;
+    });
+    var events = DataStore.getEvents().filter(function (e) {
+      return e.title && (e.title.indexOf('服药') !== -1 || e.title.indexOf('用药') !== -1);
+    });
+
+    var newMedicine = '无';
+    var details = [];
+    if (tasks.length > 0) {
+      newMedicine = tasks.map(function (t) { return t.title; }).join('、');
+      details.push(tasks.length + '项用药任务');
+    }
+    if (events.length > 0) {
+      newMedicine = events.map(function (e) { return e.title + (e.time ? ' ' + e.time : ''); }).join('、');
+      details.push(events.length + '项用药提醒');
+    }
+    if (details.length === 0) {
+      showToast('未检测到用药相关数据，无需更新');
+      return;
+    }
+
+    if (confirm('检测到系统中存在用药数据（' + details.join('、') + '），是否将档案的用药信息更新为：\n\n' + newMedicine + '\n\n这将以系统数据为准覆盖当前"无用药"标注。')) {
+      DataStore.forceUpdateCareInfo({ medicine: newMedicine });
+      careInfo = DataStore.getCareInfo();
+      showToast('医疗信息已更新');
+      // 刷新当前页面
+      var hash = window.location.hash.replace('#', '');
+      if (hash === 'care' || hash === 'home' || hash === '') {
+        handleRoute();
+      } else {
+        window.location.hash = 'care';
+      }
+    }
+  };
+
+  /* ==========================================================
    * 十四、日程日历页面
    * ========================================================== */
 
@@ -2629,8 +2688,6 @@
   window.ExportModule = ExportModule;
   window.renderTimeline = window.TimelinePage.renderTimeline;
   window.renderCharts = window.ChartsPage.renderCharts;
-  window.renderCollectPage = window.ChatBot.renderCollectPage;
-  window.navigateToCollect = window.ChatBot.navigateToCollect;
   window.renderProfile = window.ProfilePage.renderProfile;
   window.renderLatestActivity = renderLatestActivity;
   window.renderRecordCard = renderRecordCard;

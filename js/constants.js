@@ -198,64 +198,6 @@
     admin: '管理员'
   };
 
-  /** 对话式采集预设脚本 */
-  var chatScript = [
-    {
-      step: 0,
-      aiMessage: '您好！我是"AI懂我"档案助手。我会通过几个简单的问题帮您建立支持档案。我们先从基本信息开始吧！',
-      options: ['好的，开始吧', '我先了解一下流程'],
-      userReply: null
-    },
-    {
-      step: 1,
-      aiMessage: '请告诉我，您要为谁建立支持档案？他/她的名字是什么？',
-      options: ['我叫小雨，24岁，男性', '我叫小明，20岁，女性'],
-      userReply: null
-    },
-    {
-      step: 2,
-      aiMessage: '好的！{name}平时最喜欢做什么呢？可以举几个例子。',
-      options: ['喜欢烘焙、公交车、弹琴、猫', '喜欢画画、拼图、听音乐'],
-      userReply: null
-    },
-    {
-      step: 3,
-      aiMessage: '那有什么事情是{name}特别不喜欢或者会让他/她不舒服的？',
-      options: ['突然改变计划、很吵的环境、被催促', '人多的时候、强光、某些声音'],
-      userReply: null
-    },
-    {
-      step: 4,
-      aiMessage: '非常重要的信息：{name}有没有食物过敏或需要特别注意的医疗事项？',
-      options: ['海鲜过敏（虾、蟹、贝类）——严禁接触', '没有过敏，但有癫痫需要服药'],
-      userReply: null
-    },
-    {
-      step: 5,
-      aiMessage: '和{name}沟通时，什么方式最有效？有什么需要特别注意的吗？',
-      options: ['短句、慢一点、一次说一件事，给反应时间', '用图片辅助理解，避免复杂指令'],
-      userReply: null
-    },
-    {
-      step: 6,
-      aiMessage: '{name}在什么情况下容易情绪波动？情绪波动时有什么表现？',
-      options: ['环境太吵、计划改变、被催促时会焦虑', '被批评、做不好事情时会沮丧'],
-      userReply: null
-    },
-    {
-      step: 7,
-      aiMessage: '最后一个问题：{name}身边有哪些重要的照顾者或支持者？',
-      options: ['爸爸妈妈（法定支持人），李老师（机构老师）', '妈妈和外婆，社区社工小刘'],
-      userReply: null
-    },
-    {
-      step: 8,
-      aiMessage: '太好了！我已经收集了所有关键信息。正在为您生成"AI懂我"支持档案...\n\n档案已经生成完毕！您可以在首页查看小雨的完整支持档案，也可以打开速读卡分享给老师或志愿者。',
-      options: [],
-      userReply: null
-    }
-  ];
-
   /* ==========================================================
    * 角色系统配置
    * ========================================================== */
@@ -345,7 +287,6 @@
     'work': 'work',
     'relations': 'relations',
     'timeline': 'timeline',
-    'collect': 'collect',
     'login': 'login',
     'profile': 'profile',
     'charts': 'charts',
@@ -396,10 +337,6 @@
         { hash: 'charts', icon: '📊', label: '数据可视化' },
         { hash: 'analytics', icon: '📈', label: '数据价值' }
       ]
-    },
-    {
-      group: 'AI助手',
-      items: [{ hash: 'collect', icon: '🤖', label: '对话采集' }]
     }
   ];
 
@@ -889,7 +826,6 @@
     quickCardVersions: quickCardVersions,
     privacyLevels: privacyLevels,
     roleLabels: roleLabels,
-    chatScript: chatScript,
     FAMILY_RELATIONS: FAMILY_RELATIONS,
     INVITABLE_ROLES: INVITABLE_ROLES,
     ROLES: ROLES,
