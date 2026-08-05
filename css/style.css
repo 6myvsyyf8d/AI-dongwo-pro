@@ -193,7 +193,7 @@ a:hover { text-decoration: underline; }
 /* --- Main Content --- */
 .main-content {
   margin-top: 0;
-  padding: 14px 16px 0;
+  padding: 14px 16px 90px;
   min-height: auto;
 }
 
@@ -4455,6 +4455,7 @@ a:hover { text-decoration: underline; }
   display: flex;
   flex-direction: column;
   gap: 12px;
+  padding-bottom: 12px;
 }
 
 .at-card {

@@ -45,7 +45,7 @@
     html += '  <div class="know-me-mini">';
     html += '    <div class="know-me-mini-title">💪 我擅长</div>';
     am.strengths.forEach(function (s) {
-      html += '    <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:10px;font-size:0.85rem;">';
+      html += '    <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px;font-size:0.85rem;">';
       html += '      <span style="font-size:1.4rem;flex-shrink:0;">' + s.icon + '</span>';
       html += '      <div><strong>' + s.title + '</strong><br><span style="color:var(--text-secondary);">' + s.desc + '</span></div>';
       html += '    </div>';
@@ -54,7 +54,7 @@
     html += '  <div class="know-me-mini">';
     html += '    <div class="know-me-mini-title">💚 我喜欢的</div>';
     am.interests.forEach(function (i) {
-      html += '    <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:10px;font-size:0.85rem;">';
+      html += '    <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px;font-size:0.85rem;">';
       html += '      <span style="font-size:1.4rem;flex-shrink:0;">' + i.icon + '</span>';
       html += '      <div><strong>' + i.title + '</strong><br><span style="color:var(--text-secondary);">' + i.desc + '</span></div>';
       html += '    </div>';
@@ -250,7 +250,7 @@
     // ============================================
     // 1. 人物身份卡 —— 快速认识这个人
     // ============================================
-    html += '<div class="archive-id-card" style="margin-bottom:20px;">';
+    html += '<div class="archive-id-card" style="margin-bottom:6px;">';
     // 速读卡入口 —— 右上角
     html += '  <button class="archive-quickcard-btn" id="archive-quickcard-btn" title="速读卡">';
     html += '    <span class="qc-btn-icon">📋</span>';
@@ -273,7 +273,7 @@
     // ============================================
     // 2. 先认识我 —— 优势在先，支持在后
     // ============================================
-    html += '<div class="archive-about-section" style="margin-bottom:20px;">';
+    html += '<div class="archive-about-section" style="margin-bottom:6px;">';
     html += '  <div class="archive-section-header">';
     html += '    <span class="archive-section-title">🌻 先认识我</span>';
     html += '    <span class="archive-section-sub">优势、兴趣、沟通偏好</span>';
@@ -335,9 +335,9 @@
     var allRecords = DataStore.getRecords();
     var summaryItems = buildCurrentSummary(allRecords, role);
     if (summaryItems.length > 0) {
-      html += '<div class="archive-recent-section" style="margin-bottom:20px;">';
-      html += '  <div class="archive-section-header">';
-      html += '    <span class="archive-section-title">📌 当前摘要</span>';
+      html += '<div class="archive-recent-section" style="margin-bottom:8px;">'
+      + '  <div class="archive-section-header">'
+      + '    <span class="archive-section-title">📌 当前摘要</span>';
       html += '  </div>';
       summaryItems.forEach(function (item) {
         html += '<div class="archive-recent-item" data-navigate="' + item.link + '" style="margin-bottom:10px;">';
@@ -358,7 +358,7 @@
     // 4. 最近变化 —— 2-4条，标明时间范围
     // ============================================
     var recentChanges = buildRecentChanges(allRecords);
-    html += '<div class="archive-recent-section" style="margin-bottom:20px;">';
+    html += '<div class="archive-recent-section" style="margin-bottom:8px;">';
     html += '  <div class="archive-section-header">';
     html += '    <span class="archive-section-title">🕐 最近变化</span>';
     html += '    <span class="archive-section-sub">近7天</span>';
@@ -386,7 +386,7 @@
     // ============================================
     var pendingItems = buildPendingAlerts(allRecords);
     if (pendingItems.length > 0) {
-      html += '<div class="archive-recent-section" style="margin-bottom:20px;">';
+      html += '<div class="archive-recent-section" style="margin-bottom:8px;">';
       html += '  <div class="archive-section-header">';
       html += '    <span class="archive-section-title">🔔 待确认与提醒</span>';
       html += '  </div>';
@@ -405,7 +405,7 @@
     // ============================================
     // 6. 入口 —— 主题档案、时间轴、速读卡、档案状态
     // ============================================
-    html += '<div class="archive-recent-section" style="margin-bottom:20px;">';
+    html += '<div class="archive-recent-section" style="margin-bottom:8px;">';
     html += '  <div class="archive-section-header">';
     html += '    <span class="archive-section-title">📂 深入查看</span>';
     html += '  </div>';
