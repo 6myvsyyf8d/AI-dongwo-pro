@@ -93,8 +93,8 @@
       html += '</button>';
     });
     html += '</div>';
-    html += '<div class="qs-actions"><button class="qs-btn-primary" id="qs-step1-next"'
-      + (selectedRole ? '' : ' disabled') + '>继续</button></div>';
+    html += '<div class="qs-actions"><button class="qs-btn-primary" id="qs-step1-next">继续</button></div>';
+    html += '<div class="qs-back-login"><a href="#login">← 返回登录</a></div>';
     html += '</div>';
     return html;
   }
@@ -181,14 +181,17 @@
         selectedRole = this.getAttribute('data-role');
         container.querySelectorAll('.qs-role-card').forEach(function (b) { b.classList.remove('active'); });
         this.classList.add('active');
-        var nextBtn = document.getElementById('qs-step1-next');
-        if (nextBtn) nextBtn.disabled = false;
       });
     });
     var next1 = document.getElementById('qs-step1-next');
     if (next1) {
       next1.addEventListener('click', function () {
-        if (!selectedRole) return;
+        if (!selectedRole) {
+          if (typeof window.showToast === 'function') {
+            window.showToast('请先选择身份');
+          }
+          return;
+        }
         currentStep = 2;
         renderStep(container);
       });
