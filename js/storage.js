@@ -208,6 +208,27 @@
       });
     });
 
+    // === 照护记录补充（覆盖用药、就医、过敏、作息、紧急联系人等） ===
+    ['care'].forEach(function() { /* scope */ });
+    var careMore = [
+      { d: -8, t: '过敏确认', c: '与机构厨师确认了过敏清单，厨房已张贴海鲜禁用标识。食材采购时也会注意。', a: 'caregiver' },
+      { d: -14, t: '体检结果', c: '年度体检完成，各项指标正常。医生建议保持每天户外活动不少于30分钟。', a: 'parent' },
+      { d: -19, t: '用药确认', c: '社区医院复诊，确认目前无需常规用药。医生建议保持生活方式观察，半年后复查。', a: 'parent' },
+      { d: -25, t: '紧急联系人', c: '更新了紧急联系人：添加李老师（机构主管，139xxxx1234），作为第二紧急联系。', a: 'parent' },
+      { d: -33, t: '新食物尝试', c: '尝试了新款无麸质饼干（椰奶味），小雨表示喜欢，两小时内没有不良反应。', a: 'parent' },
+      { d: -42, t: '作息跟踪', c: '连续一周晚上10点前入睡，早上8:30起床，作息规律。张阿姨记录。', a: 'caregiver' },
+      { d: -55, t: '换季提醒', c: '天气转凉，已准备秋季外套。提醒机构注意室内温度，避免着凉。', a: 'parent' },
+      { d: -70, t: '复查日历', c: '上次体检医生建议3个月后复查视力。已在日历标记提醒，到期前一周通知。', a: 'parent' }
+    ];
+    careMore.forEach(function(item) {
+      var au = authors[item.a];
+      addRecord('care', {
+        title: item.t, content: item.c,
+        author: au.name, authorRole: au.role, authorId: au.id, authorAvatar: au.avatar,
+        date: dateStr(item.d), time: timeStr(8 + Math.floor(Math.random() * 5), Math.floor(Math.random() * 60))
+      });
+    });
+
     // === 沟通记录（12条，跨6个月，4个角色） ===
     var commData = [
       // 今天-7天

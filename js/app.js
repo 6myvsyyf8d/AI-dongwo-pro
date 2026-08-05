@@ -1042,7 +1042,7 @@
     html += '</div>';
 
     html += '</div>';
-    contentArea.innerHTML = html;
+    contentArea.innerHTML = (opts.prependHtml || '') + html;
 
     // 首次渲染 L2 和 L4
     renderL2Content(0, records);
@@ -1815,9 +1815,125 @@
     return events;
   }
 
+  // ============ #care L1 当前摘要 ============
+  function buildCareL1(records) {
+    var items = [];
+    var careInfo = DataStore.getCareInfo();
+    var sorted = records.slice().sort(function(a, b) { return b.date.localeCompare(a.date); });
+
+    // 1. 当前照护安排 + 最近确认信息
+    var latest = sorted[0];
+    if (latest) {
+      items.push({
+        text: '最近照护记录：' + (latest.title || '') + ' — ' + (latest.content || '').substring(0, 60),
+        source: '来源：' + (latest.author || '') + ' · ' + formatDateDisplay(latest.date) + '（最近确认）',
+        statusLabel: '已确认', statusClass: 'source-confirmed'
+      });
+    }
+
+    // 2. 过敏信息（权威数据）
+    items.push({
+      text: '过敏食物：' + careInfo.allergy.items + '（' + careInfo.allergy.level + '）',
+      source: '来源：档案权威数据 · 所有照护者须知', statusLabel: '已确认', statusClass: 'source-confirmed'
+    });
+
+    // 3. 近期医疗事件
+    var medicalRecs = records.filter(function(r) { return (r.title || '').indexOf('体检') >= 0 || (r.title || '').indexOf('用药') >= 0 || (r.title || '').indexOf('复查') >= 0; });
+    medicalRecs.slice(0, 2).forEach(function(r) {
+      items.push({
+        text: (r.title || '') + '：' + (r.content || '').substring(0, 60),
+        source: '来源：' + r.author + ' · ' + formatDateDisplay(r.date), statusLabel: '已确认', statusClass: 'source-confirmed'
+      });
+    });
+
+    // 4. 用药情况
+    items.push({
+      text: '当前用药：' + (careInfo.medicine || '无常规用药'),
+      source: '来源：档案 · 最后确认：' + formatDateDisplay(sorted[0] ? sorted[0].date : ''),
+      statusLabel: '已确认', statusClass: 'source-confirmed'
+    });
+
+    return items.slice(0, 6);
+  }
+
+  // ============ #care L3 关键事件 ============
+  function buildCareL3(records) {
+    var events = [];
+    var cutoff30 = dateDaysAgo(30);
+    var cutoff60 = dateDaysAgo(60);
+
+    // 1. 首次记录
+    if (records.length > 0) {
+      var first = records[records.length - 1];
+      events.push({
+        icon: '🆕', typeLabel: '首次记录',
+        text: '第一条照护记录：' + ((first.title || '') + ' — ' + (first.content || '')).substring(0, 50),
+        dateDisplay: formatDateDisplay(first.date),
+        source: '来源：' + (first.author || '系统')
+      });
+    }
+
+    // 2. 信息冲突检查
+    var allergyConfirm = records.filter(function(r) { return (r.title || '').indexOf('过敏') >= 0; });
+    if (allergyConfirm.length >= 2) {
+      var latestAllergy = allergyConfirm.reduce(function(a, b) { return a.date > b.date ? a : b; });
+      events.push({
+        icon: '📋', typeLabel: '过敏信息更新',
+        text: '过敏信息有 ' + allergyConfirm.length + ' 次记录更新，最近一次：' + latestAllergy.title,
+        dateDisplay: formatDateDisplay(latestAllergy.date),
+        source: '来源：' + latestAllergy.author
+      });
+    }
+
+    // 3. 新就医记录
+    var medicalRecs = records.filter(function(r) { return (r.title || '').indexOf('体检') >= 0 || (r.title || '').indexOf('用药') >= 0; });
+    medicalRecs.forEach(function(r) {
+      events.push({
+        icon: '🏥', typeLabel: '医疗记录',
+        text: r.title + '：' + (r.content || '').substring(0, 50),
+        dateDisplay: formatDateDisplay(r.date),
+        source: '来源：' + r.author
+      });
+    });
+
+    // 4. 紧急联系人变更
+    var contactRecs = records.filter(function(r) { return (r.title || '').indexOf('紧急联系') >= 0 || (r.title || '').indexOf('联系') >= 0 && (r.content || '').indexOf('139') >= 0; });
+    contactRecs.forEach(function(r) {
+      events.push({
+        icon: '📞', typeLabel: '联系人变更',
+        text: (r.content || '').substring(0, 60),
+        dateDisplay: formatDateDisplay(r.date),
+        source: '来源：' + r.author
+      });
+    });
+
+    // 5. 到期提醒（仅复查类）
+    var reviewRecs = records.filter(function(r) { return (r.title || '').indexOf('复查') >= 0; });
+    reviewRecs.forEach(function(r) {
+      events.push({
+        icon: '📅', typeLabel: '到期提醒',
+        text: (r.title || '') + '：' + (r.content || '').substring(0, 60),
+        dateDisplay: formatDateDisplay(r.date),
+        source: '来源：' + r.author
+      });
+    });
+
+    // 6. 长期未复核
+    var oldRecs = records.filter(function(r) { return r.date < cutoff60; });
+    if (oldRecs.length > 0) {
+      var oldest = oldRecs.reduce(function(a, b) { return a.date < b.date ? a : b; });
+      events.push({
+        icon: '⏰', typeLabel: '超过复核周期',
+        text: '有 ' + oldRecs.length + ' 条照护记录超过60天未复核，建议确认内容是否仍然准确',
+        dateDisplay: formatDateDisplay(oldest.date) + ' ~ ' + formatDateDisplay(cutoff60),
+        source: '来源：系统提醒'
+      });
+    }
+
+    return events;
+  }
+
   // 剩余占位函数——后续主题逐 commit 替换为真实逻辑
-  function buildCareL1(records) { return [{ text: '照护主题四层模型将在后续 commit 完成', source: '', statusLabel: '待确认', statusClass: 'source-observer' }]; }
-  function buildCareL3(records) { return []; }
   function buildWorkL1(records) { return [{ text: '工作主题四层模型将在后续 commit 完成', source: '', statusLabel: '待确认', statusClass: 'source-observer' }]; }
   function buildWorkL3(records) { return []; }
   function buildRelationsL1(records) { return [{ text: '关系主题四层模型将在后续 commit 完成', source: '', statusLabel: '待确认', statusClass: 'source-observer' }]; }
@@ -1851,76 +1967,24 @@
     var contentArea = document.getElementById('care-content');
     if (!contentArea) return;
 
-    // 重新读取权威数据源
     careInfo = DataStore.getCareInfo();
 
     var html = '';
 
-    // 医疗信息冲突警告
-    var conflict = DataStore.validateMedicalConsistency();
-    if (conflict) {
-      html += '<div class="medical-conflict-banner">';
-      html += '  <div class="mc-banner-icon">⚠️</div>';
-      html += '  <div class="mc-banner-body">';
-      html += '    <div class="mc-banner-title">医疗信息冲突</div>';
-      html += '    <div class="mc-banner-detail">档案标注为"无用药"，但系统中存在用药相关数据，可能造成照护事故。</div>';
-      html += '    <div class="mc-banner-actions">';
-      html += '      <button class="mc-btn-fix" onclick="fixMedicalConflict()">更新档案用药信息</button>';
-      html += '      <button class="mc-btn-dismiss" onclick="this.closest(\'.medical-conflict-banner\').remove()">稍后处理</button>';
-      html += '    </div>';
-      html += '  </div>';
-      html += '</div>';
-    }
-
-    // 过敏警告（置顶醒目）—— A级公开，所有角色可见
+    // 过敏警告（置顶醒目，保留原样式）
     html += '<div class="allergy-warning" data-privacy="A">';
     html += '  <div class="allergy-icon">🚨</div>';
     html += '  <div class="allergy-text">严重过敏警告</div>';
     html += '  <div class="allergy-detail">' + careInfo.allergy.items + ' — ' + careInfo.allergy.level + '</div>';
     html += '</div>';
 
-    // 照护信息卡片
-    html += '<div class="privacy-grid">';
-
-    // 过敏详情 —— A级公开
-    html += '<div class="privacy-item" data-privacy="A">';
-    html += '  <div class="privacy-label">过敏食物</div>';
-    html += '  <div class="privacy-value" style="color:#F5222D;font-weight:700;">' + careInfo.allergy.items + '</div>';
-    html += '</div>';
-
-    // 过敏等级 —— A级公开
-    html += '<div class="privacy-item" data-privacy="A">';
-    html += '  <div class="privacy-label">过敏等级</div>';
-    html += '  <div class="privacy-value" style="color:#F5222D;font-weight:700;">' + careInfo.allergy.level + '</div>';
-    html += '</div>';
-
-    // 用药 —— D级私密，仅家长可见
-    html += '<div class="privacy-item" data-privacy="D">';
-    html += '  <div class="privacy-label">日常用药</div>';
-    html += '  <div class="privacy-value">' + careInfo.medicine + '</div>';
-    html += '</div>';
-
-    // 体检 —— D级私密，仅家长可见
-    html += '<div class="privacy-item" data-privacy="D">';
-    html += '  <div class="privacy-label">体检安排</div>';
-    html += '  <div class="privacy-value">' + careInfo.checkup + '</div>';
-    html += '</div>';
-
-    // 特殊事项 —— B级照护
-    html += '<div class="privacy-item" data-privacy="B">';
-    html += '  <div class="privacy-label">特别注意事项</div>';
-    html += '  <div class="privacy-value">' + careInfo.special + '</div>';
-    html += '</div>';
-
-    // 睡眠 —— B级照护
-    html += '<div class="privacy-item" data-privacy="B">';
-    html += '  <div class="privacy-label">作息要求</div>';
-    html += '  <div class="privacy-value">' + careInfo.sleep + '</div>';
-    html += '</div>';
-
-    html += '</div>';
-
-    contentArea.innerHTML = html;
+    // 四层模型（过敏警告通过 prependHtml 前置）
+    renderTopicFourLayer(contentArea, 'care', {
+      l1Title: '📌 当前摘要',
+      l1Sub: '当前照护安排、近期医疗事件与用药情况',
+      emptyText: '暂无照护记录',
+      prependHtml: html
+    });
   }
 
   /* ==========================================================
