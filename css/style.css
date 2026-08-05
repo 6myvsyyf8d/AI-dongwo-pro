@@ -4435,3 +4435,143 @@ a:hover { text-decoration: underline; }
     font-size: 0.75rem;
   }
 }
+
+/* ==========================================
+   档案模块：主题档案入口 + 档案状态（archive.js）
+   ========================================== */
+
+/* --- 主题档案入口 --- */
+.at-intro {
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin: 0 0 16px;
+  padding: 4px 0;
+}
+
+.at-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.at-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 18px 16px;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.04);
+  border-left: 4px solid #ccc;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.at-card:active { transform: scale(0.99); }
+
+.at-card-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.at-card-icon {
+  width: 44px; height: 44px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.at-card-icon span { font-size: 1.4rem; }
+
+.at-card-body { flex: 1; min-width: 0; }
+
+.at-card-title {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+}
+
+.at-card-desc {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.at-card-end {
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.at-card-count {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.at-card-arrow {
+  font-size: 1.2rem;
+  color: var(--text-muted);
+}
+
+/* --- 档案状态 --- */
+.as-section {
+  margin-bottom: 20px;
+}
+
+.as-heading {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 10px 0;
+}
+
+.as-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 8px;
+}
+
+.as-item-icon { font-size: 1.2rem; flex-shrink: 0; }
+
+.as-item-text {
+  flex: 1;
+  font-size: 0.85rem;
+  color: #555;
+}
+
+.as-item-link {
+  font-size: 0.8rem;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.as-warning {
+  background: #FFF7E6;
+}
+.as-warning .as-item-link { color: #4A90D9; }
+
+.as-danger {
+  background: #FFF2F0;
+}
+.as-danger .as-item-link { color: #F5222D; }
+
+.as-purple {
+  background: #F6F0FF;
+}
+.as-purple .as-item-link { color: #722ED1; }
+
+.as-ok {
+  background: #F6FFED;
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 0.85rem;
+  color: #52C41A;
+}
+
+.as-footer {
+  text-align: center;
+  padding: 16px 0 32px;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
