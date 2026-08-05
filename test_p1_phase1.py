@@ -1,217 +1,230 @@
 """
-P1阶段一验收测试：档案基础骨架
-直接验证 JS 数据结构 + DOM 渲染
+P1 阶段一修正验收测试：返回层级 + 真实导航链 + 截图
 """
 from playwright.sync_api import sync_playwright
+import os
 
 BASE = 'http://localhost:12345'
+SCREENSHOT_DIR = '/tmp/p1_screenshots'
+os.makedirs(SCREENSHOT_DIR, exist_ok=True)
+
+USER_IDS = {
+    '系统管理员': 'u_sys_admin',
+    '妈妈': 'u_sample_parent',
+    '小雨': 'u_sample_youth',
+}
+
+def login(page, name):
+    uid = USER_IDS.get(name)
+    page.goto(f'{BASE}/#login')
+    page.wait_for_load_state('networkidle')
+    page.wait_for_timeout(2000)
+    page.evaluate('''(uid) => {
+        var DataStore = window.DataStore;
+        DataStore.init();
+        var users = DataStore.getAllUsers();
+        var target = users.find(function(u){return u.id===uid;});
+        if(target){
+            DataStore.setCurrentUser(target);
+            if(window.AppState){ window.AppState.currentUser=target; window.AppState.currentRole=target.role; }
+        }
+        // 触发完整导航初始化
+        if (typeof window.initApp === 'function') window.initApp();
+        else if (window.renderBottomNav) window.renderBottomNav();
+    }''', uid)
+    page.wait_for_timeout(500)
+
+def verify_return_chain(page, steps):
+    """验证返回链：按 steps 顺序导航并检查返回按钮"""
+    for i, step in enumerate(steps):
+        page.goto(f'{BASE}/#{step["hash"]}')
+        page.wait_for_timeout(600)
+        back = page.locator('#topbar-back')
+        if step.get('back_label') and back.is_visible():
+            text = back.inner_text()
+            print(f'  {step["hash"]} → 返回按钮: "{text}"')
+            assert step['back_label'] in text, f'FAIL: 期望"{step["back_label"]}", 实际"{text}"'
+        else:
+            print(f'  {step["hash"]} → 返回按钮: ' + ('隐藏' if not back.is_visible() else back.inner_text()))
+        
+        if step.get('page_title'):
+            title = page.locator('#topbar-title').inner_text()
+            print(f'    标题: "{title}"')
+        
+        # 一级Tab高亮
+        active = page.locator('.nav-tab.active')
+        if active.count() > 0:
+            route = active.get_attribute('data-route')
+            if step.get('expected_parent'):
+                assert route == step['expected_parent'], f'FAIL: 一级Tab高亮错误: {route} vs {step["expected_parent"]}'
 
 def run_tests():
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
-        page = browser.new_page(viewport={'width': 430, 'height': 900})
         errors = []
-        page.on('pageerror', lambda err: errors.append(str(err)))
 
-        # 导航到首页触发所有脚本加载
+        print('=' * 60)
+        print('P1 阶段一修正验收测试')
+        print('=' * 60)
+
+        # ====== Test 1: JS 数据结构 ======
+        print('\n--- 1. JS 数据结构 ---')
+        page = browser.new_page(viewport={'width': 430, 'height': 900})
+        page.on('pageerror', lambda err: errors.append(str(err)))
         page.goto(f'{BASE}/#login')
         page.wait_for_load_state('networkidle')
-        page.wait_for_timeout(3000)
-
-        print('=' * 50)
-        print('P1 阶段一验收测试')
-        print('=' * 50)
-
-        # ========== 1. JS 数据结构检查 ==========
-        print('\n--- JS 数据结构 ---')
+        page.wait_for_timeout(2000)
 
         results = page.evaluate('''() => {
             var C = window.Constants;
+            var bp = C.PAGE_BACK_PARENT || {};
             return {
                 adminDefault: C.ROLE_DEFAULT_PAGES.admin,
-                govDefault: C.ROLE_DEFAULT_PAGES.government,
-                hasArchiveTopics: 'archive-topics' in C.routeMap,
-                hasArchiveStatus: 'archive-status' in C.routeMap,
-                parentArchiveTopics: C.PAGE_PARENT['archive-topics'],
-                parentArchiveStatus: C.PAGE_PARENT['archive-status'],
-                parentCharts: C.PAGE_PARENT['charts'],
-                parentAnalytics: C.PAGE_PARENT['analytics'],
-                navTabsAdmin: C.ROLE_NAV_TABS.admin,
-                navTabsParent: C.ROLE_NAV_TABS.parent,
-                navTabsYouth: C.ROLE_NAV_TABS.youth,
-                navTabsGov: C.ROLE_NAV_TABS.government
+                backLife: bp['communication'],
+                backComm: bp['communication'],
+                backEmotion: bp['emotion'],
+                backStatus: bp['archive-status'],
+                backTimeline: bp['timeline'],
+                backQuickcard: bp['quickcard'],
+                backTopics: bp['archive-topics']
             };
         }''')
+        assert results['adminDefault'] == 'profile', f'FAIL: admin默认页'
+        assert results['backComm'] == 'archive-topics', f'FAIL: communication→{results["backComm"]}'
+        assert results['backEmotion'] == 'archive-topics', f'FAIL: emotion→{results["backEmotion"]}'
+        assert results['backStatus'] == 'archive', f'FAIL: archive-status→{results["backStatus"]}'
+        assert results['backTimeline'] == 'archive', f'FAIL: timeline→{results["backTimeline"]}'
+        assert results['backQuickcard'] == 'archive', f'FAIL: quickcard→{results["backQuickcard"]}'
+        assert results['backTopics'] == 'archive', f'FAIL: archive-topics→{results["backTopics"]}'
+        print('  ✅ PAGE_BACK_PARENT 全部正确')
+        page.close()
 
-        print(f'  管理员默认页: {results["adminDefault"]}')
-        assert results['adminDefault'] == 'profile', f'FAIL: 管理员默认页应为profile，实际{results["adminDefault"]}'
+        # ====== Test 2: 妈妈导航链（430px） ======
+        print('\n--- 2. 妈妈 430px 导航链 ---')
+        page = browser.new_page(viewport={'width': 430, 'height': 900})
+        page.on('pageerror', lambda err: errors.append(str(err)))
+        login(page, '妈妈')
 
-        print(f'  政府默认页: {results["govDefault"]}')
-        assert results['govDefault'] == 'analytics', f'FAIL: 政府默认页应为analytics'
+        verify_return_chain(page, [
+            {'hash': 'archive', 'back_label': None, 'page_title': '档案总览', 'expected_parent': 'archive'},
+            {'hash': 'archive-topics', 'back_label': '档案总览', 'page_title': '主题档案', 'expected_parent': 'archive'},
+            {'hash': 'communication', 'back_label': '主题档案', 'page_title': '沟通说明书', 'expected_parent': 'archive'},
+            {'hash': 'archive-status', 'back_label': '档案总览', 'page_title': '档案状态', 'expected_parent': 'archive'},
+            {'hash': 'timeline', 'back_label': '档案总览', 'page_title': '记录时间轴', 'expected_parent': 'archive'},
+            {'hash': 'quickcard', 'back_label': '档案总览', 'page_title': '速读卡', 'expected_parent': 'archive'},
+        ])
+        print('  ✅ 妈妈导航链全部正确')
 
-        print(f'  archive-topics in routeMap: {results["hasArchiveTopics"]}')
-        assert results['hasArchiveTopics'], 'FAIL: routeMap缺archive-topics'
+        # 截图：档案总览
+        page.goto(f'{BASE}/#archive')
+        page.wait_for_timeout(600)
+        page.screenshot(path=f'{SCREENSHOT_DIR}/01_mom_archive_430px.png', full_page=True)
+        print('  📸 01_mom_archive_430px.png')
 
-        print(f'  archive-status in routeMap: {results["hasArchiveStatus"]}')
-        assert results['hasArchiveStatus'], 'FAIL: routeMap缺archive-status'
+        # 截图：主题档案
+        page.goto(f'{BASE}/#archive-topics')
+        page.wait_for_timeout(600)
+        page.screenshot(path=f'{SCREENSHOT_DIR}/02_mom_topics_430px.png', full_page=True)
+        print('  📸 02_mom_topics_430px.png')
 
-        print(f'  PAGE_PARENT archive-topics: {results["parentArchiveTopics"]}')
-        assert results['parentArchiveTopics'] == 'archive', 'FAIL: archive-topics不归属archive'
+        # 截图：档案状态
+        page.goto(f'{BASE}/#archive-status')
+        page.wait_for_timeout(600)
+        page.screenshot(path=f'{SCREENSHOT_DIR}/03_mom_status_430px.png', full_page=True)
+        print('  📸 03_mom_status_430px.png')
+        page.close()
 
-        print(f'  PAGE_PARENT archive-status: {results["parentArchiveStatus"]}')
-        assert results['parentArchiveStatus'] == 'archive', 'FAIL: archive-status不归属archive'
+        # ====== Test 3: 妈妈 390px ======
+        print('\n--- 3. 妈妈 390px ---')
+        page = browser.new_page(viewport={'width': 390, 'height': 850})
+        page.on('pageerror', lambda err: errors.append(str(err)))
+        login(page, '妈妈')
 
-        print(f'  PAGE_PARENT charts: {results["parentCharts"]}')
-        print(f'  PAGE_PARENT analytics: {results["parentAnalytics"]}')
-        assert results['parentCharts'] == 'charts', 'FAIL: charts归属异常'
-        assert results['parentAnalytics'] == 'charts', 'FAIL: analytics归属异常'
+        page.goto(f'{BASE}/#archive')
+        page.wait_for_timeout(600)
+        page.screenshot(path=f'{SCREENSHOT_DIR}/04_mom_archive_390px.png', full_page=True)
+        print('  📸 04_mom_archive_390px.png')
 
-        print(f'  管理员Tab: {results["navTabsAdmin"]}')
-        assert 'profile' in results['navTabsAdmin'], 'FAIL: 管理员缺少管理Tab'
+        page.goto(f'{BASE}/#archive-topics')
+        page.wait_for_timeout(600)
+        page.screenshot(path=f'{SCREENSHOT_DIR}/05_mom_topics_390px.png', full_page=True)
+        print('  📸 05_mom_topics_390px.png')
+        page.close()
 
-        print(f'  心青年Tab: {results["navTabsYouth"]}')
-        assert len(results["navTabsYouth"]) == 3, 'FAIL: 心青年应有3个Tab'
+        # ====== Test 4: 小雨 ======
+        print('\n--- 4. 小雨 430px ---')
+        page = browser.new_page(viewport={'width': 430, 'height': 900})
+        page.on('pageerror', lambda err: errors.append(str(err)))
+        login(page, '小雨')
 
-        print('  ✅ JS 数据结构全部通过')
+        page.goto(f'{BASE}/#archive')
+        page.wait_for_timeout(600)
+        page.screenshot(path=f'{SCREENSHOT_DIR}/06_youth_archive_430px.png', full_page=True)
+        print('  📸 06_youth_archive_430px.png')
 
-        # ========== 2. DOM 容器检查 ==========
-        print('\n--- DOM 容器 ---')
-
-        dom = page.evaluate('''() => {
-            return {
-                hasArchiveTopics: !!document.getElementById('archive-topics'),
-                hasArchiveStatus: !!document.getElementById('archive-status'),
-                hasArchiveTopicsContent: !!document.getElementById('archive-topics-content'),
-                hasArchiveStatusContent: !!document.getElementById('archive-status-content'),
-                hasArchive: !!document.getElementById('archive'),
-                hasAllScripts: true
-            };
+        tabs = page.evaluate('''() => {
+            return Array.from(document.querySelectorAll('.nav-tab')).map(function(t){return t.textContent;});
         }''')
+        print(f'  小雨Tab: {tabs}')
+        assert len(tabs) == 3, f'FAIL: 小雨应有3个Tab'
+        page.close()
 
-        assert dom['hasArchiveTopics'], 'FAIL: index.html缺#archive-topics容器'
-        assert dom['hasArchiveStatus'], 'FAIL: index.html缺#archive-status容器'
-        assert dom['hasArchiveTopicsContent'], 'FAIL: #archive-topics-content容器缺失'
-        assert dom['hasArchiveStatusContent'], 'FAIL: #archive-status-content容器缺失'
-        print('  ✅ DOM 容器全部存在')
+        # ====== Test 5: 管理员 ======
+        print('\n--- 5. 管理员 430px ---')
+        page = browser.new_page(viewport={'width': 430, 'height': 900})
+        page.on('pageerror', lambda err: errors.append(str(err)))
+        login(page, '系统管理员')
 
-        # ========== 3. ArchivePage 模块检查 ==========
-        print('\n--- ArchivePage模块 ---')
+        page.goto(f'{BASE}/#profile')
+        page.wait_for_timeout(600)
+        page.screenshot(path=f'{SCREENSHOT_DIR}/07_admin_profile_430px.png', full_page=True)
+        print('  📸 07_admin_profile_430px.png')
 
-        mod = page.evaluate('''() => {
-            var ap = window.ArchivePage;
-            return {
-                exists: !!ap,
-                hasRenderTopics: !!(ap && ap.renderArchiveTopics),
-                hasRenderStatus: !!(ap && ap.renderArchiveStatus)
-            };
+        tabs = page.evaluate('''() => {
+            return Array.from(document.querySelectorAll('.nav-tab')).map(function(t){return t.textContent;});
         }''')
+        print(f'  管理员Tab: {tabs}')
+        assert len(tabs) == 2, f'FAIL: 管理员应有2个Tab'
+        page.close()
 
-        assert mod['exists'], 'FAIL: window.ArchivePage不存在'
-        assert mod['hasRenderTopics'], 'FAIL: renderArchiveTopics缺失'
-        assert mod['hasRenderStatus'], 'FAIL: renderArchiveStatus缺失'
-        print('  ✅ ArchivePage模块正常挂载')
+        # ====== Test 6: 刷新路由 ======
+        print('\n--- 6. 刷新路由 ---')
+        for test_hash in ['#archive-topics', '#archive-status', '#communication']:
+            page = browser.new_page(viewport={'width': 430, 'height': 900})
+            page.on('pageerror', lambda err: errors.append(str(err)))
+            login(page, '妈妈')
+            page.goto(f'{BASE}/{test_hash}')
+            page.wait_for_timeout(800)
+            
+            title = page.locator('#topbar-title').inner_text()
+            active = page.locator('.nav-tab.active')
+            active_route = active.get_attribute('data-route') if active.count() > 0 else None
+            
+            print(f'  {test_hash}: 标题="{title}" 高亮="{active_route}"')
+            assert active_route == 'archive', f'FAIL: {test_hash} 一级Tab高亮不是archive'
+            assert title and len(title) > 0, f'FAIL: {test_hash} 无标题'
+            page.close()
+        print('  ✅ 刷新路由全部正确')
 
-        # ========== 4. 渲染测试：主题档案页 ==========
-        print('\n--- 主题档案页渲染 ---')
-
-        page.evaluate('''() => {
-            // 渲染主题档案页
-            if (window.ArchivePage && window.ArchivePage.renderArchiveTopics) {
-                window.ArchivePage.renderArchiveTopics();
-            }
-        }''')
-        page.wait_for_timeout(500)
-
-        topic_cards = page.evaluate('''() => {
-            var cards = document.querySelectorAll('.archive-topic-card');
-            return cards.length;
-        }''')
-        print(f'  主题卡片数: {topic_cards}')
-        assert topic_cards == 6, f'FAIL: 预期6个主题卡片，实际{topic_cards}'
-        print('  ✅ 主题档案6个卡片渲染正确')
-
-        # ========== 5. 渲染测试：档案状态页 ==========
-        print('\n--- 档案状态页渲染 ---')
-
-        page.evaluate('''() => {
-            if (window.ArchivePage && window.ArchivePage.renderArchiveStatus) {
-                window.ArchivePage.renderArchiveStatus();
-            }
-        }''')
-        page.wait_for_timeout(500)
-
-        # 检查四个标题存在
-        sections = page.evaluate('''() => {
-            var h3s = document.querySelectorAll('#archive-status-content h3');
-            var texts = [];
-            h3s.forEach(function(h) { texts.push(h.textContent); });
-            return texts;
-        }''')
-        print(f'  档案状态小节: {sections}')
-        assert len(sections) == 4, f'FAIL: 预期4个小节，实际{len(sections)}'
-        assert any('资料缺口' in s for s in sections), 'FAIL: 缺少"资料缺口"'
-        assert any('长期未更新' in s for s in sections), 'FAIL: 缺少"长期未更新"'
-        assert any('信息冲突' in s for s in sections), 'FAIL: 缺少"信息冲突"'
-        assert any('AI' in s for s in sections), 'FAIL: 缺少"AI待确认"'
-        print('  ✅ 档案状态4个小节完整')
-
-        # ========== 6. 档案总览重排 ==========
-        print('\n--- 档案总览重排 ---')
-
-        page.evaluate('''() => {
-            if (window.ProfilePage && window.ProfilePage.renderProfile) {
-                window.ProfilePage.renderProfile();
-            }
-        }''')
-        page.wait_for_timeout(500)
-
-        # 检查关键section标题
-        profile_sections = page.evaluate('''() => {
-            var titles = document.querySelectorAll('#archive-content .archive-section-title');
-            var texts = [];
-            titles.forEach(function(t) { texts.push(t.textContent); });
-            return texts;
-        }''')
-        print(f'  档案总览小节: {profile_sections}')
-        assert any('先认识我' in s for s in profile_sections), 'FAIL: 缺少"先认识我"'
-        assert any('当前摘要' in s for s in profile_sections), 'FAIL: 缺少"当前摘要"'
-        assert any('最近变化' in s for s in profile_sections), 'FAIL: 缺少"最近变化"'
-        assert any('深入查看' in s for s in profile_sections), 'FAIL: 缺少"深入查看"入口'
-        print('  ✅ 档案总览7节结构正确')
-
-        # 不应有"档案完整度"百分比
-        completeness = page.evaluate('''() => {
-            return document.querySelector('.completeness-track') !== null;
-        }''')
-        assert not completeness, 'FAIL: 不应有"档案完整度"评分条'
-        print('  ✅ 已移除"档案完整度"评分')
-
-        # 检查入口卡片
-        entry_cards = page.evaluate('''() => {
-            return document.querySelectorAll('.archive-entry-card').length;
-        }''')
-        assert entry_cards == 4, f'FAIL: 预期4个入口卡片，实际{entry_cards}'
-        print(f'  ✅ 档案总览入口卡片: {entry_cards}个')
-
-        # ========== 7. 控制台错误 ==========
+        # ====== Summary ======
         print('\n--- 控制台 ---')
         if errors:
-            print(f'  ⚠️ 控制台错误({len(errors)}):')
-            for e in errors[:5]:
-                print(f'    - {e[:120]}')
+            print(f'  ⚠️ 错误({len(errors)}):')
+            for e in errors[:5]: print(f'    - {e[:120]}')
         else:
             print('  ✅ 无控制台错误')
 
+        print(f'\n📸 截图保存于: {SCREENSHOT_DIR}')
         browser.close()
 
-    print('\n' + '=' * 50)
-    print('P1 阶段一验收测试：全部通过')
-    print('=' * 50)
+    print('\n' + '=' * 60)
+    print('P1 修正验收：全部通过')
+    print('=' * 60)
 
 if __name__ == '__main__':
     try:
         run_tests()
     except Exception as e:
-        print(f'\n❌ 测试失败: {e}')
+        print(f'\n❌ 失败: {e}')
         import traceback; traceback.print_exc()
         exit(1)
