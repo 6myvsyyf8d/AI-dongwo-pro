@@ -2048,9 +2048,125 @@
     return events;
   }
 
-  // 剩余占位函数——后续主题逐 commit 替换为真实逻辑
-  function buildRelationsL1(records) { return [{ text: '关系主题四层模型将在后续 commit 完成', source: '', statusLabel: '待确认', statusClass: 'source-observer' }]; }
-  function buildRelationsL3(records) { return []; }
+  // ============ #relations L1 当前摘要 ============
+  function buildRelationsL1(records) {
+    var items = [];
+    var relInfo = window.Constants.relationsInfo;
+
+    // 1. 核心支持圈
+    if (relInfo.core && relInfo.core.length > 0) {
+      var coreNames = relInfo.core.map(function(p) { return p.name + '（' + p.role + '）'; });
+      items.push({
+        text: '核心支持圈：' + coreNames.join('、'),
+        source: '来源：档案基础信息', statusLabel: '已确认', statusClass: 'source-confirmed'
+      });
+    }
+
+    // 2. 日常交往圈
+    if (relInfo.daily && relInfo.daily.length > 0) {
+      var dailyNames = relInfo.daily.map(function(p) { return p.name + '（' + p.role + '）'; });
+      items.push({
+        text: '日常交往圈：' + dailyNames.join('、'),
+        source: '来源：档案基础信息', statusLabel: '已确认', statusClass: 'source-confirmed'
+      });
+    }
+
+    // 3. 社交偏好（来自最近记录）
+    var socialPrefRecs = records.filter(function(r) { return (r.title || '').indexOf('社交偏好') >= 0 || (r.title || '').indexOf('边界需求') >= 0; });
+    socialPrefRecs.slice(0, 2).forEach(function(r) {
+      items.push({
+        text: (r.title || '') + '：' + (r.content || '').substring(0, 60),
+        source: '来源：' + r.author + ' · ' + formatDateDisplay(r.date),
+        statusLabel: '已确认', statusClass: 'source-confirmed'
+      });
+    });
+
+    // 4. 近期重要互动
+    var recentSocial = records.filter(function(r) { return r.type === 'social'; }).sort(function(a, b) { return b.date.localeCompare(a.date); });
+    if (recentSocial.length > 0) {
+      var latest = recentSocial[0];
+      items.push({
+        text: '最近社交记录：' + (latest.title || '') + ' — ' + (latest.content || '').substring(0, 60),
+        source: '来源：' + latest.author + ' · ' + formatDateDisplay(latest.date),
+        statusLabel: '已确认', statusClass: 'source-confirmed'
+      });
+    }
+
+    return items.slice(0, 6);
+  }
+
+  // ============ #relations L3 关键事件 ============
+  function buildRelationsL3(records) {
+    var events = [];
+    var cutoff60 = dateDaysAgo(60);
+    var relInfo = window.Constants.relationsInfo;
+
+    // 1. 首次记录
+    if (records.length > 0) {
+      var first = records[records.length - 1];
+      events.push({
+        icon: '🆕', typeLabel: '首次记录',
+        text: '第一条关系记录：' + ((first.title || '') + ' — ' + (first.content || '')).substring(0, 50),
+        dateDisplay: formatDateDisplay(first.date),
+        source: '来源：' + (first.author || '系统')
+      });
+    }
+
+    // 2. 关系变化（新增或变动）
+    var changeRecs = records.filter(function(r) { return (r.title || '').indexOf('关系圈更新') >= 0 || (r.title || '').indexOf('新') >= 0 && (r.content || '').indexOf('老师') >= 0; });
+    changeRecs.forEach(function(r) {
+      events.push({
+        icon: '🔄', typeLabel: '关系变化',
+        text: (r.title || '') + '：' + (r.content || '').substring(0, 60),
+        dateDisplay: formatDateDisplay(r.date), source: '来源：' + r.author
+      });
+    });
+
+    // 3. 互动模式多次被记录
+    var initRecs = records.filter(function(r) { return (r.title || '').indexOf('互动') >= 0 && ((r.content || '').indexOf('主动') >= 0 || (r.content || '').indexOf('分享') >= 0); });
+    if (initRecs.length >= 2) {
+      events.push({
+        icon: '💬', typeLabel: '互动模式',
+        text: '主动分享/互动行为在 ' + initRecs.length + ' 次记录中出现，可能是正在发展的社交模式',
+        dateDisplay: initRecs[initRecs.length - 1].date + ' ~ ' + initRecs[0].date,
+        source: '来源：多角色观察'
+      });
+    }
+
+    // 4. 回避事件
+    var avoidRecs = records.filter(function(r) { return (r.title || '').indexOf('回避') >= 0 || (r.title || '').indexOf('社交压力') >= 0; });
+    avoidRecs.forEach(function(r) {
+      events.push({
+        icon: '⚠️', typeLabel: '需注意的社交情境',
+        text: (r.title || '') + '：' + (r.content || '').substring(0, 60),
+        dateDisplay: formatDateDisplay(r.date), source: '来源：' + r.author
+      });
+    });
+
+    // 5. 信任建立进展
+    var trustRecs = records.filter(function(r) { return (r.title || '').indexOf('信任') >= 0; });
+    trustRecs.forEach(function(r) {
+      events.push({
+        icon: '🤝', typeLabel: '信任建立',
+        text: (r.content || '').substring(0, 60),
+        dateDisplay: formatDateDisplay(r.date), source: '来源：' + r.author
+      });
+    });
+
+    // 6. 长期未复核
+    var oldRecs = records.filter(function(r) { return r.date < cutoff60; });
+    if (oldRecs.length > 0) {
+      var oldest = oldRecs.reduce(function(a, b) { return a.date < b.date ? a : b; });
+      events.push({
+        icon: '⏰', typeLabel: '超过复核周期',
+        text: '有 ' + oldRecs.length + ' 条关系记录超过60天未复核，建议确认内容是否仍然准确',
+        dateDisplay: formatDateDisplay(oldest.date) + ' ~ ' + formatDateDisplay(cutoff60),
+        source: '来源：系统提醒'
+      });
+    }
+
+    return events;
+  }
 
   /* ==========================================================
    * 五、情绪与行为支持页面渲染
@@ -2127,94 +2243,11 @@
   function renderRelations() {
     var contentArea = document.getElementById('relations-content');
     if (!contentArea) return;
-
-    var html = '';
-
-    // 关系地图可视化（CSS圆圈定位）
-    html += '<h2 class="section-title">关系地图</h2>';
-    html += '<div class="relation-map">';
-
-    // 最外层 - 避免圈
-    html += '<div class="relation-circle avoid"></div>';
-    // 中间层 - 日常圈
-    html += '<div class="relation-circle daily"></div>';
-    // 内层 - 核心圈
-    html += '<div class="relation-circle core"></div>';
-
-    // 中心 - 小雨
-    html += '<div class="relation-center">小雨</div>';
-
-    // 核心圈人物 - 按圆环位置分布
-    var coreAngles = [90, 210, 330]; // 三个核心人物的角度
-    var coreRadius = 25; // 核心圈半径百分比
-    relationsInfo.core.forEach(function (person, idx) {
-      var angle = coreAngles[idx] || 90;
-      var x = 50 + coreRadius * Math.cos(angle * Math.PI / 180);
-      var y = 50 + coreRadius * Math.sin(angle * Math.PI / 180);
-      html += '<div class="relation-person core-person" style="left:' + x + '%;top:' + y + '%;" title="' + person.name + ' - ' + person.role + '">';
-      html += '  <div class="person-avatar">' + person.emoji + '</div>';
-      html += '  <div class="person-name">' + person.name + '</div>';
-      html += '</div>';
+    renderTopicFourLayer(contentArea, 'relations', {
+      l1Title: '📌 当前摘要',
+      l1Sub: '重要关系、社交偏好与被记录的支持需求',
+      emptyText: '暂无关系记录'
     });
-
-    // 日常圈人物
-    var dailyAngles = [45, 315];
-    var dailyRadius = 37;
-    relationsInfo.daily.forEach(function (person, idx) {
-      var angle = dailyAngles[idx] || 45;
-      var x = 50 + dailyRadius * Math.cos(angle * Math.PI / 180);
-      var y = 50 + dailyRadius * Math.sin(angle * Math.PI / 180);
-      html += '<div class="relation-person daily-person" style="left:' + x + '%;top:' + y + '%;" title="' + person.name + ' - ' + person.role + '">';
-      html += '  <div class="person-avatar">' + person.emoji + '</div>';
-      html += '  <div class="person-name">' + person.name + '</div>';
-      html += '</div>';
-    });
-
-    html += '</div>';
-
-    // 关系图例
-    html += '<div style="display:flex;justify-content:center;gap:24px;margin-bottom:24px;flex-wrap:wrap;">';
-    html += '<div style="display:flex;align-items:center;gap:6px;font-size:0.85rem;"><span style="width:12px;height:12px;border-radius:50%;background:#4A90D9;display:inline-block;"></span> 核心圈</div>';
-    html += '<div style="display:flex;align-items:center;gap:6px;font-size:0.85rem;"><span style="width:12px;height:12px;border-radius:50%;background:#52C41A;display:inline-block;"></span> 日常圈</div>';
-    html += '<div style="display:flex;align-items:center;gap:6px;font-size:0.85rem;"><span style="width:12px;height:12px;border-radius:50%;background:#999;display:inline-block;"></span> 避免接触</div>';
-    html += '</div>';
-
-    // 详细列表
-    html += '<div class="container" style="padding:0 24px;">';
-
-    // 核心圈列表 —— B级照护
-    html += '<h2 class="section-title" data-privacy="B">核心支持圈</h2>';
-    html += '<div class="content-card blue" style="margin-bottom:24px;" data-privacy="B">';
-    html += '<ul class="card-list">';
-    relationsInfo.core.forEach(function (person) {
-      html += '<li>' + person.emoji + ' <strong>' + person.name + '</strong> — ' + person.role + '</li>';
-    });
-    html += '</ul>';
-    html += '</div>';
-
-    // 日常圈列表 —— B级照护
-    html += '<h2 class="section-title" data-privacy="B">日常接触圈</h2>';
-    html += '<div class="content-card green" style="margin-bottom:24px;" data-privacy="B">';
-    html += '<ul class="card-list">';
-    relationsInfo.daily.forEach(function (person) {
-      html += '<li>' + person.emoji + ' <strong>' + person.name + '</strong> — ' + person.role + '</li>';
-    });
-    html += '</ul>';
-    html += '</div>';
-
-    // 避免场景 —— A级公开，所有角色应知
-    html += '<h2 class="section-title">避免的场景与接触</h2>';
-    html += '<div class="content-card red">';
-    html += '<ul class="card-list">';
-    relationsInfo.avoid.forEach(function (item) {
-      html += '<li>' + item + '</li>';
-    });
-    html += '</ul>';
-    html += '</div>';
-
-    html += '</div>';
-
-    contentArea.innerHTML = html;
   }
 
   /* ==========================================================
