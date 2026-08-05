@@ -93,10 +93,29 @@
     return draft;
   }
 
+  var SUBMITTED_KEY = 'qr_last_submitted_id';
+
   function renderQuickRecord() {
     var container = document.getElementById('quick-record-content');
     if (!container) return;
     var user = getCurrentUser();
+
+    // A5: 刷新后保持提交成功状态
+    var lastSubmittedId = '';
+    try { lastSubmittedId = sessionStorage.getItem(SUBMITTED_KEY) || ''; } catch (e) {}
+    if (lastSubmittedId) {
+      var drafts = getDrafts();
+      var lastDraft = drafts.find(function (d) { return d.id === lastSubmittedId; });
+      if (lastDraft) {
+        container.innerHTML = buildSuccess(lastDraft);
+        bindSuccessEvents(container);
+        if (window.renderBottomNav) window.renderBottomNav();
+        return;
+      } else {
+        try { sessionStorage.removeItem(SUBMITTED_KEY); } catch (e) {}
+      }
+    }
+
     var selectedTags = [];
     var render = function () {
       container.innerHTML = buildPage(user, selectedTags);
@@ -160,6 +179,9 @@
         drafts.unshift(draft);
         saveDrafts(drafts);
 
+        // A5: 标记提交状态，刷新后保持成功页
+        try { sessionStorage.setItem(SUBMITTED_KEY, draft.id); } catch (e) {}
+
         // Show success
         container.innerHTML = buildSuccess(draft);
         bindSuccessEvents(container);
@@ -197,7 +219,11 @@
 
   function bindSuccessEvents(container) {
     var btn = document.getElementById('qr-back-card');
-    if (btn) btn.addEventListener('click', function () { window.location.hash = 'supporter-card'; });
+    if (btn) btn.addEventListener('click', function () {
+      // A5: 离开成功页时清除提交标记
+      try { sessionStorage.removeItem(SUBMITTED_KEY); } catch (e) {}
+      window.location.hash = 'supporter-card';
+    });
   }
 
   function escapeHtml(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
