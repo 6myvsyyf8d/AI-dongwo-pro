@@ -215,8 +215,7 @@
       { hash: 'archive', label: '总览' },
       { hash: 'archive-topics', label: '主题档案' },
       { hash: 'timeline', label: '时间轴' },
-      { hash: 'quickcard', label: '速读卡' },
-      { hash: 'archive-status', label: '档案状态' }
+      { hash: 'quickcard', label: '速读卡' }
     ]
   };
 
@@ -316,20 +315,22 @@
       'draft-review': '待确认记录'
     };
 
+    // 有 module sub-nav 的页面，sub-nav 标签已高亮当前页，topbar 标题和回退按钮均冗余
+    var parent = PAGE_PARENT[pageName];
+    var hasSubNav = parent ? !!MODULE_SUB_NAV[parent] : false;
+
     if (titleEl) {
-      titleEl.textContent = pageTitles[pageName] || 'AI懂我';
+      titleEl.textContent = hasSubNav ? '' : (pageTitles[pageName] || 'AI懂我');
     }
     // 对话页面自带顶栏，隐藏全局顶栏
     var isChatPage = (pageName === 'chat' || pageName === 'chat-conversation' || pageName === 'chat-review');
     if (backEl) {
-      // 返回按钮使用 PAGE_BACK_PARENT（直接父级），隐藏逻辑仍参考 PAGE_PARENT
-      var parent = PAGE_PARENT[pageName];
       var backParent = PAGE_BACK_PARENT[pageName] || parent;
       var isTopLevel = (!parent || parent === pageName);
-      backEl.style.display = (pageName === 'home' || isTopLevel || isChatPage) ? 'none' : 'block';
+      backEl.style.display = (pageName === 'home' || isTopLevel || isChatPage || hasSubNav) ? 'none' : 'block';
       // 返回按钮写描述性文案，如"← 返回 主题档案"
       if (backParent && backParent !== pageName && !isChatPage) {
-        backEl.textContent = '← 返回 ' + (pageTitles[backParent] || backParent);
+        backEl.textContent = '← ' + (pageTitles[backParent] || backParent);
       }
     }
     if (quickEl) {
