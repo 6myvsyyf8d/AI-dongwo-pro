@@ -946,18 +946,17 @@
    * ========================================================== */
 
   /**
-   * 渲染"我喜欢的生活"页面 - 双列卡片（喜欢 & 不喜欢）
+   * 渲染"我喜欢的生活"页面 — 四层模型
+   * L1: 当前兴趣与偏好 | L2: 最近变化 | L3: 关键事件 | L4: 全部记录
    */
   function renderLife() {
-    // v2.0：使用新的「认识我」以人为本渲染
-    if (window.ProfilePage && window.ProfilePage.renderAboutMe) {
-      window.ProfilePage.renderAboutMe();
-      return;
-    }
-    // fallback
     var contentArea = document.getElementById('life-content');
     if (!contentArea) return;
-    contentArea.innerHTML = '<div class="empty-state"><div class="empty-icon">💚</div><div class="empty-text">加载中...</div></div>';
+    renderTopicFourLayer(contentArea, 'life', {
+      l1Title: '📌 当前摘要',
+      l1Sub: '当前已确认的兴趣偏好、日常安排与周末假期活动',
+      emptyText: '暂无生活记录'
+    });
   }
 
   /* ==========================================================
@@ -1043,7 +1042,7 @@
     html += '</div>';
 
     html += '</div>';
-    contentArea.innerHTML = html;
+    contentArea.innerHTML = (opts.prependHtml || '') + html;
 
     // 首次渲染 L2 和 L4
     renderL2Content(0, records);
@@ -1429,22 +1428,788 @@
   }
 
   /* ==========================================================
+   * 通用四层模型渲染引擎（#life / #emotion / #care / #work / #relations 复用）
+   * ========================================================== */
+
+  /** 主题配置：摘要标题 + L3 规则集 */
+  var TOPIC_CONFIG = {
+    life: {
+      l1Rules: function(records) { return buildLifeL1(records); },
+      l3Rules: function(records) { return buildLifeL3(records); }
+    },
+    emotion: {
+      l1Rules: function(records) { return buildEmotionL1(records); },
+      l3Rules: function(records) { return buildEmotionL3(records); }
+    },
+    care: {
+      l1Rules: function(records) { return buildCareL1(records); },
+      l3Rules: function(records) { return buildCareL3(records); }
+    },
+    work: {
+      l1Rules: function(records) { return buildWorkL1(records); },
+      l3Rules: function(records) { return buildWorkL3(records); }
+    },
+    relations: {
+      l1Rules: function(records) { return buildRelationsL1(records); },
+      l3Rules: function(records) { return buildRelationsL3(records); }
+    }
+  };
+
+  function getTopicRecords(moduleKey) {
+    var all = DataStore.getRecords();
+    return all.filter(function(r) { return r.module === moduleKey; })
+              .sort(function(a, b) { return (b.date + b.time).localeCompare(a.date + a.time); });
+  }
+
+  function renderTopicFourLayer(contentArea, moduleKey, opts) {
+    var records = getTopicRecords(moduleKey);
+    var config = TOPIC_CONFIG[moduleKey] || {};
+    var html = '';
+    html += '<div class="comm-four-layer">';
+
+    // L1
+    var l1 = config.l1Rules ? config.l1Rules(records) : [];
+    html += '<div class="comm-layer comm-layer-l1">';
+    html += '  <div class="comm-layer-title">' + (opts.l1Title || '📌 当前摘要') + '</div>';
+    html += '  <div class="comm-layer-sub">' + (opts.l1Sub || '') + '</div>';
+    if (l1.length > 0) {
+      l1.forEach(function(item) {
+        html += '<div class="comm-l1-item">';
+        html += '  <div class="comm-l1-text">' + item.text + '</div>';
+        html += '  <div class="comm-l1-meta">';
+        html += '    <span class="comm-source-badge ' + (item.statusClass || 'source-confirmed') + '">' + (item.statusLabel || '已确认') + '</span>';
+        html += '    <span class="comm-source-info">' + (item.source || '') + '</span>';
+        html += '  </div>';
+        html += '</div>';
+      });
+    } else {
+      html += '<div class="comm-empty">' + (opts.emptyText || '暂无数据') + '</div>';
+    }
+    html += '</div>';
+
+    // L2
+    html += '<div class="comm-layer comm-layer-l2">';
+    html += '  <div class="comm-layer-title">🕐 最近变化</div>';
+    html += '  <div class="comm-time-tabs" id="topic-time-tabs">';
+    ['7天', '30天', '3个月', '半年'].forEach(function(label, i) {
+      html += '    <button class="comm-time-tab' + (i === 0 ? ' active' : '') + '" data-range="' + i + '">' + label + '</button>';
+    });
+    html += '  </div>';
+    html += '  <div id="topic-l2-content"></div>';
+    html += '</div>';
+
+    // L3
+    var l3 = config.l3Rules ? config.l3Rules(records) : [];
+    html += '<div class="comm-layer comm-layer-l3">';
+    html += '  <div class="comm-layer-title">⚡ 关键事件</div>';
+    html += '  <div class="comm-layer-sub">值得关注的变化节点</div>';
+    if (l3.length > 0) {
+      l3.forEach(function(evt) {
+        html += '<div class="comm-l3-item">';
+        html += '  <div class="comm-l3-header">';
+        html += '    <span class="comm-l3-icon">' + (evt.icon || '📌') + '</span>';
+        html += '    <span class="comm-l3-type">' + (evt.typeLabel || '') + '</span>';
+        html += '    <span class="comm-l3-date">' + (evt.dateDisplay || '') + '</span>';
+        html += '  </div>';
+        html += '  <div class="comm-l3-text">' + (evt.text || '') + '</div>';
+        html += '  <div class="comm-l3-source">' + (evt.source || '') + '</div>';
+        html += '</div>';
+      });
+    } else {
+      html += '<div class="comm-empty">暂未检测到关键事件</div>';
+    }
+    html += '</div>';
+
+    // L4
+    html += '<div class="comm-layer comm-layer-l4">';
+    html += '  <div class="comm-layer-title">📋 全部记录</div>';
+    html += '  <div id="topic-l4-content"></div>';
+    html += '</div>';
+
+    html += '</div>';
+    contentArea.innerHTML = html;
+
+    // 渲染 L2 和 L4（传入 contentArea 做作用域查询，避免多页面 ID 冲突）
+    renderGenericL2Content(contentArea, 'topic-l2-content', records);
+    renderGenericL4Content(contentArea, 'topic-l4-content', records);
+
+    // L2 时间切换
+    var tabs = contentArea.querySelector('#topic-time-tabs');
+    if (tabs) {
+      tabs.addEventListener('click', function(e) {
+        var tab = e.target.closest('.comm-time-tab');
+        if (!tab) return;
+        tabs.querySelectorAll('.comm-time-tab').forEach(function(t) { t.classList.remove('active'); });
+        tab.classList.add('active');
+        renderGenericL2Content(contentArea, 'topic-l2-content', records, parseInt(tab.getAttribute('data-range')));
+      });
+    }
+  }
+
+  function renderGenericL2Content(contentArea, containerId, records, rangeIdx) {
+    rangeIdx = rangeIdx || 0;
+    var container = contentArea.querySelector('#' + containerId);
+    if (!container) return;
+    var ranges = [{ days: 7, label: '近7天' }, { days: 30, label: '近30天' }, { days: 90, label: '近3个月' }, { days: 180, label: '近半年' }];
+    var range = ranges[rangeIdx] || ranges[0];
+    var cutoff = dateDaysAgo(range.days);
+    var recent = records.filter(function(r) { return r.date >= cutoff; });
+    var html = '<div class="comm-l2-summary"><p>' + range.label + '共 ' + recent.length + ' 条记录。</p></div>';
+    if (recent.length > 0) {
+      html += '<div class="comm-l2-items">';
+      recent.slice(0, 6).forEach(function(r) {
+        var text = (r.title || r.content || '').substring(0, 50);
+        html += '<div class="comm-l2-item"><span>📝</span><span class="comm-l2-item-text">' + text + '</span><span class="comm-l2-item-date">' + formatDateDisplay(r.date) + '</span></div>';
+      });
+      html += '</div>';
+    }
+    container.innerHTML = html;
+  }
+
+  function renderGenericL4Content(contentArea, containerId, records) {
+    var container = contentArea.querySelector('#' + containerId);
+    if (!container) return;
+    var today = dateDaysAgo(0), weekCutoff = dateDaysAgo(7), monthCutoff = dateDaysAgo(30);
+    var groups = [
+      { label: '今天', filter: function(r) { return r.date === today; }, icon: '📍' },
+      { label: '本周', filter: function(r) { return r.date >= weekCutoff && r.date !== today; }, icon: '📅' },
+      { label: '本月', filter: function(r) { return r.date >= monthCutoff && r.date < weekCutoff; }, icon: '📆' },
+      { label: '更早', filter: function(r) { return r.date < monthCutoff; }, icon: '📁' }
+    ];
+    var html = '';
+    groups.forEach(function(group) {
+      var gr = records.filter(group.filter);
+      if (gr.length === 0) return;
+      html += '<div class="comm-l4-group">';
+      html += '<div class="comm-l4-group-header"><span class="comm-l4-group-icon">' + group.icon + '</span><span class="comm-l4-group-label">' + group.label + '</span><span class="comm-l4-group-count">' + gr.length + '条</span><span class="comm-l4-toggle">▾</span></div>';
+      html += '<div class="comm-l4-group-body">';
+      var dg = {};
+      gr.forEach(function(r) { if (!dg[r.date]) dg[r.date] = []; dg[r.date].push(r); });
+      Object.keys(dg).sort().reverse().forEach(function(date) {
+        html += '<div class="comm-l4-day"><div class="comm-l4-day-header">' + formatDateDisplay(date) + ' · ' + dg[date].length + '条</div>';
+        dg[date].forEach(function(r) {
+          html += '<div class="comm-l4-record"><span class="comm-l4-type">📝</span><div class="comm-l4-record-body">';
+          if (r.title) html += '<div class="comm-l4-record-title">' + r.title + '</div>';
+          html += '<div class="comm-l4-record-text">' + (r.content || '') + '</div>';
+          html += '<div class="comm-l4-record-meta">' + (r.author || '') + ' · ' + (r.time || '') + '</div>';
+          html += '</div></div>';
+        });
+        html += '</div>';
+      });
+      html += '</div></div>';
+    });
+    if (!html) html = '<div class="comm-empty">暂无记录</div>';
+    container.innerHTML = html;
+    container.addEventListener('click', function(e) {
+      var hdr = e.target.closest('.comm-l4-group-header');
+      if (!hdr) return;
+      var body = hdr.nextElementSibling, toggle = hdr.querySelector('.comm-l4-toggle');
+      if (body.style.display === 'none') { body.style.display = ''; toggle.textContent = '▾'; }
+      else { body.style.display = 'none'; toggle.textContent = '▸'; }
+    });
+  }
+
+  /* ==========================================================
+   * 各主题 L1/L3 规则（按阶段三最终修订）
+   * ========================================================== */
+
+  function buildLifeL1(records) {
+    var items = [];
+    // 兴趣与活动
+    var interestRecs = records.filter(function(r) { return r.title === '烘焙兴趣' || r.title === '电子琴练习' || r.title === '新爱好'; });
+    interestRecs.slice(0, 2).forEach(function(r) {
+      items.push({ text: r.content.substring(0, 80), source: '来源：' + r.author + ' · ' + formatDateDisplay(r.date), statusLabel: '已确认', statusClass: 'source-confirmed' });
+    });
+    // 日常安排
+    var routineRecs = records.filter(function(r) { return r.title === '周末安排' || r.title === '假期安排'; });
+    routineRecs.slice(0, 2).forEach(function(r) {
+      items.push({ text: r.content.substring(0, 80), source: '来源：' + r.author + ' · ' + formatDateDisplay(r.date), statusLabel: '已确认', statusClass: 'source-confirmed' });
+    });
+    // 稳定偏好（多次出现）
+    var stable = records.filter(function(r) { return r.content.indexOf('公交车') >= 0; });
+    if (stable.length >= 2) {
+      items.push({ text: '较稳定兴趣线索：对公交车、火车等交通工具持续感兴趣（' + stable.length + '次记录）', source: '多来源观察 · 待本人确认', statusLabel: '待确认', statusClass: 'source-observer' });
+    }
+    return items.slice(0, 6);
+  }
+
+  function buildLifeL3(records) {
+    var events = [];
+    var cutoff60 = dateDaysAgo(60);
+    if (records.length > 0) {
+      var first = records[records.length - 1];
+      events.push({ icon: '🆕', typeLabel: '首次记录', text: '第一次记录生活偏好：' + (first.content || '').substring(0, 40), dateDisplay: formatDateDisplay(first.date), source: '来源：' + first.author });
+    }
+    // 明显变化
+    var cutoff90 = dateDaysAgo(90);
+    var recent = records.filter(function(r) { return r.date >= cutoff90; });
+    var old = records.filter(function(r) { return r.date < cutoff90; });
+    if (recent.length >= 3 && old.length > 0) {
+      events.push({ icon: '📈', typeLabel: '明显变化', text: '近3个月新增 ' + recent.length + ' 条生活记录，包括新爱好（拍照）和新周末活动', dateDisplay: '近3个月', source: '来源：系统' });
+    }
+    // 信息冲突
+    var conflictFound = false;
+    for (var i = 0; i < records.length && !conflictFound; i++) {
+      for (var j = i + 1; j < records.length && !conflictFound; j++) {
+        if (records[i].author !== records[j].author && records[i].date === records[j].date) { conflictFound = true; }
+      }
+    }
+    if (!conflictFound) {
+      events.push({ icon: '🔒', typeLabel: '信息一致', text: '近30天内生活偏好记录无明显冲突', dateDisplay: '近30天', source: '来源：系统' });
+    }
+    // 长期未复核
+    var oldRecs = records.filter(function(r) { return r.date < cutoff60; });
+    if (oldRecs.length > 0) {
+      var oldest = oldRecs.reduce(function(a, b) { return a.date < b.date ? a : b; });
+      events.push({ icon: '⏰', typeLabel: '超过复核周期', text: '有 ' + oldRecs.length + ' 条生活记录超过60天未复核，建议确认内容是否仍然准确', dateDisplay: formatDateDisplay(oldest.date) + ' ~ ' + formatDateDisplay(cutoff60), source: '来源：系统提醒' });
+    }
+    // 同类兴趣多次被记录
+    var busRecords = records.filter(function(r) { return r.content.indexOf('公交车') >= 0 || r.content.indexOf('火车') >= 0; });
+    if (busRecords.length >= 3) {
+      events.push({ icon: '🔁', typeLabel: '同类兴趣多次被记录', text: '关于交通工具的兴趣在 ' + busRecords.length + ' 次记录中被提及（不同时间、不同场景），为较稳定兴趣线索，待确认后可进入 L1', dateDisplay: busRecords[busRecords.length - 1].date + ' ~ ' + busRecords[0].date, source: '来源：多角色观察' });
+    }
+    return events;
+  }
+
+  // ============ #emotion L1 当前摘要 ============
+  function buildEmotionL1(records) {
+    var items = [];
+    var cutoff7 = dateDaysAgo(7);
+    var emotionRecs = records.filter(function(r) { return r.type === 'emotion'; });
+
+    // 1. 当前情绪状态 —— 近7天心情概览
+    var moodRecs = records.filter(function(r) { return r.type === 'mood'; });
+    var recentMood = moodRecs.filter(function(r) { return r.date >= cutoff7; }).sort(function(a, b) { return b.date.localeCompare(a.date); });
+    if (recentMood.length > 0) {
+      var moodLabels = { happy: '开心', calm: '平静', anxious: '焦虑', sad: '难过', excited: '兴奋' };
+      var moodCount = {};
+      recentMood.forEach(function(r) { var m = r.mood || ''; moodCount[m] = (moodCount[m] || 0) + 1; });
+      var topMoods = Object.keys(moodCount).sort(function(a, b) { return moodCount[b] - moodCount[a]; }).slice(0, 2);
+      var topText = topMoods.map(function(m) { return moodLabels[m] || m; }).join('、');
+      items.push({
+        text: '近7天心情以「' + topText + '」为主（共' + recentMood.length + '天记录）',
+        source: '近7天心情记录', statusLabel: '已确认', statusClass: 'source-confirmed'
+      });
+    }
+
+    // 2. 已识别的触发因素 —— 从情绪事件中提取
+    var triggers = [];
+    var envChange = emotionRecs.filter(function(r) { return (r.content || '').indexOf('换') >= 0 || (r.content || '').indexOf('新') >= 0 || (r.content || '').indexOf('临时') >= 0; });
+    if (envChange.length >= 2) triggers.push('环境/计划变化（如换教室、新老师、菜单更换）');
+    var noise = emotionRecs.filter(function(r) { return (r.content || '').indexOf('嘈杂') >= 0 || (r.content || '').indexOf('人多') >= 0 || (r.content || '').indexOf('打雷') >= 0; });
+    if (noise.length >= 2) triggers.push('噪音或人多环境（打雷、机构嘈杂）');
+    var weather = emotionRecs.filter(function(r) { return (r.content || '').indexOf('下雨') >= 0 && ((r.content || '').indexOf('躁') >= 0 || (r.content || '').indexOf('走') >= 0); });
+    if (weather.length >= 1) triggers.push('雨天无法户外活动时易烦躁');
+    var excited = emotionRecs.filter(function(r) { return r.emotion_type === '兴奋'; });
+    if (excited.length >= 2) triggers.push('期待外出/比赛时情绪高涨，可能影响作息');
+    if (triggers.length > 0) {
+      items.push({
+        text: '已识别触发因素：' + triggers.slice(0, 3).join('；'),
+        source: '来源：多角色观察 · 近6个月', statusLabel: '已确认', statusClass: 'source-confirmed'
+      });
+    }
+
+    // 3. 被记录为有帮助的安抚方式
+    var calmingMethods = [];
+    var quiet = emotionRecs.filter(function(r) { return (r.content || '').indexOf('安静') >= 0; });
+    if (quiet.length >= 2) calmingMethods.push('去安静环境待一会儿');
+    var music = emotionRecs.filter(function(r) { return (r.content || '').indexOf('音乐') >= 0 || (r.content || '').indexOf('电子琴') >= 0; });
+    if (music.length >= 2) calmingMethods.push('转移注意到音乐/电子琴');
+    var momComfort = emotionRecs.filter(function(r) { return (r.content || '').indexOf('妈妈') >= 0 && ((r.content || '').indexOf('安抚') >= 0 || (r.content || '').indexOf('好转') >= 0); });
+    if (momComfort.length >= 1) calmingMethods.push('联系妈妈（电话/看照片）');
+    var preview = emotionRecs.filter(function(r) { return (r.content || '').indexOf('提前') >= 0 && (r.content || '').indexOf('熟悉') >= 0; });
+    if (preview.length >= 1) calmingMethods.push('提前熟悉新环境/新安排');
+    if (calmingMethods.length > 0) {
+      var calmerAuthor = quiet.length > 0 ? quiet[0].author : (music.length > 0 ? music[0].author : '');
+      items.push({
+        text: '被记录为有帮助的安抚方式：' + calmingMethods.slice(0, 4).join('、'),
+        source: '来源：' + (calmerAuthor || '多角色') + ' · 观察记录', statusLabel: '已确认', statusClass: 'source-confirmed'
+      });
+    }
+
+    return items.slice(0, 6);
+  }
+
+  // ============ #emotion L3 关键事件 ============
+  function buildEmotionL3(records) {
+    var events = [];
+    var cutoff30 = dateDaysAgo(30);
+    var cutoff60 = dateDaysAgo(60);
+    var cutoff90 = dateDaysAgo(90);
+    var moodRecs = records.filter(function(r) { return r.type === 'mood'; }).sort(function(a, b) { return a.date.localeCompare(b.date); });
+    var emotionRecs = records.filter(function(r) { return r.type === 'emotion'; });
+
+    // 1. 首次记录
+    if (records.length > 0) {
+      var first = records[records.length - 1];
+      events.push({
+        icon: '🆕', typeLabel: '首次记录',
+        text: '第一条情绪记录：' + ((first.content || '').substring(0, 40)),
+        dateDisplay: formatDateDisplay(first.date),
+        source: '来源：' + (first.author || '系统')
+      });
+    }
+
+    // 2. 连续情绪记录 → "值得关注、待人工确认"（仅标记需关注的类型）
+    var attentionMoods = { anxious: '焦虑', sad: '难过' };
+    var streakMoods = {};
+    moodRecs.forEach(function(r) {
+      var m = r.mood;
+      if (!streakMoods[m]) streakMoods[m] = { count: 0, start: r.date, end: r.date };
+      streakMoods[m].count++;
+      streakMoods[m].end = r.date;
+    });
+    Object.keys(streakMoods).forEach(function(m) {
+      var s = streakMoods[m];
+      if (s.count >= 3 && attentionMoods[m]) {
+        events.push({
+          icon: '👁️', typeLabel: '值得关注',
+          text: '近30天「' + attentionMoods[m] + '」出现 ' + s.count + ' 天，待人工确认是否存在规律',
+          dateDisplay: s.start + ' ~ ' + s.end,
+          source: '来源：系统统计 · 仅作提示，非诊断性结论'
+        });
+      }
+    });
+
+    // 3. 明显变化 —— 情绪波动相关记录增加
+    var recentEmotion = emotionRecs.filter(function(r) { return r.date >= cutoff30; });
+    var olderEmotion = emotionRecs.filter(function(r) { return r.date < cutoff30; });
+    if (recentEmotion.length > olderEmotion.length && olderEmotion.length > 0) {
+      events.push({
+        icon: '📈', typeLabel: '明显变化',
+        text: '近30天情绪事件记录 ' + recentEmotion.length + ' 条，较前段（' + olderEmotion.length + ' 条）有所增加，近阶段情绪波动相关记录增加',
+        dateDisplay: '近30天 vs 更早',
+        source: '来源：系统'
+      });
+    }
+
+    // 4. 信息冲突待核实
+    var moodHappy = moodRecs.filter(function(r) { return r.mood === 'happy' && r.date >= cutoff30; });
+    var moodSad = moodRecs.filter(function(r) { return r.mood === 'sad' && r.date >= cutoff30; });
+    if (moodHappy.length > 0 && moodSad.length > 0) {
+      events.push({
+        icon: '⚠️', typeLabel: '信息冲突待核实',
+        text: '近30天心情记录中「开心」和「难过」并存，不同场景下的情绪反应差异较大，建议综合观察',
+        dateDisplay: '近30天', source: '来源：系统'
+      });
+    }
+
+    // 5. 新触发因素识别（查全部记录，不限类型）
+    var catTriggers = records.filter(function(r) { return r.date >= cutoff90 && ((r.content || '').indexOf('猫') >= 0 || (r.content || '').indexOf('动物') >= 0); });
+    if (catTriggers.length >= 2) {
+      events.push({
+        icon: '💡', typeLabel: '新触发因素',
+        text: '近3个月 ' + catTriggers.length + ' 次记录显示：接触小动物（猫）时情绪积极，可能是新的正向触发因素',
+        dateDisplay: formatDateDisplay(catTriggers[catTriggers.length - 1].date) + ' ~ ' + formatDateDisplay(catTriggers[0].date),
+        source: '来源：照护者观察'
+      });
+    }
+
+    // 6. 长期未复核
+    var oldEmotion = emotionRecs.filter(function(r) { return r.date < cutoff60; });
+    if (oldEmotion.length > 0) {
+      var oldest = oldEmotion.reduce(function(a, b) { return a.date < b.date ? a : b; });
+      events.push({
+        icon: '⏰', typeLabel: '超过复核周期',
+        text: '有 ' + oldEmotion.length + ' 条情绪事件记录超过60天未复核，建议确认内容是否仍然准确',
+        dateDisplay: formatDateDisplay(oldest.date) + ' ~ ' + formatDateDisplay(cutoff60),
+        source: '来源：系统提醒'
+      });
+    }
+
+    // 7. 安抚方式被多次记录为有帮助
+    var calmMusic = records.filter(function(r) { return ((r.content || '').indexOf('音乐') >= 0 || (r.content || '').indexOf('电子琴') >= 0 || (r.content || '').indexOf(' 琴') >= 0) && ((r.content || '').indexOf('平静') >= 0 || (r.content || '').indexOf('好转') >= 0 || (r.content || '').indexOf('放松') >= 0 || (r.content || '').indexOf('恢复') >= 0); });
+    if (calmMusic.length >= 2) {
+      events.push({
+        icon: '✅', typeLabel: '多次记录为有帮助',
+        text: '「播放音乐/转移注意到电子琴」在 ' + calmMusic.length + ' 次不同情境下被记录为有助于情绪平稳',
+        dateDisplay: formatDateDisplay(calmMusic[calmMusic.length - 1].date) + ' ~ ' + formatDateDisplay(calmMusic[0].date),
+        source: '来源：多角色记录'
+      });
+    }
+
+    return events;
+  }
+
+  // ============ #care L1 当前摘要 ============
+  function buildCareL1(records) {
+    var items = [];
+    var careInfo = DataStore.getCareInfo();
+    var sorted = records.slice().sort(function(a, b) { return b.date.localeCompare(a.date); });
+
+    // 1. 当前照护安排 + 最近确认信息
+    var latest = sorted[0];
+    if (latest) {
+      items.push({
+        text: '最近照护记录：' + (latest.title || '') + ' — ' + (latest.content || '').substring(0, 60),
+        source: '来源：' + (latest.author || '') + ' · ' + formatDateDisplay(latest.date) + '（最近确认）',
+        statusLabel: '已确认', statusClass: 'source-confirmed'
+      });
+    }
+
+    // 2. 过敏信息（权威数据）
+    items.push({
+      text: '过敏食物：' + careInfo.allergy.items + '（' + careInfo.allergy.level + '）',
+      source: '来源：档案权威数据 · 所有照护者须知', statusLabel: '已确认', statusClass: 'source-confirmed'
+    });
+
+    // 3. 近期医疗事件
+    var medicalRecs = records.filter(function(r) { return (r.title || '').indexOf('体检') >= 0 || (r.title || '').indexOf('用药') >= 0 || (r.title || '').indexOf('复查') >= 0; });
+    medicalRecs.slice(0, 2).forEach(function(r) {
+      items.push({
+        text: (r.title || '') + '：' + (r.content || '').substring(0, 60),
+        source: '来源：' + r.author + ' · ' + formatDateDisplay(r.date), statusLabel: '已确认', statusClass: 'source-confirmed'
+      });
+    });
+
+    // 4. 用药情况
+    items.push({
+      text: '当前用药：' + (careInfo.medicine || '无常规用药'),
+      source: '来源：档案 · 最后确认：' + formatDateDisplay(sorted[0] ? sorted[0].date : ''),
+      statusLabel: '已确认', statusClass: 'source-confirmed'
+    });
+
+    return items.slice(0, 6);
+  }
+
+  // ============ #care L3 关键事件 ============
+  function buildCareL3(records) {
+    var events = [];
+    var cutoff30 = dateDaysAgo(30);
+    var cutoff60 = dateDaysAgo(60);
+
+    // 1. 首次记录
+    if (records.length > 0) {
+      var first = records[records.length - 1];
+      events.push({
+        icon: '🆕', typeLabel: '首次记录',
+        text: '第一条照护记录：' + ((first.title || '') + ' — ' + (first.content || '')).substring(0, 50),
+        dateDisplay: formatDateDisplay(first.date),
+        source: '来源：' + (first.author || '系统')
+      });
+    }
+
+    // 2. 信息冲突检查
+    var allergyConfirm = records.filter(function(r) { return (r.title || '').indexOf('过敏') >= 0; });
+    if (allergyConfirm.length >= 2) {
+      var latestAllergy = allergyConfirm.reduce(function(a, b) { return a.date > b.date ? a : b; });
+      events.push({
+        icon: '📋', typeLabel: '过敏信息更新',
+        text: '过敏信息有 ' + allergyConfirm.length + ' 次记录更新，最近一次：' + latestAllergy.title,
+        dateDisplay: formatDateDisplay(latestAllergy.date),
+        source: '来源：' + latestAllergy.author
+      });
+    }
+
+    // 3. 新就医记录
+    var medicalRecs = records.filter(function(r) { return (r.title || '').indexOf('体检') >= 0 || (r.title || '').indexOf('用药') >= 0; });
+    medicalRecs.forEach(function(r) {
+      events.push({
+        icon: '🏥', typeLabel: '医疗记录',
+        text: r.title + '：' + (r.content || '').substring(0, 50),
+        dateDisplay: formatDateDisplay(r.date),
+        source: '来源：' + r.author
+      });
+    });
+
+    // 4. 紧急联系人变更
+    var contactRecs = records.filter(function(r) { return (r.title || '').indexOf('紧急联系') >= 0 || (r.title || '').indexOf('联系') >= 0 && (r.content || '').indexOf('139') >= 0; });
+    contactRecs.forEach(function(r) {
+      events.push({
+        icon: '📞', typeLabel: '联系人变更',
+        text: (r.content || '').substring(0, 60),
+        dateDisplay: formatDateDisplay(r.date),
+        source: '来源：' + r.author
+      });
+    });
+
+    // 5. 到期提醒（仅复查类）
+    var reviewRecs = records.filter(function(r) { return (r.title || '').indexOf('复查') >= 0; });
+    reviewRecs.forEach(function(r) {
+      events.push({
+        icon: '📅', typeLabel: '到期提醒',
+        text: (r.title || '') + '：' + (r.content || '').substring(0, 60),
+        dateDisplay: formatDateDisplay(r.date),
+        source: '来源：' + r.author
+      });
+    });
+
+    // 6. 长期未复核
+    var oldRecs = records.filter(function(r) { return r.date < cutoff60; });
+    if (oldRecs.length > 0) {
+      var oldest = oldRecs.reduce(function(a, b) { return a.date < b.date ? a : b; });
+      events.push({
+        icon: '⏰', typeLabel: '超过复核周期',
+        text: '有 ' + oldRecs.length + ' 条照护记录超过60天未复核，建议确认内容是否仍然准确',
+        dateDisplay: formatDateDisplay(oldest.date) + ' ~ ' + formatDateDisplay(cutoff60),
+        source: '来源：系统提醒'
+      });
+    }
+
+    return events;
+  }
+
+  // ============ #work L1 当前摘要 ============
+  function buildWorkL1(records) {
+    var items = [];
+    var actRecs = records.filter(function(r) { return r.type === 'activity'; }).sort(function(a, b) { return b.date.localeCompare(a.date); });
+    var noteRecs = records.filter(function(r) { return r.type === 'note'; });
+
+    // 1. 当前工作/活动能力
+    var workInfo = window.Constants.workInfo;
+    items.push({
+      text: '能独立完成：' + (workInfo.canDo || []).join('、'),
+      source: '来源：档案基础信息', statusLabel: '已确认', statusClass: 'source-confirmed'
+    });
+    items.push({
+      text: '需要支持的：' + (workInfo.needSupport || []).join('、'),
+      source: '来源：档案基础信息', statusLabel: '已确认', statusClass: 'source-confirmed'
+    });
+
+    // 2. 最近活动表现
+    if (actRecs.length > 0) {
+      var latestAct = actRecs[0];
+      items.push({
+        text: '最近活动：' + (latestAct.title || '') + ' — ' + (latestAct.content || '').substring(0, 60),
+        source: '来源：' + latestAct.author + ' · ' + formatDateDisplay(latestAct.date),
+        statusLabel: '已确认', statusClass: 'source-confirmed'
+      });
+    }
+
+    // 3. 被记录为有帮助的支持方式
+    var supportRecs = noteRecs.filter(function(r) { return (r.title || '').indexOf('支持方式') >= 0 || (r.title || '').indexOf('支持需求') >= 0; });
+    supportRecs.slice(0, 2).forEach(function(r) {
+      items.push({
+        text: (r.title || '') + '：' + (r.content || '').substring(0, 60),
+        source: '来源：' + r.author + ' · ' + formatDateDisplay(r.date),
+        statusLabel: '已确认', statusClass: 'source-confirmed'
+      });
+    });
+
+    return items.slice(0, 6);
+  }
+
+  // ============ #work L3 关键事件 ============
+  function buildWorkL3(records) {
+    var events = [];
+    var cutoff30 = dateDaysAgo(30);
+    var cutoff60 = dateDaysAgo(60);
+    var noteRecs = records.filter(function(r) { return r.type === 'note'; });
+
+    // 1. 首次记录
+    if (records.length > 0) {
+      var first = records[records.length - 1];
+      events.push({
+        icon: '🆕', typeLabel: '首次记录',
+        text: '第一条工作记录：' + ((first.title || '') + ' — ' + (first.content || '')).substring(0, 50),
+        dateDisplay: formatDateDisplay(first.date),
+        source: '来源：' + (first.author || '系统')
+      });
+    }
+
+    // 2. 明显变化（全部记录，不限于 activity 类型）
+    var recentItems = records.filter(function(r) { return r.date >= cutoff30; });
+    var olderItems = records.filter(function(r) { return r.date < cutoff30; });
+    if (recentItems.length > olderItems.length && olderItems.length > 0) {
+      events.push({
+        icon: '📈', typeLabel: '明显变化',
+        text: '近30天有 ' + recentItems.length + ' 条工作记录，较前段（' + olderItems.length + ' 条）有所增加',
+        dateDisplay: '近30天 vs 更早', source: '来源：系统'
+      });
+    }
+
+    // 3. 新任务/角色变化
+    var newTaskRecs = records.filter(function(r) { return (r.title || '').indexOf('新任务') >= 0 || (r.title || '').indexOf('新') >= 0 && r.type === 'note'; });
+    newTaskRecs.forEach(function(r) {
+      events.push({
+        icon: '🆕', typeLabel: '新任务/角色变化',
+        text: (r.title || '') + '：' + (r.content || '').substring(0, 60),
+        dateDisplay: formatDateDisplay(r.date), source: '来源：' + r.author
+      });
+    });
+
+    // 4. 支持方式被记录为有帮助
+    var helpfulRecs = noteRecs.filter(function(r) { return (r.title || '').indexOf('支持方式') >= 0 || ((r.content || '').indexOf('独立完成') >= 0 && (r.content || '').indexOf('步骤') >= 0); });
+    helpfulRecs.forEach(function(r) {
+      events.push({
+        icon: '✅', typeLabel: '支持方式被记录为有帮助',
+        text: (r.title || '') + '：' + (r.content || '').substring(0, 60),
+        dateDisplay: formatDateDisplay(r.date), source: '来源：' + r.author
+      });
+    });
+
+    // 5. 同一困难多次出现 → "待人工评估"
+    var difficultyRecs = noteRecs.filter(function(r) { return (r.title || '').indexOf('困难') >= 0 || ((r.content || '').indexOf('临时调整') >= 0 || (r.content || '').indexOf('不安') >= 0); });
+    if (difficultyRecs.length >= 2) {
+      events.push({
+        icon: '👁️', typeLabel: '待人工评估',
+        text: '应对变化相关支持记录出现 ' + difficultyRecs.length + ' 次，建议人工评估是否需要调整支持策略',
+        dateDisplay: difficultyRecs[difficultyRecs.length - 1].date + ' ~ ' + difficultyRecs[0].date,
+        source: '来源：系统提示 · 非诊断性结论'
+      });
+    }
+
+    // 6. 长期未复核
+    var oldRecs = records.filter(function(r) { return r.date < cutoff60; });
+    if (oldRecs.length > 0) {
+      var oldest = oldRecs.reduce(function(a, b) { return a.date < b.date ? a : b; });
+      events.push({
+        icon: '⏰', typeLabel: '超过复核周期',
+        text: '有 ' + oldRecs.length + ' 条工作记录超过60天未复核，建议确认内容是否仍然准确',
+        dateDisplay: formatDateDisplay(oldest.date) + ' ~ ' + formatDateDisplay(cutoff60),
+        source: '来源：系统提醒'
+      });
+    }
+
+    return events;
+  }
+
+  // ============ #relations L1 当前摘要 ============
+  function buildRelationsL1(records) {
+    var items = [];
+    var relInfo = window.Constants.relationsInfo;
+
+    // 1. 核心支持圈
+    if (relInfo.core && relInfo.core.length > 0) {
+      var coreNames = relInfo.core.map(function(p) { return p.name + '（' + p.role + '）'; });
+      items.push({
+        text: '核心支持圈：' + coreNames.join('、'),
+        source: '来源：档案基础信息', statusLabel: '已确认', statusClass: 'source-confirmed'
+      });
+    }
+
+    // 2. 日常交往圈
+    if (relInfo.daily && relInfo.daily.length > 0) {
+      var dailyNames = relInfo.daily.map(function(p) { return p.name + '（' + p.role + '）'; });
+      items.push({
+        text: '日常交往圈：' + dailyNames.join('、'),
+        source: '来源：档案基础信息', statusLabel: '已确认', statusClass: 'source-confirmed'
+      });
+    }
+
+    // 3. 社交偏好（来自最近记录）
+    var socialPrefRecs = records.filter(function(r) { return (r.title || '').indexOf('社交偏好') >= 0 || (r.title || '').indexOf('边界需求') >= 0; });
+    socialPrefRecs.slice(0, 2).forEach(function(r) {
+      items.push({
+        text: (r.title || '') + '：' + (r.content || '').substring(0, 60),
+        source: '来源：' + r.author + ' · ' + formatDateDisplay(r.date),
+        statusLabel: '已确认', statusClass: 'source-confirmed'
+      });
+    });
+
+    // 4. 近期重要互动
+    var recentSocial = records.filter(function(r) { return r.type === 'social'; }).sort(function(a, b) { return b.date.localeCompare(a.date); });
+    if (recentSocial.length > 0) {
+      var latest = recentSocial[0];
+      items.push({
+        text: '最近社交记录：' + (latest.title || '') + ' — ' + (latest.content || '').substring(0, 60),
+        source: '来源：' + latest.author + ' · ' + formatDateDisplay(latest.date),
+        statusLabel: '已确认', statusClass: 'source-confirmed'
+      });
+    }
+
+    return items.slice(0, 6);
+  }
+
+  // ============ #relations L3 关键事件 ============
+  function buildRelationsL3(records) {
+    var events = [];
+    var cutoff30 = dateDaysAgo(30);
+    var cutoff60 = dateDaysAgo(60);
+
+    // 1. 首次记录
+    if (records.length > 0) {
+      var first = records[records.length - 1];
+      events.push({
+        icon: '🆕', typeLabel: '首次记录',
+        text: '第一条关系记录：' + ((first.title || '') + ' — ' + (first.content || '')).substring(0, 50),
+        dateDisplay: formatDateDisplay(first.date),
+        source: '来源：' + (first.author || '系统')
+      });
+    }
+
+    // 2. 明显变化
+    var recentItems = records.filter(function(r) { return r.date >= cutoff30; });
+    var olderItems = records.filter(function(r) { return r.date < cutoff30; });
+    if (recentItems.length > olderItems.length && olderItems.length > 0) {
+      events.push({
+        icon: '📈', typeLabel: '明显变化',
+        text: '近30天有 ' + recentItems.length + ' 条关系记录，较前段（' + olderItems.length + ' 条）有所增加',
+        dateDisplay: '近30天 vs 更早', source: '来源：系统'
+      });
+    }
+
+    // 3. 信息冲突
+    var conflictRecords = {};
+    records.forEach(function(r) {
+      if (!conflictRecords[r.date]) conflictRecords[r.date] = [];
+      conflictRecords[r.date].push(r);
+    });
+    var conflictDates = 0;
+    Object.keys(conflictRecords).forEach(function(d) {
+      var authors = {};
+      conflictRecords[d].forEach(function(r) { authors[r.author] = true; });
+      if (Object.keys(authors).length > 1) conflictDates++;
+    });
+    if (conflictDates === 0 && records.length > 0) {
+      events.push({
+        icon: '🔒', typeLabel: '信息一致',
+        text: '无同一日期多角色记录冲突',
+        dateDisplay: '全时段', source: '来源：系统'
+      });
+    }
+
+    // 4. 新关系或关系变化
+    var changeRecs = records.filter(function(r) { return (r.title || '').indexOf('关系圈更新') >= 0; });
+    changeRecs.forEach(function(r) {
+      events.push({
+        icon: '🔄', typeLabel: '新关系或关系变化',
+        text: (r.title || '') + '：' + (r.content || '').substring(0, 60),
+        dateDisplay: formatDateDisplay(r.date), source: '来源：' + r.author
+      });
+    });
+
+    // 5. 互动偏好多次被描述
+    var prefRecs = records.filter(function(r) { return (r.title || '').indexOf('互动') >= 0 || (r.title || '').indexOf('社交偏好') >= 0 || (r.title || '').indexOf('边界需求') >= 0; });
+    if (prefRecs.length >= 2) {
+      events.push({
+        icon: '💬', typeLabel: '互动偏好多次被描述',
+        text: '关于社交互动偏好/边界在 ' + prefRecs.length + ' 次记录中被提及',
+        dateDisplay: prefRecs[prefRecs.length - 1].date + ' ~ ' + prefRecs[0].date,
+        source: '来源：多角色观察'
+      });
+    }
+
+    // 6. 长期未复核
+    var oldRecs = records.filter(function(r) { return r.date < cutoff60; });
+    if (oldRecs.length > 0) {
+      var oldest = oldRecs.reduce(function(a, b) { return a.date < b.date ? a : b; });
+      events.push({
+        icon: '⏰', typeLabel: '超过复核周期',
+        text: '有 ' + oldRecs.length + ' 条关系记录超过60天未复核，建议确认内容是否仍然准确',
+        dateDisplay: formatDateDisplay(oldest.date) + ' ~ ' + formatDateDisplay(cutoff60),
+        source: '来源：系统提醒'
+      });
+    }
+
+    return events;
+  }
+
+  /* ==========================================================
    * 五、情绪与行为支持页面渲染
    * ========================================================== */
 
   /**
-   * 渲染情绪与行为支持页面 - 流程图 + 彩色卡片
+   * 渲染情绪与行为支持页面 — 四层模型
    */
   function renderEmotion() {
-    // v2.0：使用新的压力信号与支持方法渲染
-    if (window.ProfilePage && window.ProfilePage.renderEmotionSupport) {
-      window.ProfilePage.renderEmotionSupport();
-      return;
-    }
-    // fallback
     var contentArea = document.getElementById('emotion-content');
     if (!contentArea) return;
-    contentArea.innerHTML = '<div class="empty-state"><div class="empty-icon">🌊</div><div class="empty-text">加载中...</div></div>';
+    renderTopicFourLayer(contentArea, 'emotion', {
+      l1Title: '📌 当前摘要',
+      l1Sub: '当前已确认的情绪状态、已识别的触发因素与被记录为有帮助的安抚方式',
+      emptyText: '暂无情绪记录'
+    });
   }
 
   /* ==========================================================
@@ -1458,76 +2223,24 @@
     var contentArea = document.getElementById('care-content');
     if (!contentArea) return;
 
-    // 重新读取权威数据源
     careInfo = DataStore.getCareInfo();
 
     var html = '';
 
-    // 医疗信息冲突警告
-    var conflict = DataStore.validateMedicalConsistency();
-    if (conflict) {
-      html += '<div class="medical-conflict-banner">';
-      html += '  <div class="mc-banner-icon">⚠️</div>';
-      html += '  <div class="mc-banner-body">';
-      html += '    <div class="mc-banner-title">医疗信息冲突</div>';
-      html += '    <div class="mc-banner-detail">档案标注为"无用药"，但系统中存在用药相关数据，可能造成照护事故。</div>';
-      html += '    <div class="mc-banner-actions">';
-      html += '      <button class="mc-btn-fix" onclick="fixMedicalConflict()">更新档案用药信息</button>';
-      html += '      <button class="mc-btn-dismiss" onclick="this.closest(\'.medical-conflict-banner\').remove()">稍后处理</button>';
-      html += '    </div>';
-      html += '  </div>';
-      html += '</div>';
-    }
-
-    // 过敏警告（置顶醒目）—— A级公开，所有角色可见
+    // 过敏警告（置顶醒目，保留原样式）
     html += '<div class="allergy-warning" data-privacy="A">';
     html += '  <div class="allergy-icon">🚨</div>';
     html += '  <div class="allergy-text">严重过敏警告</div>';
     html += '  <div class="allergy-detail">' + careInfo.allergy.items + ' — ' + careInfo.allergy.level + '</div>';
     html += '</div>';
 
-    // 照护信息卡片
-    html += '<div class="privacy-grid">';
-
-    // 过敏详情 —— A级公开
-    html += '<div class="privacy-item" data-privacy="A">';
-    html += '  <div class="privacy-label">过敏食物</div>';
-    html += '  <div class="privacy-value" style="color:#F5222D;font-weight:700;">' + careInfo.allergy.items + '</div>';
-    html += '</div>';
-
-    // 过敏等级 —— A级公开
-    html += '<div class="privacy-item" data-privacy="A">';
-    html += '  <div class="privacy-label">过敏等级</div>';
-    html += '  <div class="privacy-value" style="color:#F5222D;font-weight:700;">' + careInfo.allergy.level + '</div>';
-    html += '</div>';
-
-    // 用药 —— D级私密，仅家长可见
-    html += '<div class="privacy-item" data-privacy="D">';
-    html += '  <div class="privacy-label">日常用药</div>';
-    html += '  <div class="privacy-value">' + careInfo.medicine + '</div>';
-    html += '</div>';
-
-    // 体检 —— D级私密，仅家长可见
-    html += '<div class="privacy-item" data-privacy="D">';
-    html += '  <div class="privacy-label">体检安排</div>';
-    html += '  <div class="privacy-value">' + careInfo.checkup + '</div>';
-    html += '</div>';
-
-    // 特殊事项 —— B级照护
-    html += '<div class="privacy-item" data-privacy="B">';
-    html += '  <div class="privacy-label">特别注意事项</div>';
-    html += '  <div class="privacy-value">' + careInfo.special + '</div>';
-    html += '</div>';
-
-    // 睡眠 —— B级照护
-    html += '<div class="privacy-item" data-privacy="B">';
-    html += '  <div class="privacy-label">作息要求</div>';
-    html += '  <div class="privacy-value">' + careInfo.sleep + '</div>';
-    html += '</div>';
-
-    html += '</div>';
-
-    contentArea.innerHTML = html;
+    // 四层模型（过敏警告通过 prependHtml 前置）
+    renderTopicFourLayer(contentArea, 'care', {
+      l1Title: '📌 当前摘要',
+      l1Sub: '当前照护安排、近期医疗事件与用药情况',
+      emptyText: '暂无照护记录',
+      prependHtml: html
+    });
   }
 
   /* ==========================================================
@@ -1540,50 +2253,11 @@
   function renderWork() {
     var contentArea = document.getElementById('work-content');
     if (!contentArea) return;
-
-    var html = '';
-
-    html += '<div class="three-col">';
-
-    // 能做的
-    html += '<div>';
-    html += '  <div class="content-card green">';
-    html += '    <div class="card-section-title">✅ 能做的</div>';
-    html += '    <ul class="card-list">';
-    workInfo.canDo.forEach(function (item) {
-      html += '<li>' + item + '</li>';
+    renderTopicFourLayer(contentArea, 'work', {
+      l1Title: '📌 当前摘要',
+      l1Sub: '当前工作与活动能力、支持需求与被记录为有帮助的支持方式',
+      emptyText: '暂无工作记录'
     });
-    html += '    </ul>';
-    html += '  </div>';
-    html += '</div>';
-
-    // 需要支持的
-    html += '<div>';
-    html += '  <div class="content-card yellow">';
-    html += '    <div class="card-section-title">⚠️ 需要支持的</div>';
-    html += '    <ul class="card-list">';
-    workInfo.needSupport.forEach(function (item) {
-      html += '<li>' + item + '</li>';
-    });
-    html += '    </ul>';
-    html += '  </div>';
-    html += '</div>';
-
-    // 避免的
-    html += '<div>';
-    html += '  <div class="content-card red">';
-    html += '    <div class="card-section-title">🚫 避免安排</div>';
-    html += '    <ul class="card-list">';
-    workInfo.avoid.forEach(function (item) {
-      html += '<li>' + item + '</li>';
-    });
-    html += '    </ul>';
-    html += '  </div>';
-    html += '</div>';
-
-    html += '</div>';
-
-    contentArea.innerHTML = html;
   }
 
   /* ==========================================================
@@ -1596,94 +2270,11 @@
   function renderRelations() {
     var contentArea = document.getElementById('relations-content');
     if (!contentArea) return;
-
-    var html = '';
-
-    // 关系地图可视化（CSS圆圈定位）
-    html += '<h2 class="section-title">关系地图</h2>';
-    html += '<div class="relation-map">';
-
-    // 最外层 - 避免圈
-    html += '<div class="relation-circle avoid"></div>';
-    // 中间层 - 日常圈
-    html += '<div class="relation-circle daily"></div>';
-    // 内层 - 核心圈
-    html += '<div class="relation-circle core"></div>';
-
-    // 中心 - 小雨
-    html += '<div class="relation-center">小雨</div>';
-
-    // 核心圈人物 - 按圆环位置分布
-    var coreAngles = [90, 210, 330]; // 三个核心人物的角度
-    var coreRadius = 25; // 核心圈半径百分比
-    relationsInfo.core.forEach(function (person, idx) {
-      var angle = coreAngles[idx] || 90;
-      var x = 50 + coreRadius * Math.cos(angle * Math.PI / 180);
-      var y = 50 + coreRadius * Math.sin(angle * Math.PI / 180);
-      html += '<div class="relation-person core-person" style="left:' + x + '%;top:' + y + '%;" title="' + person.name + ' - ' + person.role + '">';
-      html += '  <div class="person-avatar">' + person.emoji + '</div>';
-      html += '  <div class="person-name">' + person.name + '</div>';
-      html += '</div>';
+    renderTopicFourLayer(contentArea, 'relations', {
+      l1Title: '📌 当前摘要',
+      l1Sub: '重要关系、社交偏好与被记录的支持需求',
+      emptyText: '暂无关系记录'
     });
-
-    // 日常圈人物
-    var dailyAngles = [45, 315];
-    var dailyRadius = 37;
-    relationsInfo.daily.forEach(function (person, idx) {
-      var angle = dailyAngles[idx] || 45;
-      var x = 50 + dailyRadius * Math.cos(angle * Math.PI / 180);
-      var y = 50 + dailyRadius * Math.sin(angle * Math.PI / 180);
-      html += '<div class="relation-person daily-person" style="left:' + x + '%;top:' + y + '%;" title="' + person.name + ' - ' + person.role + '">';
-      html += '  <div class="person-avatar">' + person.emoji + '</div>';
-      html += '  <div class="person-name">' + person.name + '</div>';
-      html += '</div>';
-    });
-
-    html += '</div>';
-
-    // 关系图例
-    html += '<div style="display:flex;justify-content:center;gap:24px;margin-bottom:24px;flex-wrap:wrap;">';
-    html += '<div style="display:flex;align-items:center;gap:6px;font-size:0.85rem;"><span style="width:12px;height:12px;border-radius:50%;background:#4A90D9;display:inline-block;"></span> 核心圈</div>';
-    html += '<div style="display:flex;align-items:center;gap:6px;font-size:0.85rem;"><span style="width:12px;height:12px;border-radius:50%;background:#52C41A;display:inline-block;"></span> 日常圈</div>';
-    html += '<div style="display:flex;align-items:center;gap:6px;font-size:0.85rem;"><span style="width:12px;height:12px;border-radius:50%;background:#999;display:inline-block;"></span> 避免接触</div>';
-    html += '</div>';
-
-    // 详细列表
-    html += '<div class="container" style="padding:0 24px;">';
-
-    // 核心圈列表 —— B级照护
-    html += '<h2 class="section-title" data-privacy="B">核心支持圈</h2>';
-    html += '<div class="content-card blue" style="margin-bottom:24px;" data-privacy="B">';
-    html += '<ul class="card-list">';
-    relationsInfo.core.forEach(function (person) {
-      html += '<li>' + person.emoji + ' <strong>' + person.name + '</strong> — ' + person.role + '</li>';
-    });
-    html += '</ul>';
-    html += '</div>';
-
-    // 日常圈列表 —— B级照护
-    html += '<h2 class="section-title" data-privacy="B">日常接触圈</h2>';
-    html += '<div class="content-card green" style="margin-bottom:24px;" data-privacy="B">';
-    html += '<ul class="card-list">';
-    relationsInfo.daily.forEach(function (person) {
-      html += '<li>' + person.emoji + ' <strong>' + person.name + '</strong> — ' + person.role + '</li>';
-    });
-    html += '</ul>';
-    html += '</div>';
-
-    // 避免场景 —— A级公开，所有角色应知
-    html += '<h2 class="section-title">避免的场景与接触</h2>';
-    html += '<div class="content-card red">';
-    html += '<ul class="card-list">';
-    relationsInfo.avoid.forEach(function (item) {
-      html += '<li>' + item + '</li>';
-    });
-    html += '</ul>';
-    html += '</div>';
-
-    html += '</div>';
-
-    contentArea.innerHTML = html;
   }
 
   /* ==========================================================

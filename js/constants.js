@@ -239,7 +239,11 @@
     note: { label: '一般备注', icon: '📝', color: '#999999',
       fields: ['title', 'content'], description: '添加其他需要记录的备注' },
     strategy: { label: '策略记录', icon: '🧩', color: '#EB2F96',
-      fields: ['emotion_type', 'title', 'content', 'effectiveness'], description: '记录情绪行为策略使用及效果' }
+      fields: ['emotion_type', 'title', 'content', 'effectiveness'], description: '记录情绪行为策略使用及效果' },
+    life: { label: '生活记录', icon: '❤️', color: '#4A90D9',
+      fields: ['title', 'content'], description: '记录兴趣、活动、日常生活偏好' },
+    social: { label: '社交记录', icon: '👥', color: '#EB2F96',
+      fields: ['title', 'content'], description: '记录社交互动、人际关系变化' }
   };
 
   /** 心情选项 */
@@ -602,7 +606,8 @@
     communication: ['对话', '短句', '图片卡', '示范', '选择', '比喻', '指令', '反馈', '社交故事', '视觉提示'],
     emotion: ['焦虑', '开心', '生气', '难过', '兴奋', '安抚', '触发', '预警', '感官', '深压力'],
     care: ['过敏', '用药', '饮食', '睡眠', '体检', '卫生', '安全', '过敏原', '用药提醒', '作息'],
-    work: ['烘焙', '清洁', '包装', '电子琴', '散步', '绘画', '步骤分解', '任务支持', '就业', '技能']
+    work: ['烘焙', '清洁', '包装', '电子琴', '散步', '绘画', '步骤分解', '任务支持', '就业', '技能'],
+    relations: ['社交', '互动', '关系', '家庭', '朋友', '同事', '社区', '支持圈', '信任', '边界']
   };
 
   /** 记录类型到档案模块的映射 */
@@ -612,6 +617,8 @@
     communication: 'communication',
     care: 'care',
     activity: 'work',
+    life: 'life',
+    social: 'relations',
     strategy: 'emotion',
     note: null
   };
@@ -621,7 +628,8 @@
     communication: ['communication', 'note'],
     emotion: ['mood', 'emotion', 'strategy', 'note'],
     care: ['care', 'note'],
-    work: ['activity', 'note']
+    work: ['activity', 'note'],
+    relations: ['social', 'note']
   };
 
   /* ==========================================================

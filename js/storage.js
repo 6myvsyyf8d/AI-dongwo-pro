@@ -160,6 +160,55 @@
       });
     });
 
+    // === 工作支持补充记录（支持需求、适应调整、困难） ===
+    var workMore = [
+      { d: -9, t: '支持需求', c: '新任务指令需要提前演示一遍，口头说明不够。建议用步骤卡片辅助理解。', a: 'teacher' },
+      { d: -15, t: '适应调整', c: '烘焙课临时换了配方，提前说明后配合良好，比上次换教室时适应得快。', a: 'teacher' },
+      { d: -20, t: '困难记录', c: '今天活动顺序临时调整，出现不安。先安排熟悉的烘焙环节后恢复，说明固定流程可应急使用。', a: 'caregiver' },
+      { d: -28, t: '支持方式', c: '用步骤分解法教新任务——把"包装饼干"分解成取袋→装袋→封口三步，小雨独立完成了全部步骤。', a: 'teacher' },
+      { d: -35, t: '新任务', c: '开始尝试清洁整理工作。从擦桌子开始，做了示范后小雨能独立完成2张桌子。', a: 'caregiver' },
+      { d: -45, t: '支持调整建议', c: '建议在烘焙任务中加入称量环节，小雨对数字敏感，可能适合更精确的操作步骤。', a: 'teacher' }
+    ];
+    workMore.forEach(function(item) {
+      var au = authors[item.a];
+      addRecord('note', {
+        title: item.t, content: item.c,
+        author: au.name, authorRole: au.role, authorId: au.id, authorAvatar: au.avatar,
+        module: 'work',
+        date: dateStr(item.d), time: timeStr(10 + Math.floor(Math.random() * 5), Math.floor(Math.random() * 60))
+      });
+    });
+
+    // === 生活记录（12条，兴趣/活动/日常安排，跨6个月，3角色） ===
+    var lifeData = [
+      // 今天-7天
+      { d: 0,  t: '周末安排', c: '周末去了公园，看了很多公交车进出站，还喂了鸽子。回家路上主动说"下周还来"。', a: 'parent' },
+      { d: -2,  t: '烘焙兴趣', c: '今天在家尝试做了小饼干，从量面粉到装饰全程参与。最喜欢巧克力口味的，做了两盘。', a: 'parent' },
+      { d: -4,  c: '每天晚饭后要看一集《托马斯小火车》，会跟着唱主题曲。看到火车进站的画面特别兴奋。', a: 'parent' },
+      { d: -6,  t: '公园活动', c: '在公园散步时主动指着一个新公交站牌说"这个以前没见过"，观察力很强。', a: 'caregiver' },
+      // 8-30天
+      { d: -10, t: '电子琴练习', c: '最近喜欢弹《小星星》，每天自己主动坐到琴前弹两遍。弹完了会拍手给自己鼓掌。', a: 'teacher' },
+      { d: -15, c: '他最近收集了好几个公交车模型，摆在床头整整齐齐的。睡前会一个个拿起来看看再放回去。', a: 'parent' },
+      { d: -22, t: '烘焙课', c: '这周的烘焙课做了纸杯蛋糕，从打蛋到裱花全程参与了。特别喜欢裱花这一步。', a: 'teacher' },
+      { d: -28, t: '周末安排', c: '周六去了奶奶家，在院子里帮奶奶浇花。看到蝴蝶后追着跑了一会儿，笑得很开心。', a: 'parent' },
+      // 31-90天
+      { d: -40, t: '假期安排', c: '五一假期带他去了动物园，最喜欢的不是狮子老虎，是园区的游览小火车。来回坐了三次。', a: 'parent' },
+      { d: -55, c: '发现他喜欢把鞋子摆成整整齐齐的一排，按颜色分类。妈妈说这是他自己的"小仪式"。', a: 'caregiver' },
+      { d: -75, t: '新爱好', c: '最近开始对拍照感兴趣，拿着妈妈的旧手机到处拍。最喜欢拍公交车和路边的小猫。', a: 'parent' },
+      // 91-180天
+      { d: -110, c: '春节时第一次主动在饭桌上祝大家"新年快乐"，说之前练了好几遍。全家人都特别惊喜。', a: 'parent' }
+    ];
+
+    lifeData.forEach(function(item) {
+      var au = authors[item.a];
+      addRecord('life', {
+        title: item.t || '',
+        content: item.c,
+        author: au.name, authorRole: au.role, authorId: au.id, authorAvatar: au.avatar,
+        date: dateStr(item.d), time: timeStr(10 + Math.floor(Math.random() * 5), Math.floor(Math.random() * 60))
+      });
+    });
+
     // === 照护记录 ===
     var careData = [
       { d: 0, t: '早餐情况', c: '吃了面包和牛奶，食欲不错。提醒午餐不能有海鲜。', a: 'parent' },
@@ -175,6 +224,51 @@
         title: item.t, content: item.c,
         author: au.name, authorRole: au.role, authorId: au.id, authorAvatar: au.avatar,
         date: dateStr(item.d), time: timeStr(7 + Math.floor(Math.random() * 3), Math.floor(Math.random() * 60))
+      });
+    });
+
+    // === 照护记录补充（覆盖用药、就医、过敏、作息、紧急联系人等） ===
+    ['care'].forEach(function() { /* scope */ });
+    var careMore = [
+      { d: -8, t: '过敏确认', c: '与机构厨师确认了过敏清单，厨房已张贴海鲜禁用标识。食材采购时也会注意。', a: 'caregiver' },
+      { d: -14, t: '体检结果', c: '年度体检完成，各项指标正常。医生建议保持每天户外活动不少于30分钟。', a: 'parent' },
+      { d: -19, t: '用药确认', c: '社区医院复诊，确认目前无需常规用药。医生建议保持生活方式观察，半年后复查。', a: 'parent' },
+      { d: -25, t: '紧急联系人', c: '更新了紧急联系人：添加李老师（机构主管，139xxxx1234），作为第二紧急联系。', a: 'parent' },
+      { d: -33, t: '新食物尝试', c: '尝试了新款无麸质饼干（椰奶味），小雨表示喜欢，两小时内没有不良反应。', a: 'parent' },
+      { d: -42, t: '作息跟踪', c: '连续一周晚上10点前入睡，早上8:30起床，作息规律。张阿姨记录。', a: 'caregiver' },
+      { d: -55, t: '换季提醒', c: '天气转凉，已准备秋季外套。提醒机构注意室内温度，避免着凉。', a: 'parent' },
+      { d: -70, t: '复查日历', c: '上次体检医生建议3个月后复查视力。已在日历标记提醒，到期前一周通知。', a: 'parent' }
+    ];
+    careMore.forEach(function(item) {
+      var au = authors[item.a];
+      addRecord('care', {
+        title: item.t, content: item.c,
+        author: au.name, authorRole: au.role, authorId: au.id, authorAvatar: au.avatar,
+        date: dateStr(item.d), time: timeStr(8 + Math.floor(Math.random() * 5), Math.floor(Math.random() * 60))
+      });
+    });
+
+    // === 关系与社交记录（12条，跨6个月，3角色） ===
+    var relationsData = [
+      { d: -1,  t: '与李老师互动', c: '今天烘焙课上李老师示范了裱花技巧，小雨跟着做得很认真，结束后主动说"谢谢老师"。', a: 'teacher' },
+      { d: -3,  t: '与同事小王', c: '小王把用过的包装纸叠好递给小雨，小雨接过来放进垃圾桶。两人的配合越来越默契了。', a: 'caregiver' },
+      { d: -6,  t: '社交偏好', c: '今天机构来了访客，小雨没有主动打招呼，但在角落安静观察了一会儿。不抗拒接触，只是需要时间。', a: 'teacher' },
+      { d: -10, t: '家庭互动', c: '晚饭后和爸爸一起拼模型，小雨负责找零件、爸爸负责组装，花了一个小时完成，两人都很开心。', a: 'parent' },
+      { d: -14, t: '回避事件', c: '社区活动有个志愿者太热情，一见面就想拍小雨肩膀，小雨明显后退了一步。张阿姨及时拦住，解释后小雨放松了。', a: 'caregiver' },
+      { d: -18, t: '信任建立', c: '新来的实习老师小陈连续三天只是远远点头打招呼，不主动靠近。今天小雨第一次回应了她的微笑。', a: 'teacher' },
+      { d: -22, t: '和邻居互动', c: '楼下阿姨送来自己种的番茄，小雨接过来小声说了"谢谢"，虽然没看对方眼睛，但说了话就是进步。', a: 'parent' },
+      { d: -27, t: '社交压力', c: '今天机构活动人多声音大，小雨一进门就找了靠墙的角落位置。安静了20分钟后开始参加。', a: 'caregiver' },
+      { d: -32, t: '关系圈更新', c: '小王要调到其他组了，以后可能不会经常一起工作了。需要帮小雨准备这个变化。', a: 'teacher' },
+      { d: -38, t: '社群融入', c: '机构烘焙小组固定有4个人，小雨现在能和其他成员共用操作台，不排斥别人离得近。', a: 'teacher' },
+      { d: -50, t: '互动意愿', c: '今天小雨主动把烤好的饼干分给小王和李老师各一块，这是最近第一次主动分享食物给别人。', a: 'caregiver' },
+      { d: -65, t: '边界需求', c: '机构评估：小雨对个人空间有明确需求，建议新接触的人保持一臂距离、先打招呼再互动。', a: 'teacher' }
+    ];
+    relationsData.forEach(function(item) {
+      var au = authors[item.a];
+      addRecord('social', {
+        title: item.t, content: item.c,
+        author: au.name, authorRole: au.role, authorId: au.id, authorAvatar: au.avatar,
+        date: dateStr(item.d), time: timeStr(10 + Math.floor(Math.random() * 5), Math.floor(Math.random() * 60))
       });
     });
 
