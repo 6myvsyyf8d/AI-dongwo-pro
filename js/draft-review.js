@@ -321,6 +321,7 @@
         // 更新卡片UI
         var card = container.querySelector('.dr-card[data-draft-id="' + draftId + '"]');
         if (card) {
+          card.setAttribute('data-status', 'confirmed');
           card.querySelector('.dr-card-status').className = 'dr-card-status confirmed';
           card.querySelector('.dr-card-status').textContent = '✅ 已入档';
           card.querySelector('.dr-actions').innerHTML = '<button class="dr-btn-view-record" data-draft-id="' + draftId + '">查看已入档记录</button>';
@@ -352,6 +353,7 @@
         saveDrafts(drafts);
         var card = container.querySelector('.dr-card[data-draft-id="' + draftId + '"]');
         if (card) {
+          card.setAttribute('data-status', 'needs_info');
           card.querySelector('.dr-card-status').className = 'dr-card-status needs_info';
           card.querySelector('.dr-card-status').textContent = '📝 需补充';
           card.querySelector('.dr-actions').innerHTML = '';
@@ -369,6 +371,7 @@
         saveDrafts(drafts);
         var card = container.querySelector('.dr-card[data-draft-id="' + draftId + '"]');
         if (card) {
+          card.setAttribute('data-status', 'discarded');
           card.querySelector('.dr-card-status').className = 'dr-card-status discarded';
           card.querySelector('.dr-card-status').textContent = '🗑 已放弃';
           card.querySelector('.dr-actions').innerHTML = '';
