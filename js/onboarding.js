@@ -36,6 +36,8 @@
     if (!user) return false;
     // 示例用户不强制引导
     if (isSampleUser(user)) return false;
+    // 2026-08-05 之前注册的老用户自动跳过引导
+    if (user.createdAt && user.createdAt < '2026-08-05') return false;
     var s = getState();
     return !s.onboardingCompleted || s.onboardingCompleted !== true;
   }
