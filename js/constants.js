@@ -318,7 +318,9 @@
     'admin-users': 'admin-users',
     'admin-data': 'admin-data',
     'quick-start': 'quick-start',
-    'supporter-card': 'supporter-card'
+    'supporter-card': 'supporter-card',
+    'quick-record': 'quick-record',
+    'draft-review': 'draft-review'
   };
 
   /**
@@ -364,7 +366,9 @@
     'login': null,
     'welcome': null,
     'quick-start': null,
-    'supporter-card': null
+    'supporter-card': null,
+    'quick-record': null,
+    'draft-review': null
   };
 
   /**

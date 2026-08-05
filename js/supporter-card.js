@@ -110,9 +110,8 @@
     return '<div class="sc-block">'
       + '<div class="sc-block-title">6. 本次服务结束后</div>'
       + '<div class="sc-block-body">'
-      + '<p style="margin-bottom:12px;">如需记录今天发生的事，可在下一阶段使用快速记录功能。</p>'
-      + '<button class="sc-btn-placeholder" id="sc-quick-record-btn">记录刚刚发生的一件事</button>'
-      + '<p class="sc-placeholder-hint">快速记录功能将在下一阶段开放</p>'
+      + '<p style="margin-bottom:12px;">记录一次观察或关怀，帮助家长和老师了解今天的情况。</p>'
+      + '<button class="sc-btn-action" id="sc-quick-record-btn">记录一次观察 / 关怀</button>'
       + '</div></div>';
   }
 
@@ -120,7 +119,7 @@
     var btn = document.getElementById('sc-quick-record-btn');
     if (btn) {
       btn.addEventListener('click', function () {
-        window.showToast && window.showToast('快速记录功能将在下一阶段开放', 2000);
+        window.location.hash = 'quick-record';
       });
     }
   }
