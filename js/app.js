@@ -430,6 +430,10 @@
       document.body.classList.remove('mode-login');
     }
 
+    // 导航时清除残留 toast，避免遮挡新页面
+    var toast = document.getElementById('app-toast');
+    if (toast) { toast.classList.remove('show'); }
+
     // 隐藏所有页面section
     var sections = document.querySelectorAll('.page-section');
     sections.forEach(function (section) {

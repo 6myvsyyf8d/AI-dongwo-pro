@@ -104,8 +104,8 @@ body.mode-login .bottom-nav { display: none; }
 /* ---- 模块二级标签栏 ---- */
 .sub-nav {
   position: sticky;
-  top: 0;
-  z-index: 15;
+  top: 58px; /* 顶栏高度，避免覆盖 topbar */
+  z-index: 9; /* 低于 topbar(z-index:10) */
   display: flex;
   gap: 0;
   padding: 0;
@@ -153,8 +153,7 @@ a:hover { text-decoration: underline; }
 
 /* --- Global Topbar --- */
 .topbar {
-  position: sticky;
-  top: 0;
+  position: relative;
   z-index: 10;
   height: 58px;
   display: grid;
@@ -192,7 +191,7 @@ a:hover { text-decoration: underline; }
 
 /* --- Main Content --- */
 .main-content {
-  margin-top: 0;
+  position: relative;
   padding: 14px 16px 0;
   min-height: auto;
 }
@@ -1558,26 +1557,27 @@ a:hover { text-decoration: underline; }
   animation: loginFadeIn 0.3s ease;
 }
 
-/* --- Toast 通知 --- */
+/* --- Toast 通知（合并定义，避免重复） --- */
 .app-toast {
   position: fixed;
   top: 72px;
   left: 50%;
-  transform: translateX(-50%);
-  background: rgba(0,0,0,0.8);
+  transform: translateX(-50%) translateY(-20px);
+  background: var(--text-primary, rgba(0,0,0,0.85));
   color: white;
-  padding: 12px 24px;
-  border-radius: var(--radius-md);
-  font-size: 0.9rem;
+  padding: 10px 24px;
+  border-radius: var(--radius-xl, 12px);
+  font-size: 0.88rem;
   z-index: 2000;
   opacity: 0;
-  transition: opacity 0.3s ease;
+  transition: all 0.3s ease;
   pointer-events: none;
   white-space: nowrap;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
 }
-
 .app-toast.show {
   opacity: 1;
+  transform: translateX(-50%) translateY(0);
 }
 
 /* ==========================================
@@ -2064,28 +2064,7 @@ a:hover { text-decoration: underline; }
   line-height: 1.5;
 }
 
-/* --- Toast 提示 --- */
-.app-toast {
-  position: fixed;
-  top: 72px;
-  left: 50%;
-  transform: translateX(-50%) translateY(-20px);
-  background: var(--text-primary);
-  color: white;
-  padding: 10px 24px;
-  border-radius: var(--radius-xl);
-  font-size: 0.88rem;
-  z-index: 300;
-  opacity: 0;
-  transition: all 0.3s ease;
-  pointer-events: none;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
-}
-
-.app-toast.show {
-  opacity: 1;
-  transform: translateX(-50%) translateY(0);
-}
+/* --- Toast 数据导出按钮样式 --- */
 
 /* --- 个人中心 --- */
 .profile-header {
@@ -2629,6 +2608,15 @@ a:hover { text-decoration: underline; }
   #charts-content [style*="grid-template-columns: 1fr 1fr"] {
     grid-template-columns: 1fr;
   }
+}
+
+/* 图表区域溢出防护 */
+#charts-content, #charts-main-area {
+  overflow-x: hidden;
+}
+.chart-card canvas {
+  max-width: 100% !important;
+  height: auto !important;
 }
 
 /* ==========================================
