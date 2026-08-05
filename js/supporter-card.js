@@ -11,9 +11,25 @@
   function renderSupporterCard() {
     var container = document.getElementById('supporter-card-content');
     if (!container) return;
-    container.innerHTML = buildCard();
+    container.innerHTML = buildAccessDeniedBanner() + buildCard();
     bindEvents(container);
+    // 清除拒绝标记
+    try { sessionStorage.removeItem('ts_access_denied_to'); } catch (e) {}
     if (window.renderBottomNav) window.renderBottomNav();
+  }
+
+  /** 权限拒绝身份提示条 */
+  function buildAccessDeniedBanner() {
+    var deniedTo = '';
+    try { deniedTo = sessionStorage.getItem('ts_access_denied_to') || ''; } catch (e) {}
+    if (!deniedTo) return '';
+    return '<div class="sc-denied-banner">'
+      + '<div class="sc-denied-icon">🔒</div>'
+      + '<div class="sc-denied-body">'
+      + '<div class="sc-denied-title">当前身份仅限查看服务所需信息</div>'
+      + '<div class="sc-denied-info">当前身份：临时支持者 · 当前心青年：小雨（演示）</div>'
+      + '</div>'
+      + '</div>';
   }
 
   function buildCard() {
@@ -110,9 +126,8 @@
     return '<div class="sc-block">'
       + '<div class="sc-block-title">6. 本次服务结束后</div>'
       + '<div class="sc-block-body">'
-      + '<p style="margin-bottom:12px;">如需记录今天发生的事，可在下一阶段使用快速记录功能。</p>'
-      + '<button class="sc-btn-placeholder" id="sc-quick-record-btn">记录刚刚发生的一件事</button>'
-      + '<p class="sc-placeholder-hint">快速记录功能将在下一阶段开放</p>'
+      + '<p style="margin-bottom:12px;">记录一次观察或关怀，帮助家长和老师了解今天的情况。</p>'
+      + '<button class="sc-btn-action" id="sc-quick-record-btn">记录一次观察 / 关怀</button>'
       + '</div></div>';
   }
 
@@ -120,7 +135,7 @@
     var btn = document.getElementById('sc-quick-record-btn');
     if (btn) {
       btn.addEventListener('click', function () {
-        window.showToast && window.showToast('快速记录功能将在下一阶段开放', 2000);
+        window.location.hash = 'quick-record';
       });
     }
   }

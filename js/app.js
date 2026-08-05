@@ -73,6 +73,37 @@
    * ========================================================== */
 
   /**
+   * 渲染待确认记录入口横幅（仅家长/老师/影子老师可见）
+   */
+  function renderPendingDraftBanner(role) {
+    if (['parent', 'teacher', 'caregiver'].indexOf(role) === -1) return;
+    var existingBanner = document.getElementById('draft-pending-banner');
+    if (existingBanner) existingBanner.remove();
+
+    var drafts = [];
+    try { drafts = JSON.parse(localStorage.getItem('ai_dongwo_pending_drafts') || '[]'); } catch (e) { drafts = []; }
+    var pending = drafts.filter(function (d) { return d.status === 'pending'; });
+    if (pending.length === 0) return;
+
+    var cardGridEl = document.getElementById('card-grid');
+    if (!cardGridEl) return;
+
+    var banner = document.createElement('div');
+    banner.id = 'draft-pending-banner';
+    banner.style.cssText = 'margin:0 24px 12px;padding:12px 16px;background:linear-gradient(135deg,#FFF7E6,#FFF3D6);border-radius:12px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;border:1px solid rgba(232,165,71,0.3);';
+    banner.innerHTML = '<div style="display:flex;align-items:center;gap:8px;">' +
+      '<span style="font-size:1.5rem;">📋</span>' +
+      '<div><span style="font-weight:600;color:#8B6914;">待确认记录</span>' +
+      '<span style="font-size:0.85rem;color:#A68A29;"> · ' + pending.length + ' 条待确认</span></div>' +
+      '</div>' +
+      '<span style="color:#E8A547;font-size:1.2rem;">→</span>';
+    banner.addEventListener('click', function () {
+      window.location.hash = 'draft-review';
+    });
+    cardGridEl.parentNode.insertBefore(banner, cardGridEl);
+  }
+
+  /**
    * 初始化路由系统
    * 监听 hashchange 事件，实现SPA页面切换
    */
@@ -280,7 +311,9 @@
       'youth-chat': 'AI聊聊',
       'batch-import': '批量导入',
       'admin-users': '用户管理',
-      'admin-data': '系统数据'
+      'admin-data': '系统数据',
+      'quick-record': '快速记录',
+      'draft-review': '待确认记录'
     };
 
     if (titleEl) {
@@ -363,9 +396,10 @@
     var user = DataStore.getCurrentUser() || appState.currentUser;
     var role = user ? user.role : '';
     if (role === 'temp_supporter') {
-      var allowedPages = ['supporter-card', 'quick-start', 'login', 'home'];
+      var allowedPages = ['supporter-card', 'quick-start', 'login', 'quick-record'];
       if (allowedPages.indexOf(basePage) === -1) {
-        window.showToast && window.showToast('当前身份仅限查看服务所需信息');
+        // 标记权限拒绝，速读卡页显示身份提示
+        try { sessionStorage.setItem('ts_access_denied_to', basePage); } catch (e) {}
         basePage = 'supporter-card';
         window.location.hash = '#supporter-card';
         return;
@@ -518,6 +552,12 @@
       case 'supporter-card':
         if (window.SupporterCardPage) window.SupporterCardPage.render();
         break;
+      case 'quick-record':
+        if (window.QuickRecordPage) window.QuickRecordPage.render();
+        break;
+      case 'draft-review':
+        if (window.DraftReviewPage) window.DraftReviewPage.render();
+        break;
     }
   }
 
@@ -599,6 +639,9 @@
         });
       });
     }
+
+    // 渲染待确认记录入口（仅家长/老师/影子老师可见）
+    renderPendingDraftBanner(role);
 
     // 渲染欢迎语（根据当前角色）
     renderWelcomeBanner(user);
@@ -1308,16 +1351,29 @@
       });
     }
 
-    // 规则6: 信息冲突检测（暂无冲突数据则显示"最近确认"）
-    // 检查最近的沟通指南是否稳定（近30天无冲突信息）
-    events.push({
-      icon: '🔒', typeLabel: '信息稳定',
-      text: '近30天内沟通记录中未发现信息冲突，当前沟通策略一致性良好',
-      dateDisplay: '近30天',
-      author: '系统',
-      roleLabel: '',
-      rid: null
+    // 规则6: 信息冲突检测
+    var conflictDates = {};
+    records.forEach(function(r) {
+      if (!conflictDates[r.date]) conflictDates[r.date] = new Set();
+      conflictDates[r.date].add(r.author);
     });
+    var conflictCount = 0;
+    Object.keys(conflictDates).forEach(function(d) {
+      if (conflictDates[d].size > 1) conflictCount++;
+    });
+    if (conflictCount > 0) {
+      events.push({
+        icon: '⚠️', typeLabel: '信息冲突待核实',
+        text: '有 ' + conflictCount + ' 天存在多角色同日记录，建议核实不同视角的观察是否一致',
+        dateDisplay: '全时段', author: '系统', roleLabel: '', rid: null
+      });
+    } else {
+      events.push({
+        icon: '🔒', typeLabel: '信息一致',
+        text: '未检测到同日内多角色记录冲突',
+        dateDisplay: '全时段', author: '系统', roleLabel: '', rid: null
+      });
+    }
 
     return events;
   }
