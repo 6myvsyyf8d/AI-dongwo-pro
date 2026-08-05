@@ -4,6 +4,8 @@
  * ============================================================
  * 路由：#quick-record
  * 临时支持者提交一条观察记录 → 生成待确认草稿 → 家长/老师审核
+ * 
+ * A1: 固定草稿数据结构（18字段）
  * ============================================================
  */
 (function () {
@@ -15,7 +17,30 @@
     { value: 'activity', label: '活动表现', icon: '🎯' },
     { value: 'support', label: '支持方法', icon: '🤲' }
   ];
-  var TAG_MODULES = { emotion: 'emotion', activity: 'work', support: 'care' };
+
+  /** 草稿固定字段默认值 */
+  var DRAFT_DEFAULTS = {
+    id: '',
+    youthId: 'demo_xiaoyu',
+    youthName: '小雨',
+    originalText: '',
+    organizedSummary: '',
+    suggestedTheme: 'care',
+    selectedTheme: 'care',
+    tags: [],
+    authorId: '',
+    authorName: '临时支持者',
+    authorRole: 'temp_supporter',
+    createdAt: '',
+    status: 'pending',
+    reviewerId: '',
+    reviewerName: '',
+    reviewedAt: '',
+    reviewNote: '',
+    sourceType: 'temp_supporter_quick_record',
+    isDemoOrganized: true,
+    archivedRecordId: ''
+  };
 
   function getDrafts() {
     try { return JSON.parse(localStorage.getItem(DRAFTS_KEY) || '[]'); } catch (e) { return []; }
@@ -48,6 +73,26 @@
     return ds ? (ds.getCurrentUser() || (appState && appState.currentUser) || null) : null;
   }
 
+  /** 创建标准化草稿（18字段） */
+  function createDraft(text, tags, user) {
+    var gen = generateDraftSummary(text, tags);
+    var now = new Date().toISOString();
+    var draft = {};
+    Object.keys(DRAFT_DEFAULTS).forEach(function (k) {
+      draft[k] = DRAFT_DEFAULTS[k];
+    });
+    draft.id = 'draft_' + Date.now();
+    draft.originalText = text;
+    draft.organizedSummary = gen.summary;
+    draft.suggestedTheme = gen.suggestedModule;
+    draft.selectedTheme = gen.suggestedModule;
+    draft.tags = tags.slice();
+    draft.authorId = user ? (user.id || '') : '';
+    draft.authorName = user ? (user.name || '临时支持者') : '临时支持者';
+    draft.createdAt = now;
+    return draft;
+  }
+
   function renderQuickRecord() {
     var container = document.getElementById('quick-record-content');
     if (!container) return;
@@ -69,14 +114,15 @@
       + '</div>'
       + '<div class="qr-body">'
       + '<div class="qr-youth-badge">👤 小雨 · 临时支持者记录</div>'
-      + '<textarea class="qr-textarea" id="qr-text" placeholder="例如：小雨今天第一次到新场地，开始有点紧张，志愿者提前说明流程后稳定下来。"></textarea>'
+      + '<p class="qr-textarea-hint">请具体记录发生的场景、你观察到的情况、使用的支持方式和后续状态。系统只负责整理，需由家长或老师确认后才能入档。</p>'
+      + '<textarea class="qr-textarea" id="qr-text" placeholder="小雨第一次到新场地时反复询问时间。我提前向他说明活动流程并展示日程卡，之后他逐渐开始参与活动。"></textarea>'
       + '<div class="qr-tags-row">'
       + QUICK_TAGS.map(function (t) {
           var active = selectedTags.indexOf(t.value) >= 0;
           return '<button class="qr-tag' + (active ? ' active' : '') + '" data-tag="' + t.value + '">' + t.icon + ' ' + t.label + '</button>';
         }).join('')
       + '</div>'
-      + '<button class="qr-btn-submit" id="qr-submit" disabled>提交记录</button>'
+      + '<button class="qr-btn-submit" id="qr-submit" disabled>记录一次观察或关怀</button>'
       + '<p class="qr-hint">提交后将生成待确认草稿，由家长或老师审核后入档。</p>'
       + '</div>'
       + '</div>';
@@ -104,21 +150,12 @@
       submitBtn.addEventListener('click', function () {
         var text = textEl ? textEl.value.trim() : '';
         if (!text) return;
-        var gen = generateDraftSummary(text, selectedTags);
-        var draft = {
-          id: 'draft_' + Date.now(),
-          originalText: text,
-          aiSummary: gen.summary,
-          suggestedModule: gen.suggestedModule,
-          tags: selectedTags.slice(),
-          author: user ? user.name : '临时支持者',
-          authorId: user ? user.id : '',
-          authorRole: 'temp_supporter',
-          youthName: '小雨',
-          youthId: 'demo_xiaoyu',
-          createdAt: new Date().toISOString(),
-          status: 'pending'
-        };
+
+        // A3: 防重复提交 —— 立即禁用按钮
+        submitBtn.disabled = true;
+        submitBtn.textContent = '提交中...';
+
+        var draft = createDraft(text, selectedTags.slice(), user);
         var drafts = getDrafts();
         drafts.unshift(draft);
         saveDrafts(drafts);
@@ -144,10 +181,11 @@
       + '<div class="qr-draft-text">' + escapeHtml(draft.originalText) + '</div>'
       + '<div class="qr-draft-divider"></div>'
       + '<div class="qr-draft-label">🤖 演示整理摘要</div>'
-      + '<div class="qr-draft-text qr-draft-summary">' + escapeHtml(draft.aiSummary) + '</div>'
+      + '<div class="qr-draft-text qr-draft-summary">' + escapeHtml(draft.organizedSummary) + '</div>'
+      + '<div class="qr-ai-badge">演示整理 · 不代表专业判断</div>'
       + '<div class="qr-draft-divider"></div>'
       + '<div class="qr-draft-meta">'
-      + '<span>📂 建议归属：' + moduleLabel(draft.suggestedModule) + '</span>'
+      + '<span>📂 建议归属：' + moduleLabel(draft.suggestedTheme) + '</span>'
       + '<span class="qr-draft-status">⏳ 待家长/老师确认</span>'
       + '</div>'
       + '</div>'
@@ -172,6 +210,7 @@
     render: renderQuickRecord,
     getDrafts: getDrafts,
     saveDrafts: saveDrafts,
-    DRAFTS_KEY: DRAFTS_KEY
+    DRAFTS_KEY: DRAFTS_KEY,
+    DRAFT_DEFAULTS: DRAFT_DEFAULTS
   };
 })();
