@@ -396,7 +396,7 @@
     var user = DataStore.getCurrentUser() || appState.currentUser;
     var role = user ? user.role : '';
     if (role === 'temp_supporter') {
-      var allowedPages = ['supporter-card', 'quick-start', 'login', 'home', 'quick-record'];
+      var allowedPages = ['supporter-card', 'quick-start', 'login', 'quick-record'];
       if (allowedPages.indexOf(basePage) === -1) {
         window.showToast && window.showToast('当前身份仅限查看服务所需信息');
         basePage = 'supporter-card';
