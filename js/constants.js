@@ -221,7 +221,10 @@
       description: '查看宏观数据看板' },
     admin: { label: '管理员', name: '系统管理员', avatar: '🛡️', color: '#13C2C2',
       canAdd: [],
-      description: '系统配置与用户管理' }
+      description: '系统配置与用户管理' },
+    temp_supporter: { label: '临时支持者', name: '临时支持者', avatar: '🤲', color: '#FA8C16',
+      canAdd: [],
+      description: '快速了解如何支持心青年（最小权限）' }
   };
 
   /** 记录类型配置 */
@@ -313,7 +316,9 @@
     'youth-chat': 'youth-chat',
     'batch-import': 'batch-import',
     'admin-users': 'admin-users',
-    'admin-data': 'admin-data'
+    'admin-data': 'admin-data',
+    'quick-start': 'quick-start',
+    'supporter-card': 'supporter-card'
   };
 
   /**
@@ -357,7 +362,9 @@
     'admin-data': 'profile',
     // 无归属
     'login': null,
-    'welcome': null
+    'welcome': null,
+    'quick-start': null,
+    'supporter-card': null
   };
 
   /**
@@ -387,7 +394,8 @@
     'teacher': ['chat', 'home', 'archive', 'charts', 'profile'],
     'caregiver': ['chat', 'home', 'archive', 'charts', 'profile'],
     'government': ['charts', 'profile'],
-    'admin': ['profile', 'charts']
+    'admin': ['profile', 'charts'],
+    'temp_supporter': []
   };
 
   /**
@@ -399,7 +407,8 @@
     'teacher': 'home',
     'caregiver': 'archive',
     'government': 'analytics',
-    'admin': 'profile'
+    'admin': 'profile',
+    'temp_supporter': 'supporter-card'
   };
 
   /** 侧边栏菜单配置（普通角色：parent/teacher/caregiver） */

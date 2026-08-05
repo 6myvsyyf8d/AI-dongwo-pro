@@ -95,6 +95,12 @@
       window.location.hash = defaultPage;
       return;
     }
+    // 已登录且非引导页，检查是否需要引导
+    if (user && hash !== 'quick-start' && window.Onboarding && window.Onboarding.needsOnboarding(user)) {
+      hash = 'quick-start';
+      window.location.hash = 'quick-start';
+      return;
+    }
     navigateTo(hash);
   }
 
@@ -112,6 +118,11 @@
     if (user && !hash) {
       hash = ROLE_DEFAULT_PAGES[user.role] || 'home';
       window.location.hash = hash;
+      return;
+    }
+    // 登录后检查是否需要进入首次使用引导
+    if (user && hash !== 'quick-start' && hash !== 'login' && window.Onboarding && window.Onboarding.needsOnboarding(user)) {
+      window.location.hash = 'quick-start';
       return;
     }
     navigateTo(hash);
@@ -348,6 +359,19 @@
       basePage = 'home';
     }
 
+    // 权限拦截：临时支持者只能访问 supporter-card 和 quick-start
+    var user = DataStore.getCurrentUser() || appState.currentUser;
+    var role = user ? user.role : '';
+    if (role === 'temp_supporter') {
+      var allowedPages = ['supporter-card', 'quick-start', 'login', 'home'];
+      if (allowedPages.indexOf(basePage) === -1) {
+        window.showToast && window.showToast('当前身份仅限查看服务所需信息');
+        basePage = 'supporter-card';
+        window.location.hash = '#supporter-card';
+        return;
+      }
+    }
+
     // 离开 youth-chat 时恢复 viewport + 清理 TTS
     if (currentPage === 'youth-chat' && basePage !== 'youth-chat') {
       if (window.YouthChat && window.YouthChat.destroy) {
@@ -487,6 +511,12 @@
         break;
       case 'admin-data':
         // 管理员系统数据页 — 第二期填充内容
+        break;
+      case 'quick-start':
+        if (window.QuickStartPage) window.QuickStartPage.render();
+        break;
+      case 'supporter-card':
+        if (window.SupporterCardPage) window.SupporterCardPage.render();
         break;
     }
   }
