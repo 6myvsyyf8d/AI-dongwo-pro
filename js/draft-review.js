@@ -302,7 +302,7 @@
           time: timeStr,
           module: finalTheme,
           tags: draft.tags || [],
-          _source: 'quick-record',
+          source: 'quick-record',
           _draftId: draftId,
           _reviewer: reviewer ? reviewer.name : ''
         });
