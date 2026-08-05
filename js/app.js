@@ -16,7 +16,7 @@
  *   9. records.js     - 记录管理
  *   10. quickcard.js  - 速读卡
  *   11. timeline.js   - 时间轴
- *   12. chatbot.js    - 对话采集
+ *   12. chatbot.js    - AI聊聊引擎
  *   13. charts.js     - 数据可视化
  *   —— app.js（本文件）最后加载 ——
  * ============================================================
@@ -47,6 +47,9 @@
   var quickCardVersions = C.quickCardVersions;
   var privacyLevels = C.privacyLevels;
   var routeMap = C.routeMap;
+  var PAGE_PARENT = C.PAGE_PARENT;
+  var ROLE_NAV_TABS = C.ROLE_NAV_TABS;
+  var ROLE_DEFAULT_PAGES = C.ROLE_DEFAULT_PAGES;
   var STRATEGY_KB = C.STRATEGY_KB;
   var EMOTION_TO_STRATEGY = C.EMOTION_TO_STRATEGY;
   var appState = window.AppState.appState;
@@ -84,6 +87,13 @@
       window.location.hash = 'login';
       return;
     }
+    // 已登录且 hash 为空时，使用角色默认落地页
+    if (user && !window.location.hash.replace('#', '')) {
+      var defaultPage = ROLE_DEFAULT_PAGES[user.role] || 'home';
+      hash = defaultPage;
+      window.location.hash = defaultPage;
+      return;
+    }
     navigateTo(hash);
   }
 
@@ -91,17 +101,35 @@
    * 处理路由变化
    */
   function handleRouteChange() {
-    var hash = window.location.hash.replace('#', '') || 'home';
+    var hash = window.location.hash.replace('#', '');
     var user = DataStore.getCurrentUser() || appState.currentUser;
     if (!user && hash !== 'login') {
       window.location.hash = 'login';
+      return;
+    }
+    // 已登录且 hash 为空时，使用角色默认落地页
+    if (user && !hash) {
+      hash = ROLE_DEFAULT_PAGES[user.role] || 'home';
+      window.location.hash = hash;
       return;
     }
     navigateTo(hash);
   }
 
   /**
-   * 渲染底部导航 TabBar
+   * 一级 Tab 配置（图标 + 标签）
+   */
+  var TAB_CONFIG = {
+    'chat': { route: 'chat', icon: '💬', label: 'AI聊聊' },
+    'home': { route: 'home', icon: '✅', label: '任务' },
+    'archive': { route: 'archive', icon: '👤', label: '档案' },
+    'charts': { route: 'charts', icon: '📊', label: '分析' },
+    'profile': { route: 'profile', icon: '⚙️', label: '管理' },
+    'youth-chat': { route: 'youth-chat', icon: '💬', label: 'AI聊聊' }
+  };
+
+  /**
+   * 渲染底部导航 TabBar（按角色差异化）
    */
   function renderBottomNav() {
     var navContainer = Utils.dom.get('bottom-nav');
@@ -109,24 +137,9 @@
 
     var user = DataStore.getCurrentUser() || appState.currentUser;
     var role = user ? user.role : 'parent';
-
-    // 所有角色共用的5个tab：AI聊聊第一位
-    var allTabs = [
-      { route: 'chat', icon: '💬', label: 'AI聊聊' },
-      { route: 'home', icon: '✅', label: '任务' },
-      { route: 'archive', icon: '👤', label: '档案' },
-      { route: 'charts', icon: '📊', label: '分析' },
-      { route: 'profile', icon: '⚙️', label: '管理' }
-    ];
-
-    // 心青年显示：对话、任务、档案
-    var visibleTabs = (role === 'youth')
-      ? [
-          { route: 'youth-chat', icon: '💬', label: '对话' },
-          { route: 'home', icon: '✅', label: '任务' },
-          { route: 'archive', icon: '👤', label: '档案' }
-        ]
-      : allTabs;
+    var visibleTabs = (ROLE_NAV_TABS[role] || ROLE_NAV_TABS.parent)
+      .map(function (route) { return TAB_CONFIG[route]; })
+      .filter(Boolean);
 
     var html = '';
     visibleTabs.forEach(function (tab) {
@@ -137,13 +150,7 @@
     });
 
     Utils.dom.html(navContainer, html);
-
-    // 心青年3个tab时调整grid列数
-    if (visibleTabs.length === 3) {
-      navContainer.style.gridTemplateColumns = 'repeat(3, 1fr)';
-    } else {
-      navContainer.style.gridTemplateColumns = 'repeat(5, 1fr)';
-    }
+    navContainer.style.gridTemplateColumns = 'repeat(' + visibleTabs.length + ', 1fr)';
 
     // 绑定点击事件
     var tabs = navContainer.querySelectorAll('.nav-tab');
@@ -158,13 +165,68 @@
   }
 
   /**
-   * 高亮当前底部导航项
+   * 模块二级标签栏配置
+   */
+  var MODULE_SUB_NAV = {
+    'archive': [
+      { hash: 'archive', label: '总览' },
+      { hash: 'archive-themes', label: '主题档案' },
+      { hash: 'timeline', label: '时间轴' },
+      { hash: 'quickcard', label: '速读卡' }
+    ]
+  };
+
+  /**
+   * 渲染模块二级标签栏（如档案的 总览/主题档案/时间轴/速读卡）
+   */
+  function renderModuleSubNav(pageName) {
+    var subNav = document.getElementById('module-sub-nav');
+    if (!subNav) return;
+
+    var parent = PAGE_PARENT[pageName];
+    var items = parent ? MODULE_SUB_NAV[parent] : null;
+
+    if (!items) {
+      subNav.style.display = 'none';
+      return;
+    }
+
+    subNav.style.display = 'flex';
+    // 主题子页面也高亮"主题档案"
+    var themePages = ['life', 'communication', 'emotion', 'care', 'work', 'relations', 'records'];
+    var html = '';
+    items.forEach(function (item) {
+      var isActive = (item.hash === pageName) ||
+        (item.hash === 'archive-themes' && themePages.indexOf(pageName) !== -1);
+      html += '<button class="sub-nav-tab' + (isActive ? ' active' : '') + '" data-hash="' + item.hash + '">';
+      html += item.label;
+      html += '</button>';
+    });
+    subNav.innerHTML = html;
+
+    // 绑定点击事件
+    subNav.querySelectorAll('.sub-nav-tab').forEach(function (tab) {
+      tab.addEventListener('click', function () {
+        var hash = this.getAttribute('data-hash');
+        if (hash === 'archive-themes') {
+          // TODO: 主题档案入口 — 第二期补完整页面
+          window.location.hash = 'archive';
+        } else if (hash) {
+          window.location.hash = hash;
+        }
+      });
+    });
+  }
+
+  /**
+   * 高亮当前底部导航项（通过 PAGE_PARENT 映射，子页面继承父级高亮）
    */
   function highlightBottomNav(route) {
+    var parent = PAGE_PARENT[route] || route;
     var tabs = document.querySelectorAll('.nav-tab');
     tabs.forEach(function (tab) {
       tab.classList.remove('active');
-      if (tab.getAttribute('data-route') === route) {
+      if (tab.getAttribute('data-route') === parent) {
         tab.classList.add('active');
       }
     });
@@ -182,8 +244,8 @@
       chat: 'AI聊聊',
       'chat-conversation': 'AI聊聊',
       'chat-review': '整理确认',
-      home: '任务',
-      archive: '完整档案',
+      home: '今日',
+      archive: '档案总览',
       life: '我喜欢的生活',
       communication: '沟通说明书',
       emotion: '情绪与行为支持',
@@ -192,18 +254,21 @@
       relations: '关系地图',
       timeline: '记录时间轴',
       records: '记录列表',
-      profile: '个人中心',
-      charts: '数据可视化',
-      tasks: '每日任务',
+      profile: '我的账号',
+      charts: '趋势分析',
+      tasks: '任务清单',
       calendar: '日程日历',
-      analytics: '数据价值',
+      analytics: '分析总览',
       quickcard: '速读卡',
       grants: '授权管理',
-      join: '加入家庭',
+      join: '家庭与成员',
       approvals: '加入申请审批',
       'archive-code': '档案码',
       welcome: '欢迎',
-      'youth-chat': 'AI 聊天'
+      'youth-chat': 'AI聊聊',
+      'batch-import': '批量导入',
+      'admin-users': '用户管理',
+      'admin-data': '系统数据'
     };
 
     if (titleEl) {
@@ -212,10 +277,13 @@
     // 对话页面自带顶栏，隐藏全局顶栏
     var isChatPage = (pageName === 'chat' || pageName === 'chat-conversation' || pageName === 'chat-review');
     if (backEl) {
-      backEl.style.display = (pageName === 'home' || isChatPage) ? 'none' : 'block';
+      // 一级 Tab 页面（无父级或父级=自身）和对话页隐藏返回按钮
+      var parent = PAGE_PARENT[pageName];
+      var isTopLevel = (!parent || parent === pageName);
+      backEl.style.display = (pageName === 'home' || isTopLevel || isChatPage) ? 'none' : 'block';
     }
     if (quickEl) {
-      quickEl.style.display = (pageName === 'home' || pageName === 'archive') ? 'block' : 'none';
+      quickEl.style.display = (pageName === 'home') ? 'block' : 'none';
     }
     var topbar = document.getElementById('app-topbar');
     if (topbar) {
@@ -231,7 +299,13 @@
     var quickEl = Utils.dom.get('topbar-quick');
     if (backEl) {
       Utils.dom.on(backEl, 'click', function () {
-        window.location.hash = 'home';
+        var parent = PAGE_PARENT[currentPage];
+        // 如果当前页有父级且不是父级自身，回父级；否则回首页
+        if (parent && parent !== currentPage) {
+          window.location.hash = parent;
+        } else {
+          window.location.hash = 'home';
+        }
       });
     }
     if (quickEl) {
@@ -313,6 +387,9 @@
     // 更新顶栏标题
     updateTopbar(basePage);
 
+    // 渲染模块二级标签栏
+    renderModuleSubNav(basePage);
+
     // 滚动到页面顶部
     window.scrollTo(0, 0);
 
@@ -389,6 +466,12 @@
       case 'batch-import':
         if (window.BatchImport) window.BatchImport.render('batch-import-content');
         break;
+      case 'admin-users':
+        // 管理员用户管理页 — 第二期填充内容
+        break;
+      case 'admin-data':
+        // 管理员系统数据页 — 第二期填充内容
+        break;
     }
   }
 
@@ -404,9 +487,9 @@
     var user = DataStore.getCurrentUser() || appState.currentUser;
     var role = user ? user.role : 'parent';
 
-    // 政府角色：渲染宏观数据看板
-    if (role === 'government' && window.GovernmentDashboard) {
-      window.GovernmentDashboard.render();
+    // 政府角色无任务模块，重定向到分析总览
+    if (role === 'government') {
+      window.location.hash = 'analytics';
       return;
     }
 
@@ -491,46 +574,59 @@
    * 获取角色定制的导航卡片配置
    */
   function getRoleCards(role) {
+    // 卡片归属标注：module 字段标明该卡片跳转后属于哪个一级 Tab
     var roleCards = {
       parent: [
-        { hash: 'archive', icon: '📋', title: '完整档案', desc: '六大主题档案分类查看' },
-        { hash: 'timeline', icon: '📅', title: '动态时间轴', desc: '所有记录按时间排列' },
-        { hash: 'tasks', icon: '✅', title: '每日任务', desc: '打卡清单、完成进度' },
-        { hash: 'analytics', icon: '📈', title: '数据价值', desc: '统计分析、数据导出' },
-        { hash: 'charts', icon: '📊', title: '数据可视化', desc: '心情趋势、统计图表' },
-        { hash: 'grants', icon: '👥', title: '授权管理', desc: '邀请家人、管理授权' },
-        { hash: 'approvals', icon: '📋', title: '加入审批', desc: '审核家庭加入申请' },
-        { hash: 'archive-code', icon: '📱', title: '档案码', desc: '生成分享二维码' }
+        // 任务
+        { hash: 'tasks', icon: '✅', title: '任务清单', desc: '今日打卡清单与完成进度', module: 'home' },
+        { hash: 'calendar', icon: '📆', title: '日程日历', desc: '课程安排、照护提醒', module: 'home' },
+        // 档案
+        { hash: 'archive', icon: '📋', title: '档案总览', desc: '六大主题档案分类查看', module: 'archive' },
+        { hash: 'timeline', icon: '📅', title: '动态时间轴', desc: '所有记录按时间排列', module: 'archive' },
+        { hash: 'quickcard', icon: '⚡', title: '速读卡', desc: '快速了解小雨的关键信息', module: 'archive' },
+        // 分析
+        { hash: 'analytics', icon: '📈', title: '分析总览', desc: '阶段总结、统计导出', module: 'charts' },
+        { hash: 'charts', icon: '📊', title: '趋势分析', desc: '心情趋势、统计图表', module: 'charts' },
+        // 管理
+        { hash: 'grants', icon: '👥', title: '授权管理', desc: '邀请家人、管理权限', module: 'profile' },
+        { hash: 'approvals', icon: '📋', title: '加入审批', desc: '审核家庭加入申请', module: 'profile' },
+        { hash: 'archive-code', icon: '📱', title: '档案码', desc: '生成分享二维码', module: 'profile' }
       ],
       teacher: [
-        { hash: 'communication', icon: '💬', title: '沟通与表达', desc: '有效话术、禁忌用语' },
-        { hash: 'tasks', icon: '✅', title: '每日任务', desc: '今日活动、打卡进度' },
-        { hash: 'calendar', icon: '📆', title: '日程日历', desc: '课程安排、重要事项' },
-        { hash: 'join', icon: '👨\u200d👩\u200d👧', title: '加入家庭', desc: '输入邀请码加入' },
-        { hash: 'quick-card', icon: '📋', title: '速读卡', desc: '快速了解小雨', action: 'quick-card' }
+        // 任务
+        { hash: 'tasks', icon: '✅', title: '任务清单', desc: '今日活动、打卡进度', module: 'home' },
+        { hash: 'calendar', icon: '📆', title: '日程日历', desc: '课程安排、重要事项', module: 'home' },
+        // 档案
+        { hash: 'communication', icon: '💬', title: '沟通说明书', desc: '有效话术、禁忌用语', module: 'archive' },
+        { hash: 'quickcard', icon: '⚡', title: '速读卡', desc: '快速了解小雨', module: 'archive' },
+        // 管理
+        { hash: 'join', icon: '👨\u200d👩\u200d👧', title: '加入家庭', desc: '输入邀请码加入', module: 'profile' }
       ],
       caregiver: [
-        { hash: 'care', icon: '💊', title: '照护要点', desc: '过敏、用药、作息提醒' },
-        { hash: 'emotion', icon: '🌊', title: '情绪支持', desc: '触发因素、安抚策略' },
-        { hash: 'calendar', icon: '📆', title: '日程日历', desc: '今日安排、照护提醒' },
-        { hash: 'join', icon: '👨\u200d👩\u200d👧', title: '加入家庭', desc: '输入邀请码加入' },
-        { hash: 'quick-card', icon: '📋', title: '速读卡', desc: '快速参考卡片', action: 'quick-card' }
+        // 档案（默认落地页）
+        { hash: 'quickcard', icon: '⚡', title: '今日速读卡', desc: '照护要点一览', module: 'archive' },
+        { hash: 'care', icon: '💊', title: '照护要点', desc: '过敏、用药、作息提醒', module: 'archive' },
+        { hash: 'emotion', icon: '🌊', title: '情绪支持', desc: '触发因素、安抚策略', module: 'archive' },
+        // 任务
+        { hash: 'calendar', icon: '📆', title: '日程日历', desc: '今日安排、照护提醒', module: 'home' },
+        // 管理
+        { hash: 'join', icon: '👨\u200d👩\u200d👧', title: '加入家庭', desc: '输入邀请码加入', module: 'profile' }
       ],
       youth: [
-        { hash: 'mood', icon: '💭', title: '记录心情', desc: '今天心情怎么样？', action: 'add-mood' },
-        { hash: 'tasks', icon: '✅', title: '今日任务', desc: '今天要完成的事' },
-        { hash: 'calendar', icon: '📆', title: '日程日历', desc: '今天的安排' },
-        { hash: 'archive', icon: '📋', title: '我的档案', desc: '查看我的信息' }
+        { hash: 'mood', icon: '💭', title: '记录心情', desc: '今天心情怎么样？', action: 'add-mood', module: 'home' },
+        { hash: 'tasks', icon: '✅', title: '今日任务', desc: '今天要完成的事', module: 'home' },
+        { hash: 'calendar', icon: '📆', title: '日程日历', desc: '今天的安排', module: 'home' },
+        { hash: 'archive', icon: '📋', title: '我的档案', desc: '查看我的信息', module: 'archive' }
       ],
       government: [
-        { hash: 'charts', icon: '📊', title: '宏观数据', desc: '区域数据统计分析' },
-        { hash: 'analytics', icon: '📈', title: '数据价值', desc: '数据导出与报告' }
+        { hash: 'analytics', icon: '📈', title: '分析总览', desc: '区域数据统计分析', module: 'charts' },
+        { hash: 'charts', icon: '📊', title: '宏观数据', desc: '数据趋势与汇总', module: 'charts' }
       ],
       admin: [
-        { hash: 'archive', icon: '📋', title: '用户管理', desc: '管理系统用户账号' },
-        { hash: 'batch-import', icon: '📥', title: '批量导入', desc: 'CSV批量导入记录数据' },
-        { hash: 'analytics', icon: '📈', title: '系统数据', desc: '系统运行数据看板' },
-        { hash: 'charts', icon: '📊', title: '数据可视化', desc: '统计图表概览' }
+        { hash: 'admin-users', icon: '👥', title: '用户管理', desc: '管理系统用户账号', module: 'profile' },
+        { hash: 'batch-import', icon: '📥', title: '批量导入', desc: 'CSV批量导入记录数据', module: 'profile' },
+        { hash: 'admin-data', icon: '📈', title: '系统数据', desc: '系统运行数据看板', module: 'charts' },
+        { hash: 'charts', icon: '📊', title: '数据可视化', desc: '统计图表概览', module: 'charts' }
       ]
     };
     return roleCards[role] || roleCards.parent;
@@ -1936,15 +2032,20 @@
       }
     });
 
-    // 为所有 back-btn 绑定返回首页事件（使用事件委托，支持点击文字返回）
+    // 为所有 back-btn 绑定返回事件（使用事件委托，回到父级模块）
     document.addEventListener('click', function (e) {
       var backBtn = e.target.closest('.back-btn');
       if (backBtn) {
-        window.location.hash = 'home';
+        var parent = PAGE_PARENT[currentPage];
+        if (parent && parent !== currentPage) {
+          window.location.hash = parent;
+        } else {
+          window.location.hash = 'home';
+        }
       }
     });
 
-    // 事件委托：速读卡和对话采集按钮
+    // 事件委托：速读卡和AI聊聊按钮
     document.addEventListener('click', function (e) {
       if (e.target.id === 'btn-quick-card' || e.target.closest('#btn-quick-card')) {
         window.location.hash = 'quickcard';
@@ -2418,13 +2519,8 @@
       DataStore.forceUpdateCareInfo({ medicine: newMedicine });
       careInfo = DataStore.getCareInfo();
       showToast('医疗信息已更新');
-      // 刷新当前页面
-      var hash = window.location.hash.replace('#', '');
-      if (hash === 'care' || hash === 'home' || hash === '') {
-        handleRoute();
-      } else {
-        window.location.hash = 'care';
-      }
+      // 刷新当前页面显示
+      handleRouteChange();
     }
   };
 

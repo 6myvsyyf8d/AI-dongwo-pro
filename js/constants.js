@@ -305,56 +305,137 @@
     'chat-conversation': 'chat-conversation',
     'chat-review': 'chat-review',
     'youth-chat': 'youth-chat',
-    'batch-import': 'batch-import'
+    'batch-import': 'batch-import',
+    'admin-users': 'admin-users',
+    'admin-data': 'admin-data'
   };
 
-  /** 侧边栏菜单配置（普通角色：youth/parent/teacher/caregiver） */
+  /**
+   * 页面父子归属映射：每个页面 hash → 归属的一级 Tab route
+   * null 表示无归属（如 login / welcome）
+   */
+  var PAGE_PARENT = {
+    // 💬 AI聊聊
+    'chat': 'chat',
+    'chat-conversation': 'chat',
+    'chat-review': 'chat',
+    'youth-chat': 'youth-chat',
+    // ✅ 任务
+    'home': 'home',
+    'tasks': 'home',
+    'calendar': 'home',
+    // 👤 档案
+    'archive': 'archive',
+    'life': 'archive',
+    'communication': 'archive',
+    'emotion': 'archive',
+    'care': 'archive',
+    'work': 'archive',
+    'relations': 'archive',
+    'timeline': 'archive',
+    'records': 'archive',
+    'quickcard': 'archive',
+    // 📊 分析
+    'charts': 'charts',
+    'analytics': 'charts',
+    // ⚙️ 管理
+    'profile': 'profile',
+    'grants': 'profile',
+    'join': 'profile',
+    'approvals': 'profile',
+    'archive-code': 'profile',
+    'batch-import': 'profile',
+    'admin-users': 'profile',
+    'admin-data': 'profile',
+    // 无归属
+    'login': null,
+    'welcome': null
+  };
+
+  /**
+   * 各角色可见的一级 Tab 列表
+   */
+  var ROLE_NAV_TABS = {
+    'youth': ['youth-chat', 'home', 'archive'],
+    'parent': ['chat', 'home', 'archive', 'charts', 'profile'],
+    'teacher': ['chat', 'home', 'archive', 'charts', 'profile'],
+    'caregiver': ['chat', 'home', 'archive', 'charts', 'profile'],
+    'government': ['charts', 'profile'],
+    'admin': ['profile', 'charts']
+  };
+
+  /**
+   * 各角色登录后的默认落地页 hash
+   */
+  var ROLE_DEFAULT_PAGES = {
+    'youth': 'home',
+    'parent': 'home',
+    'teacher': 'home',
+    'caregiver': 'archive',
+    'government': 'analytics',
+    'admin': 'home'
+  };
+
+  /** 侧边栏菜单配置（普通角色：parent/teacher/caregiver） */
   var SIDEBAR_MENU = [
-    { group: '概览', items: [{ hash: 'home', icon: '🏠', label: '首页' }] },
+    { group: '任务', items: [
+      { hash: 'home', icon: '🏠', label: '今日' },
+      { hash: 'tasks', icon: '✅', label: '任务清单' },
+      { hash: 'calendar', icon: '📆', label: '日程日历' }
+    ]},
     {
       group: '档案',
       items: [
-        { hash: 'archive', icon: '📋', label: '完整档案' },
-        { hash: 'life', icon: '💚', label: '生活' },
-        { hash: 'communication', icon: '💬', label: '沟通与表达' },
-        { hash: 'emotion', icon: '🌊', label: '情绪与行为' },
-        { hash: 'care', icon: '💊', label: '照护与医疗' },
-        { hash: 'work', icon: '💼', label: '工作与生活' },
-        { hash: 'relations', icon: '👥', label: '关系地图' }
+        { hash: 'archive', icon: '📋', label: '档案总览' },
+        { hash: 'life', icon: '💚', label: '我喜欢的生活' },
+        { hash: 'communication', icon: '💬', label: '沟通说明书' },
+        { hash: 'emotion', icon: '🌊', label: '情绪与行为支持' },
+        { hash: 'care', icon: '💊', label: '照护与医疗提醒' },
+        { hash: 'work', icon: '💼', label: '工作支持' },
+        { hash: 'relations', icon: '👥', label: '关系地图' },
+        { hash: 'timeline', icon: '📅', label: '时间轴' }
       ]
     },
     {
-      group: '日常',
+      group: '分析',
       items: [
-        { hash: 'timeline', icon: '📅', label: '时间轴' },
-        { hash: 'tasks', icon: '✅', label: '每日任务' },
-        { hash: 'calendar', icon: '📆', label: '日程日历' }
+        { hash: 'analytics', icon: '📈', label: '分析总览' },
+        { hash: 'charts', icon: '📊', label: '趋势分析' }
       ]
     },
     {
-      group: '数据',
+      group: '管理',
       items: [
-        { hash: 'charts', icon: '📊', label: '数据可视化' },
-        { hash: 'analytics', icon: '📈', label: '数据价值' }
+        { hash: 'profile', icon: '⚙️', label: '我的账号' },
+        { hash: 'grants', icon: '👥', label: '授权管理' },
+        { hash: 'join', icon: '👨\u200d👩\u200d👧', label: '家庭与成员' },
+        { hash: 'approvals', icon: '📋', label: '加入审批' },
+        { hash: 'archive-code', icon: '📱', label: '档案码/分享' }
       ]
     }
   ];
 
   /** 政府角色侧边栏菜单 */
   var GOVERNMENT_NAV_ITEMS = [
-    { group: '概览', items: [{ hash: 'home', icon: '🏠', label: '政府看板' }] },
-    { group: '数据', items: [
-      { hash: 'charts', icon: '📊', label: '宏观数据' },
-      { hash: 'analytics', icon: '📈', label: '数据价值' }
+    { group: '分析', items: [
+      { hash: 'analytics', icon: '📈', label: '分析总览' },
+      { hash: 'charts', icon: '📊', label: '宏观数据' }
+    ]},
+    { group: '账号', items: [
+      { hash: 'profile', icon: '⚙️', label: '账号信息' },
+      { hash: 'grants', icon: '🔒', label: '授权说明' }
     ]}
   ];
 
   /** 管理员角色侧边栏菜单 */
   var ADMIN_NAV_ITEMS = [
-    { group: '概览', items: [{ hash: 'home', icon: '🏠', label: '管理首页' }] },
     { group: '管理', items: [
-      { hash: 'archive', icon: '📋', label: '用户管理' },
-      { hash: 'analytics', icon: '📈', label: '系统数据' },
+      { hash: 'home', icon: '🏠', label: '系统概览' },
+      { hash: 'admin-users', icon: '👥', label: '用户管理' },
+      { hash: 'batch-import', icon: '📥', label: '批量导入' }
+    ]},
+    { group: '系统', items: [
+      { hash: 'admin-data', icon: '📈', label: '系统数据' },
       { hash: 'charts', icon: '📊', label: '数据可视化' }
     ]}
   ];
@@ -833,6 +914,9 @@
     MOOD_OPTIONS: MOOD_OPTIONS,
     EMOTION_OPTIONS: EMOTION_OPTIONS,
     routeMap: routeMap,
+    PAGE_PARENT: PAGE_PARENT,
+    ROLE_NAV_TABS: ROLE_NAV_TABS,
+    ROLE_DEFAULT_PAGES: ROLE_DEFAULT_PAGES,
     SIDEBAR_MENU: SIDEBAR_MENU,
     GOVERNMENT_NAV_ITEMS: GOVERNMENT_NAV_ITEMS,
     ADMIN_NAV_ITEMS: ADMIN_NAV_ITEMS,

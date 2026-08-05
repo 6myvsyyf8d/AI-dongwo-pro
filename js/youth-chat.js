@@ -248,7 +248,7 @@
     var topbarHTML = '<div class="youth-topbar">';
     topbarHTML += '<div class="youth-topbar-title">';
     topbarHTML += '<div class="youth-avatar">🤖</div>';
-    topbarHTML += '<span>AI 聊天</span>';
+    topbarHTML += '<span>AI聊聊</span>';
     topbarHTML += '</div>';
     topbarHTML += '<div class="youth-topbar-actions">';
     topbarHTML += '<button class="youth-tts-toggle on" id="youth-tts-toggle">🔊</button>';

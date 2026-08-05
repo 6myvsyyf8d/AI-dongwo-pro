@@ -285,10 +285,10 @@
 
     // ======== 临时任务 adhoc ========
     var adhocTasks = [
-      { id: 'task_a1', title: '年度体检', icon: '🏥', category: 'medication', dueDate: (function () { var d = new Date(); d.setDate(d.getDate() + 5); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); })(), dueTime: '09:00', assignee: 'parent' },
+      { id: 'task_a1', title: '年度体检', icon: '🏥', category: 'other', dueDate: (function () { var d = new Date(); d.setDate(d.getDate() + 5); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); })(), dueTime: '09:00', assignee: 'parent' },
       { id: 'task_a2', title: 'IEP季度评估', icon: '📋', category: 'learning', dueDate: (function () { var d = new Date(); d.setDate(d.getDate() + 3); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); })(), dueTime: '10:00', assignee: 'teacher' },
       { id: 'task_a3', title: '购买新画材', icon: '🎨', category: 'other', dueDate: (function () { var d = new Date(); d.setDate(d.getDate() + 1); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); })(), dueTime: '14:00', assignee: 'parent' },
-      { id: 'task_a4', title: '预约牙科检查', icon: '🦷', category: 'medication', dueDate: (function () { var d = new Date(); d.setDate(d.getDate() + 7); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); })(), dueTime: null, assignee: 'parent' }
+      { id: 'task_a4', title: '预约牙科检查', icon: '🦷', category: 'other', dueDate: (function () { var d = new Date(); d.setDate(d.getDate() + 7); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); })(), dueTime: null, assignee: 'parent' }
     ];
 
     adhocTasks.forEach(function (t) {
@@ -351,12 +351,12 @@
 
     var events = [];
 
-    // 每日重复事件 — 服药提醒
+    // 每日重复事件 — 睡前准备
     for (var i = 0; i <= dayOffset + 7; i++) {
       events.push({
-        id: 'evt_med_' + i, title: '服药提醒', type: 'reminder', icon: '💊',
-        date: dateStr(-dayOffset + i), time: '21:00', description: '每日睡前服药',
-        recurring: 'daily', priority: 'high', color: '#722ED1',
+        id: 'evt_sleep_' + i, title: '睡前准备', type: 'reminder', icon: '🌙',
+        date: dateStr(-dayOffset + i), time: '21:30', description: '晚间照护确认入睡',
+        recurring: 'daily', priority: 'medium', color: '#4A90D9',
         author: '妈妈', authorRole: 'parent', createdAt: today
       });
     }
@@ -465,6 +465,12 @@
 
       if (!data.events || data.events.length === 0) {
         data.events = generateSampleEvents();
+        needReset = true;
+      }
+
+      // 初始化 primaryYouthMap，将 sample 家长关联到 sample 心青年
+      if (!data.primaryYouthMap || Object.keys(data.primaryYouthMap).length === 0) {
+        data.primaryYouthMap = { 'u_sample_parent': 'u_sample_youth' };
         needReset = true;
       }
 

@@ -204,7 +204,8 @@
     updateNavBar();
     // 重新渲染侧边栏以匹配新角色
     if (window.renderSidebar) window.renderSidebar();
-    window.location.hash = 'home';
+    var defaultPage = window.Constants.ROLE_DEFAULT_PAGES[user.role] || 'home';
+    window.location.hash = defaultPage;
   }
 
   /**
@@ -245,7 +246,8 @@
     updateNavBar();
     // 重新渲染侧边栏以匹配新角色
     if (window.renderSidebar) window.renderSidebar();
-    window.location.hash = 'home';
+    var defaultPage = window.Constants.ROLE_DEFAULT_PAGES[user.role] || 'home';
+    window.location.hash = defaultPage;
   }
 
   /**
@@ -283,8 +285,8 @@
    * 更新导航栏显示用户信息（底部导航无需用户信息展示，保留接口兼容）
    */
   function updateNavBar() {
-    // 侧边栏已移除，底部导航不显示用户信息
-    // 保留接口以兼容其他调用方
+    // 重新渲染底部导航以匹配当前角色
+    if (window.renderBottomNav) window.renderBottomNav();
   }
 
   /**

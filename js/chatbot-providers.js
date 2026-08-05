@@ -303,7 +303,7 @@
      */
     generateDraft: function (messages, moduleKey, name) {
       name = name || '小雨';
-      var draftCfg = T.DRAFT_TYPES[moduleKey] || { type: 'note', titleTemplate: '对话采集' };
+      var draftCfg = T.DRAFT_TYPES[moduleKey] || { type: 'note', titleTemplate: '聊天记录' };
       var moduleInfo = window.Modules[moduleKey];
 
       var userTexts = messages
