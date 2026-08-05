@@ -584,6 +584,13 @@
         needReset = true;
       }
 
+      // 迁移：确保 temp_supporter 预置账号存在（按 id 判断，不覆盖已有用户）
+      var hasSupporter = data.users.some(function(u) { return u.id === 'u_sample_supporter'; });
+      if (!hasSupporter) {
+        data.users.push({ id: 'u_sample_supporter', name: '临时支持者', role: 'temp_supporter', pin: '8888', avatar: '🤲', createdAt: window.getTodayString() });
+        needReset = true;
+      }
+
       if (!data.records || data.records.length < 5) {
         data.records = generateSampleRecords();
         needReset = true;
