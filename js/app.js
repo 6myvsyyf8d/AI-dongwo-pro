@@ -434,6 +434,13 @@
     var toast = document.getElementById('app-toast');
     if (toast) { toast.classList.remove('show'); }
 
+    // 隐藏页面内重复标题（topbar 已提供页面名称）
+    // 保留登录页和对话页的标题（这些页面没有 topbar）
+    var hidePageHeader = !(isChatPage || basePage === 'login');
+    document.querySelectorAll('.page-header').forEach(function (h) {
+      h.style.display = hidePageHeader ? 'none' : '';
+    });
+
     // 隐藏所有页面section
     var sections = document.querySelectorAll('.page-section');
     sections.forEach(function (section) {

@@ -412,9 +412,6 @@
     html += '  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">';
 
     var entryItems = [
-      { hash: 'archive-topics', icon: '📋', label: '主题档案', desc: '6个主题分类' },
-      { hash: 'timeline',       icon: '📅', label: '时间轴',   desc: '按时间查看' },
-      { hash: 'quickcard',      icon: '⚡', label: '速读卡',   desc: '关键信息一览' },
       { hash: 'archive-status', icon: '🔍', label: '档案状态', desc: '资料完整度' }
     ];
     entryItems.forEach(function (entry) {
