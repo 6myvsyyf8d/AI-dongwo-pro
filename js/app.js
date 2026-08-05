@@ -1933,9 +1933,122 @@
     return events;
   }
 
+  // ============ #work L1 当前摘要 ============
+  function buildWorkL1(records) {
+    var items = [];
+    var actRecs = records.filter(function(r) { return r.type === 'activity'; }).sort(function(a, b) { return b.date.localeCompare(a.date); });
+    var noteRecs = records.filter(function(r) { return r.type === 'note'; });
+
+    // 1. 当前工作/活动能力
+    var workInfo = window.Constants.workInfo;
+    items.push({
+      text: '能独立完成：' + (workInfo.canDo || []).join('、'),
+      source: '来源：档案基础信息', statusLabel: '已确认', statusClass: 'source-confirmed'
+    });
+    items.push({
+      text: '需要支持的：' + (workInfo.needSupport || []).join('、'),
+      source: '来源：档案基础信息', statusLabel: '已确认', statusClass: 'source-confirmed'
+    });
+
+    // 2. 最近活动表现
+    if (actRecs.length > 0) {
+      var latestAct = actRecs[0];
+      items.push({
+        text: '最近活动：' + (latestAct.title || '') + ' — ' + (latestAct.content || '').substring(0, 60),
+        source: '来源：' + latestAct.author + ' · ' + formatDateDisplay(latestAct.date),
+        statusLabel: '已确认', statusClass: 'source-confirmed'
+      });
+    }
+
+    // 3. 被记录为有帮助的支持方式
+    var supportRecs = noteRecs.filter(function(r) { return (r.title || '').indexOf('支持方式') >= 0 || (r.title || '').indexOf('支持需求') >= 0; });
+    supportRecs.slice(0, 2).forEach(function(r) {
+      items.push({
+        text: (r.title || '') + '：' + (r.content || '').substring(0, 60),
+        source: '来源：' + r.author + ' · ' + formatDateDisplay(r.date),
+        statusLabel: '已确认', statusClass: 'source-confirmed'
+      });
+    });
+
+    return items.slice(0, 6);
+  }
+
+  // ============ #work L3 关键事件 ============
+  function buildWorkL3(records) {
+    var events = [];
+    var cutoff30 = dateDaysAgo(30);
+    var cutoff60 = dateDaysAgo(60);
+    var noteRecs = records.filter(function(r) { return r.type === 'note'; });
+
+    // 1. 首次记录
+    if (records.length > 0) {
+      var first = records[records.length - 1];
+      events.push({
+        icon: '🆕', typeLabel: '首次记录',
+        text: '第一条工作记录：' + ((first.title || '') + ' — ' + (first.content || '')).substring(0, 50),
+        dateDisplay: formatDateDisplay(first.date),
+        source: '来源：' + (first.author || '系统')
+      });
+    }
+
+    // 2. 明显变化
+    var recentActs = records.filter(function(r) { return r.date >= cutoff30 && r.type === 'activity'; });
+    var olderActs = records.filter(function(r) { return r.date < cutoff30 && r.type === 'activity'; });
+    if (recentActs.length > olderActs.length && olderActs.length > 0) {
+      events.push({
+        icon: '📈', typeLabel: '明显变化',
+        text: '近30天有 ' + recentActs.length + ' 条活动记录，较前段（' + olderActs.length + ' 条）有所增加',
+        dateDisplay: '近30天 vs 更早', source: '来源：系统'
+      });
+    }
+
+    // 3. 新任务/角色变化
+    var newTaskRecs = records.filter(function(r) { return (r.title || '').indexOf('新任务') >= 0 || (r.title || '').indexOf('新') >= 0 && r.type === 'note'; });
+    newTaskRecs.forEach(function(r) {
+      events.push({
+        icon: '🆕', typeLabel: '新任务/角色变化',
+        text: (r.title || '') + '：' + (r.content || '').substring(0, 60),
+        dateDisplay: formatDateDisplay(r.date), source: '来源：' + r.author
+      });
+    });
+
+    // 4. 支持方式被记录为有帮助
+    var helpfulRecs = noteRecs.filter(function(r) { return (r.title || '').indexOf('支持方式') >= 0 || ((r.content || '').indexOf('独立完成') >= 0 && (r.content || '').indexOf('步骤') >= 0); });
+    helpfulRecs.forEach(function(r) {
+      events.push({
+        icon: '✅', typeLabel: '支持方式被记录为有帮助',
+        text: (r.title || '') + '：' + (r.content || '').substring(0, 60),
+        dateDisplay: formatDateDisplay(r.date), source: '来源：' + r.author
+      });
+    });
+
+    // 5. 同一困难多次出现 → "待人工评估"
+    var difficultyRecs = noteRecs.filter(function(r) { return (r.title || '').indexOf('困难') >= 0 || ((r.content || '').indexOf('临时调整') >= 0 || (r.content || '').indexOf('不安') >= 0); });
+    if (difficultyRecs.length >= 2) {
+      events.push({
+        icon: '👁️', typeLabel: '待人工评估',
+        text: '应对变化相关支持记录出现 ' + difficultyRecs.length + ' 次，建议人工评估是否需要调整支持策略',
+        dateDisplay: difficultyRecs[difficultyRecs.length - 1].date + ' ~ ' + difficultyRecs[0].date,
+        source: '来源：系统提示 · 非诊断性结论'
+      });
+    }
+
+    // 6. 长期未复核
+    var oldRecs = records.filter(function(r) { return r.date < cutoff60; });
+    if (oldRecs.length > 0) {
+      var oldest = oldRecs.reduce(function(a, b) { return a.date < b.date ? a : b; });
+      events.push({
+        icon: '⏰', typeLabel: '超过复核周期',
+        text: '有 ' + oldRecs.length + ' 条工作记录超过60天未复核，建议确认内容是否仍然准确',
+        dateDisplay: formatDateDisplay(oldest.date) + ' ~ ' + formatDateDisplay(cutoff60),
+        source: '来源：系统提醒'
+      });
+    }
+
+    return events;
+  }
+
   // 剩余占位函数——后续主题逐 commit 替换为真实逻辑
-  function buildWorkL1(records) { return [{ text: '工作主题四层模型将在后续 commit 完成', source: '', statusLabel: '待确认', statusClass: 'source-observer' }]; }
-  function buildWorkL3(records) { return []; }
   function buildRelationsL1(records) { return [{ text: '关系主题四层模型将在后续 commit 完成', source: '', statusLabel: '待确认', statusClass: 'source-observer' }]; }
   function buildRelationsL3(records) { return []; }
 
@@ -1997,50 +2110,11 @@
   function renderWork() {
     var contentArea = document.getElementById('work-content');
     if (!contentArea) return;
-
-    var html = '';
-
-    html += '<div class="three-col">';
-
-    // 能做的
-    html += '<div>';
-    html += '  <div class="content-card green">';
-    html += '    <div class="card-section-title">✅ 能做的</div>';
-    html += '    <ul class="card-list">';
-    workInfo.canDo.forEach(function (item) {
-      html += '<li>' + item + '</li>';
+    renderTopicFourLayer(contentArea, 'work', {
+      l1Title: '📌 当前摘要',
+      l1Sub: '当前工作与活动能力、支持需求与被记录为有帮助的支持方式',
+      emptyText: '暂无工作记录'
     });
-    html += '    </ul>';
-    html += '  </div>';
-    html += '</div>';
-
-    // 需要支持的
-    html += '<div>';
-    html += '  <div class="content-card yellow">';
-    html += '    <div class="card-section-title">⚠️ 需要支持的</div>';
-    html += '    <ul class="card-list">';
-    workInfo.needSupport.forEach(function (item) {
-      html += '<li>' + item + '</li>';
-    });
-    html += '    </ul>';
-    html += '  </div>';
-    html += '</div>';
-
-    // 避免的
-    html += '<div>';
-    html += '  <div class="content-card red">';
-    html += '    <div class="card-section-title">🚫 避免安排</div>';
-    html += '    <ul class="card-list">';
-    workInfo.avoid.forEach(function (item) {
-      html += '<li>' + item + '</li>';
-    });
-    html += '    </ul>';
-    html += '  </div>';
-    html += '</div>';
-
-    html += '</div>';
-
-    contentArea.innerHTML = html;
   }
 
   /* ==========================================================

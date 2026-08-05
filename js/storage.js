@@ -160,6 +160,25 @@
       });
     });
 
+    // === 工作支持补充记录（支持需求、适应调整、困难） ===
+    var workMore = [
+      { d: -9, t: '支持需求', c: '新任务指令需要提前演示一遍，口头说明不够。建议用步骤卡片辅助理解。', a: 'teacher' },
+      { d: -15, t: '适应调整', c: '烘焙课临时换了配方，提前说明后配合良好，比上次换教室时适应得快。', a: 'teacher' },
+      { d: -20, t: '困难记录', c: '今天活动顺序临时调整，出现不安。先安排熟悉的烘焙环节后恢复，说明固定流程可应急使用。', a: 'caregiver' },
+      { d: -28, t: '支持方式', c: '用步骤分解法教新任务——把"包装饼干"分解成取袋→装袋→封口三步，小雨独立完成了全部步骤。', a: 'teacher' },
+      { d: -35, t: '新任务', c: '开始尝试清洁整理工作。从擦桌子开始，做了示范后小雨能独立完成2张桌子。', a: 'caregiver' },
+      { d: -45, t: '支持调整建议', c: '建议在烘焙任务中加入称量环节，小雨对数字敏感，可能适合更精确的操作步骤。', a: 'teacher' }
+    ];
+    workMore.forEach(function(item) {
+      var au = authors[item.a];
+      addRecord('note', {
+        title: item.t, content: item.c,
+        author: au.name, authorRole: au.role, authorId: au.id, authorAvatar: au.avatar,
+        module: 'work',
+        date: dateStr(item.d), time: timeStr(10 + Math.floor(Math.random() * 5), Math.floor(Math.random() * 60))
+      });
+    });
+
     // === 生活记录（12条，兴趣/活动/日常安排，跨6个月，3角色） ===
     var lifeData = [
       // 今天-7天
