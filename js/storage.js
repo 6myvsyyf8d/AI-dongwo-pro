@@ -178,20 +178,56 @@
       });
     });
 
-    // === 沟通记录 ===
+    // === 沟通记录（12条，跨6个月，4个角色） ===
     var commData = [
-      { d: 0, c: '用"先...然后..."的方式讲解新任务，理解得很快。对公交车相关的比喻反应特别好。', a: 'teacher' },
-      { d: -6, c: '今天尝试用图片卡片辅助沟通，对"下一步做什么"的理解明显提升。', a: 'teacher' },
-      { d: -14, c: '给他两个选择时（A或B），能较快做出决定。直接问"你想做什么"时反而需要更长时间。', a: 'teacher' },
-      { d: -20, c: '下雨天不能外出时，用画图的方式解释原因，他比语言解释更能接受。', a: 'caregiver' }
+      // 今天-7天
+      { d: 0,  t: '有效策略', c: '用"先...然后..."的方式讲解新任务，理解得很快。对公交车相关的比喻反应特别好。', a: 'teacher' },
+      { d: -1, c: '给他两个选择时（A或B），能较快做出决定。直接问"你想做什么"时反而需要较长时间。今天在烘焙课和电子琴之间选择了烘焙。', a: 'teacher' },
+      { d: -3, c: '今天尝试用图片卡片辅助沟通，对"下一步做什么"的理解明显提升。已经能主动指认"喝水""上厕所""想休息"三张卡片。', a: 'teacher' },
+      { d: -5, c: '他主动跟志愿者说"谢谢"，声音不大但很清晰。平时需要提醒才说，今天是自发的。', a: 'caregiver' },
+      { d: -6, t: '有效策略', c: '下雨天不能外出时，用画图的方式解释原因，比语言解释更容易接受。配合"雨停了再去"的约定，情绪平稳没有闹。', a: 'caregiver' },
+      // 8-30天
+      { d: -10, c: '发现用"上午做完这个，下午就可以去公园"的句式效果很好。他会更配合完成任务，还会自己重复确认"做完就可以去吗？"。', a: 'parent' },
+      { d: -14, c: '新老师第一次接触时，他需要约15分钟熟悉期。建议新老师先安静在旁边观察，等他主动打招呼后再互动。', a: 'teacher' },
+      { d: -22, t: '有效策略', c: '用手机录了一段妈妈的声音说明晚餐安排，他反复听了三遍。比起别人转述，直接听妈妈声音更安心。', a: 'parent' },
+      { d: -28, c: '今天试着用"5分钟后要做XX"的方式提前告知，过渡很平稳。以前突然切换活动时容易闹情绪。', a: 'caregiver' },
+      // 31-90天
+      { d: -45, c: '心青年本人说：他最喜欢别人叫他"小雨"，不喜欢"这孩子""喂"。称呼对了之后，他回应得更快了。', a: 'youth' },
+      { d: -60, c: '用步骤卡片（1-2-3）代替口述指令后，任务完成率从约50%提升到了约80%。特别是烘焙流程，现在已经可以自己看卡片独立做了。', a: 'teacher' },
+      { d: -80, c: '发现他紧张时会反复搓手，这时候问他问题不会得到回答。正确做法是停下来等一两分钟，或者给他看熟悉的图片。', a: 'caregiver' },
+      // 91-180天
+      { d: -120, c: '第一次用公交车站牌图片做沟通工具，他对这个特别感兴趣，能指着站名牌跟我讲好久。后续可以多用公交相关素材。', a: 'parent' }
     ];
 
     commData.forEach(function(item) {
       var au = authors[item.a];
       addRecord('communication', {
+        title: item.t || '',
         content: item.c,
         author: au.name, authorRole: au.role, authorId: au.id, authorAvatar: au.avatar,
-        date: dateStr(item.d), time: timeStr(10, Math.floor(Math.random() * 60))
+        date: dateStr(item.d), time: timeStr(9 + Math.floor(Math.random() * 6), Math.floor(Math.random() * 60))
+      });
+    });
+
+    // === 沟通策略效果记录（8条，验证哪些方法有效） ===
+    var commStrategyData = [
+      { d: -2,  t: '先…然后…句式', e: 5, c: '用先…然后…安排烘焙课流程，小雨完全按步骤执行，没有需要额外提醒。', a: 'teacher' },
+      { d: -4,  t: '二选一问法',   e: 4, c: '二选一方式给小雨选下午活动，他很快选了公园散步。', a: 'teacher' },
+      { d: -7,  t: '图片卡片',     e: 5, c: '卡片沟通今天用了4次，每次都正确指认。准备增加"想出去走走""帮忙"两张新卡片。', a: 'teacher' },
+      { d: -15, t: '画图解释',     e: 4, c: '用画图解释下午活动变更，小雨看了之后点头表示理解了。', a: 'caregiver' },
+      { d: -23, t: '录音传达',     e: 5, c: '妈妈录音说明睡前安排，小雨听了很安心，自己主动去刷牙了。', a: 'parent' },
+      { d: -35, t: '提前告知过渡', e: 4, c: '用"5分钟后我们要去吃饭了"，小雨能接受并开始收拾东西。', a: 'caregiver' },
+      { d: -50, t: '步骤卡片',     e: 5, c: '用1-2-3步骤卡片替代口述，小雨已经可以独立看卡片完成烘焙流程。从第3步开始他会自言自语"然后…"。', a: 'teacher' },
+      { d: -75, t: '等待+安静陪伴',e: 4, c: '小雨紧张搓手时，安静等待1分钟后他开始说话了。比直接追问效果好很多。', a: 'caregiver' }
+    ];
+
+    commStrategyData.forEach(function(item) {
+      var au = authors[item.a];
+      addRecord('strategy', {
+        title: item.t, content: item.c, effectiveness: item.e,
+        module: 'communication',
+        author: au.name, authorRole: au.role, authorId: au.id, authorAvatar: au.avatar,
+        date: dateStr(item.d), time: timeStr(10 + Math.floor(Math.random() * 5), Math.floor(Math.random() * 60))
       });
     });
 
