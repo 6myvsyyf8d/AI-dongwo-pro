@@ -239,7 +239,9 @@
     note: { label: '一般备注', icon: '📝', color: '#999999',
       fields: ['title', 'content'], description: '添加其他需要记录的备注' },
     strategy: { label: '策略记录', icon: '🧩', color: '#EB2F96',
-      fields: ['emotion_type', 'title', 'content', 'effectiveness'], description: '记录情绪行为策略使用及效果' }
+      fields: ['emotion_type', 'title', 'content', 'effectiveness'], description: '记录情绪行为策略使用及效果' },
+    life: { label: '生活记录', icon: '❤️', color: '#4A90D9',
+      fields: ['title', 'content'], description: '记录兴趣、活动、日常生活偏好' }
   };
 
   /** 心情选项 */
@@ -612,6 +614,7 @@
     communication: 'communication',
     care: 'care',
     activity: 'work',
+    life: 'life',
     strategy: 'emotion',
     note: null
   };

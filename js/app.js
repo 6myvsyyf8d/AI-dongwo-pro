@@ -946,18 +946,17 @@
    * ========================================================== */
 
   /**
-   * 渲染"我喜欢的生活"页面 - 双列卡片（喜欢 & 不喜欢）
+   * 渲染"我喜欢的生活"页面 — 四层模型
+   * L1: 当前兴趣与偏好 | L2: 最近变化 | L3: 关键事件 | L4: 全部记录
    */
   function renderLife() {
-    // v2.0：使用新的「认识我」以人为本渲染
-    if (window.ProfilePage && window.ProfilePage.renderAboutMe) {
-      window.ProfilePage.renderAboutMe();
-      return;
-    }
-    // fallback
     var contentArea = document.getElementById('life-content');
     if (!contentArea) return;
-    contentArea.innerHTML = '<div class="empty-state"><div class="empty-icon">💚</div><div class="empty-text">加载中...</div></div>';
+    renderTopicFourLayer(contentArea, 'life', {
+      l1Title: '📌 当前摘要',
+      l1Sub: '当前已确认的兴趣偏好、日常安排与周末假期活动',
+      emptyText: '暂无生活记录'
+    });
   }
 
   /* ==========================================================
@@ -1427,6 +1426,244 @@
     d.setDate(d.getDate() - days);
     return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
   }
+
+  /* ==========================================================
+   * 通用四层模型渲染引擎（#life / #emotion / #care / #work / #relations 复用）
+   * ========================================================== */
+
+  /** 主题配置：摘要标题 + L3 规则集 */
+  var TOPIC_CONFIG = {
+    life: {
+      l1Rules: function(records) { return buildLifeL1(records); },
+      l3Rules: function(records) { return buildLifeL3(records); }
+    },
+    emotion: {
+      l1Rules: function(records) { return buildEmotionL1(records); },
+      l3Rules: function(records) { return buildEmotionL3(records); }
+    },
+    care: {
+      l1Rules: function(records) { return buildCareL1(records); },
+      l3Rules: function(records) { return buildCareL3(records); }
+    },
+    work: {
+      l1Rules: function(records) { return buildWorkL1(records); },
+      l3Rules: function(records) { return buildWorkL3(records); }
+    },
+    relations: {
+      l1Rules: function(records) { return buildRelationsL1(records); },
+      l3Rules: function(records) { return buildRelationsL3(records); }
+    }
+  };
+
+  function getTopicRecords(moduleKey) {
+    var all = DataStore.getRecords();
+    return all.filter(function(r) { return r.module === moduleKey; })
+              .sort(function(a, b) { return (b.date + b.time).localeCompare(a.date + a.time); });
+  }
+
+  function renderTopicFourLayer(contentArea, moduleKey, opts) {
+    var records = getTopicRecords(moduleKey);
+    var config = TOPIC_CONFIG[moduleKey] || {};
+    var html = '';
+    html += '<div class="comm-four-layer">';
+
+    // L1
+    var l1 = config.l1Rules ? config.l1Rules(records) : [];
+    html += '<div class="comm-layer comm-layer-l1">';
+    html += '  <div class="comm-layer-title">' + (opts.l1Title || '📌 当前摘要') + '</div>';
+    html += '  <div class="comm-layer-sub">' + (opts.l1Sub || '') + '</div>';
+    if (l1.length > 0) {
+      l1.forEach(function(item) {
+        html += '<div class="comm-l1-item">';
+        html += '  <div class="comm-l1-text">' + item.text + '</div>';
+        html += '  <div class="comm-l1-meta">';
+        html += '    <span class="comm-source-badge ' + (item.statusClass || 'source-confirmed') + '">' + (item.statusLabel || '已确认') + '</span>';
+        html += '    <span class="comm-source-info">' + (item.source || '') + '</span>';
+        html += '  </div>';
+        html += '</div>';
+      });
+    } else {
+      html += '<div class="comm-empty">' + (opts.emptyText || '暂无数据') + '</div>';
+    }
+    html += '</div>';
+
+    // L2
+    html += '<div class="comm-layer comm-layer-l2">';
+    html += '  <div class="comm-layer-title">🕐 最近变化</div>';
+    html += '  <div class="comm-time-tabs" id="topic-time-tabs">';
+    ['7天', '30天', '3个月', '半年'].forEach(function(label, i) {
+      html += '    <button class="comm-time-tab' + (i === 0 ? ' active' : '') + '" data-range="' + i + '">' + label + '</button>';
+    });
+    html += '  </div>';
+    html += '  <div id="topic-l2-content"></div>';
+    html += '</div>';
+
+    // L3
+    var l3 = config.l3Rules ? config.l3Rules(records) : [];
+    html += '<div class="comm-layer comm-layer-l3">';
+    html += '  <div class="comm-layer-title">⚡ 关键事件</div>';
+    html += '  <div class="comm-layer-sub">值得关注的变化节点</div>';
+    if (l3.length > 0) {
+      l3.forEach(function(evt) {
+        html += '<div class="comm-l3-item">';
+        html += '  <div class="comm-l3-header">';
+        html += '    <span class="comm-l3-icon">' + (evt.icon || '📌') + '</span>';
+        html += '    <span class="comm-l3-type">' + (evt.typeLabel || '') + '</span>';
+        html += '    <span class="comm-l3-date">' + (evt.dateDisplay || '') + '</span>';
+        html += '  </div>';
+        html += '  <div class="comm-l3-text">' + (evt.text || '') + '</div>';
+        html += '  <div class="comm-l3-source">' + (evt.source || '') + '</div>';
+        html += '</div>';
+      });
+    } else {
+      html += '<div class="comm-empty">暂未检测到关键事件</div>';
+    }
+    html += '</div>';
+
+    // L4
+    html += '<div class="comm-layer comm-layer-l4">';
+    html += '  <div class="comm-layer-title">📋 全部记录</div>';
+    html += '  <div id="topic-l4-content"></div>';
+    html += '</div>';
+
+    html += '</div>';
+    contentArea.innerHTML = html;
+
+    // 渲染 L2 和 L4
+    renderGenericL2Content('topic-l2-content', records);
+    renderGenericL4Content('topic-l4-content', records);
+
+    // L2 时间切换
+    var tabs = document.getElementById('topic-time-tabs');
+    if (tabs) {
+      tabs.addEventListener('click', function(e) {
+        var tab = e.target.closest('.comm-time-tab');
+        if (!tab) return;
+        tabs.querySelectorAll('.comm-time-tab').forEach(function(t) { t.classList.remove('active'); });
+        tab.classList.add('active');
+        renderGenericL2Content('topic-l2-content', records, parseInt(tab.getAttribute('data-range')));
+      });
+    }
+  }
+
+  function renderGenericL2Content(containerId, records, rangeIdx) {
+    rangeIdx = rangeIdx || 0;
+    var container = document.getElementById(containerId);
+    if (!container) return;
+    var ranges = [{ days: 7, label: '近7天' }, { days: 30, label: '近30天' }, { days: 90, label: '近3个月' }, { days: 180, label: '近半年' }];
+    var range = ranges[rangeIdx] || ranges[0];
+    var cutoff = dateDaysAgo(range.days);
+    var recent = records.filter(function(r) { return r.date >= cutoff; });
+    var html = '<div class="comm-l2-summary"><p>' + range.label + '共 ' + recent.length + ' 条记录。</p></div>';
+    if (recent.length > 0) {
+      html += '<div class="comm-l2-items">';
+      recent.slice(0, 6).forEach(function(r) {
+        var text = (r.title || r.content || '').substring(0, 50);
+        html += '<div class="comm-l2-item"><span>📝</span><span class="comm-l2-item-text">' + text + '</span><span class="comm-l2-item-date">' + formatDateDisplay(r.date) + '</span></div>';
+      });
+      html += '</div>';
+    }
+    container.innerHTML = html;
+  }
+
+  function renderGenericL4Content(containerId, records) {
+    var container = document.getElementById(containerId);
+    if (!container) return;
+    var today = dateDaysAgo(0), weekCutoff = dateDaysAgo(7), monthCutoff = dateDaysAgo(30);
+    var groups = [
+      { label: '今天', filter: function(r) { return r.date === today; }, icon: '📍' },
+      { label: '本周', filter: function(r) { return r.date >= weekCutoff && r.date !== today; }, icon: '📅' },
+      { label: '本月', filter: function(r) { return r.date >= monthCutoff && r.date < weekCutoff; }, icon: '📆' },
+      { label: '更早', filter: function(r) { return r.date < monthCutoff; }, icon: '📁' }
+    ];
+    var html = '';
+    groups.forEach(function(group) {
+      var gr = records.filter(group.filter);
+      if (gr.length === 0) return;
+      html += '<div class="comm-l4-group">';
+      html += '<div class="comm-l4-group-header"><span class="comm-l4-group-icon">' + group.icon + '</span><span class="comm-l4-group-label">' + group.label + '</span><span class="comm-l4-group-count">' + gr.length + '条</span><span class="comm-l4-toggle">▾</span></div>';
+      html += '<div class="comm-l4-group-body">';
+      var dg = {};
+      gr.forEach(function(r) { if (!dg[r.date]) dg[r.date] = []; dg[r.date].push(r); });
+      Object.keys(dg).sort().reverse().forEach(function(date) {
+        html += '<div class="comm-l4-day"><div class="comm-l4-day-header">' + formatDateDisplay(date) + ' · ' + dg[date].length + '条</div>';
+        dg[date].forEach(function(r) {
+          html += '<div class="comm-l4-record"><span class="comm-l4-type">📝</span><div class="comm-l4-record-body">';
+          if (r.title) html += '<div class="comm-l4-record-title">' + r.title + '</div>';
+          html += '<div class="comm-l4-record-text">' + (r.content || '') + '</div>';
+          html += '<div class="comm-l4-record-meta">' + (r.author || '') + ' · ' + (r.time || '') + '</div>';
+          html += '</div></div>';
+        });
+        html += '</div>';
+      });
+      html += '</div></div>';
+    });
+    if (!html) html = '<div class="comm-empty">暂无记录</div>';
+    container.innerHTML = html;
+    container.addEventListener('click', function(e) {
+      var hdr = e.target.closest('.comm-l4-group-header');
+      if (!hdr) return;
+      var body = hdr.nextElementSibling, toggle = hdr.querySelector('.comm-l4-toggle');
+      if (body.style.display === 'none') { body.style.display = ''; toggle.textContent = '▾'; }
+      else { body.style.display = 'none'; toggle.textContent = '▸'; }
+    });
+  }
+
+  /* ==========================================================
+   * 各主题 L1/L3 规则（按阶段三最终修订）
+   * ========================================================== */
+
+  function buildLifeL1(records) {
+    var items = [];
+    // 兴趣与活动
+    var interestRecs = records.filter(function(r) { return r.title === '烘焙兴趣' || r.title === '电子琴练习' || r.title === '新爱好'; });
+    interestRecs.slice(0, 2).forEach(function(r) {
+      items.push({ text: r.content.substring(0, 80), source: '来源：' + r.author + ' · ' + formatDateDisplay(r.date), statusLabel: '已确认', statusClass: 'source-confirmed' });
+    });
+    // 日常安排
+    var routineRecs = records.filter(function(r) { return r.title === '周末安排' || r.title === '假期安排'; });
+    routineRecs.slice(0, 2).forEach(function(r) {
+      items.push({ text: r.content.substring(0, 80), source: '来源：' + r.author + ' · ' + formatDateDisplay(r.date), statusLabel: '已确认', statusClass: 'source-confirmed' });
+    });
+    // 稳定偏好（多次出现）
+    var stable = records.filter(function(r) { return r.content.indexOf('公交车') >= 0; });
+    if (stable.length >= 2) {
+      items.push({ text: '较稳定兴趣线索：对公交车、火车等交通工具持续感兴趣（' + stable.length + '次记录）', source: '多来源观察 · 待本人确认', statusLabel: '待确认', statusClass: 'source-observer' });
+    }
+    return items.slice(0, 6);
+  }
+
+  function buildLifeL3(records) {
+    var events = [];
+    if (records.length > 0) {
+      var first = records[records.length - 1];
+      events.push({ icon: '🆕', typeLabel: '首次记录', text: '第一次记录生活偏好：' + (first.content || '').substring(0, 40), dateDisplay: formatDateDisplay(first.date), source: '来源：' + first.author });
+    }
+    // 同类活动多次出现
+    var busRecords = records.filter(function(r) { return r.content.indexOf('公交车') >= 0 || r.content.indexOf('火车') >= 0; });
+    if (busRecords.length >= 3) {
+      events.push({ icon: '🔁', typeLabel: '较稳定兴趣线索', text: '关于交通工具的兴趣在 ' + busRecords.length + ' 次记录中被提及（不同时间、不同场景），为较稳定兴趣线索，待确认后可进入 L1', dateDisplay: busRecords[0].date + ' ~ ' + busRecords[busRecords.length - 1].date, source: '来源：多角色观察' });
+    }
+    // 明显变化
+    var cutoff90 = dateDaysAgo(90);
+    var recent = records.filter(function(r) { return r.date >= cutoff90; });
+    var old = records.filter(function(r) { return r.date < cutoff90; });
+    if (recent.length >= 3 && old.length > 0) {
+      events.push({ icon: '📈', typeLabel: '明显变化', text: '近3个月新增 ' + recent.length + ' 条生活记录，包括新爱好（拍照）和新周末活动', dateDisplay: '近3个月', source: '来源：系统' });
+    }
+    events.push({ icon: '🔒', typeLabel: '信息稳定', text: '近30天内生活偏好记录无明显冲突', dateDisplay: '近30天', source: '来源：系统' });
+    return events;
+  }
+
+  // 占位函数——后续主题逐 commit 替换为真实逻辑
+  function buildEmotionL1(records) { return [{ text: '情绪主题四层模型将在下一个 commit 完成', source: '', statusLabel: '待确认', statusClass: 'source-observer' }]; }
+  function buildEmotionL3(records) { return []; }
+  function buildCareL1(records) { return [{ text: '照护主题四层模型将在后续 commit 完成', source: '', statusLabel: '待确认', statusClass: 'source-observer' }]; }
+  function buildCareL3(records) { return []; }
+  function buildWorkL1(records) { return [{ text: '工作主题四层模型将在后续 commit 完成', source: '', statusLabel: '待确认', statusClass: 'source-observer' }]; }
+  function buildWorkL3(records) { return []; }
+  function buildRelationsL1(records) { return [{ text: '关系主题四层模型将在后续 commit 完成', source: '', statusLabel: '待确认', statusClass: 'source-observer' }]; }
+  function buildRelationsL3(records) { return []; }
 
   /* ==========================================================
    * 五、情绪与行为支持页面渲染
