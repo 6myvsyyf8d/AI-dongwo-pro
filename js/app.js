@@ -1529,26 +1529,26 @@
     html += '</div>';
     contentArea.innerHTML = html;
 
-    // 渲染 L2 和 L4
-    renderGenericL2Content('topic-l2-content', records);
-    renderGenericL4Content('topic-l4-content', records);
+    // 渲染 L2 和 L4（传入 contentArea 做作用域查询，避免多页面 ID 冲突）
+    renderGenericL2Content(contentArea, 'topic-l2-content', records);
+    renderGenericL4Content(contentArea, 'topic-l4-content', records);
 
     // L2 时间切换
-    var tabs = document.getElementById('topic-time-tabs');
+    var tabs = contentArea.querySelector('#topic-time-tabs');
     if (tabs) {
       tabs.addEventListener('click', function(e) {
         var tab = e.target.closest('.comm-time-tab');
         if (!tab) return;
         tabs.querySelectorAll('.comm-time-tab').forEach(function(t) { t.classList.remove('active'); });
         tab.classList.add('active');
-        renderGenericL2Content('topic-l2-content', records, parseInt(tab.getAttribute('data-range')));
+        renderGenericL2Content(contentArea, 'topic-l2-content', records, parseInt(tab.getAttribute('data-range')));
       });
     }
   }
 
-  function renderGenericL2Content(containerId, records, rangeIdx) {
+  function renderGenericL2Content(contentArea, containerId, records, rangeIdx) {
     rangeIdx = rangeIdx || 0;
-    var container = document.getElementById(containerId);
+    var container = contentArea.querySelector('#' + containerId);
     if (!container) return;
     var ranges = [{ days: 7, label: '近7天' }, { days: 30, label: '近30天' }, { days: 90, label: '近3个月' }, { days: 180, label: '近半年' }];
     var range = ranges[rangeIdx] || ranges[0];
@@ -1566,8 +1566,8 @@
     container.innerHTML = html;
   }
 
-  function renderGenericL4Content(containerId, records) {
-    var container = document.getElementById(containerId);
+  function renderGenericL4Content(contentArea, containerId, records) {
+    var container = contentArea.querySelector('#' + containerId);
     if (!container) return;
     var today = dateDaysAgo(0), weekCutoff = dateDaysAgo(7), monthCutoff = dateDaysAgo(30);
     var groups = [
