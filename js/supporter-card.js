@@ -11,9 +11,25 @@
   function renderSupporterCard() {
     var container = document.getElementById('supporter-card-content');
     if (!container) return;
-    container.innerHTML = buildCard();
+    container.innerHTML = buildAccessDeniedBanner() + buildCard();
     bindEvents(container);
+    // 清除拒绝标记
+    try { sessionStorage.removeItem('ts_access_denied_to'); } catch (e) {}
     if (window.renderBottomNav) window.renderBottomNav();
+  }
+
+  /** 权限拒绝身份提示条 */
+  function buildAccessDeniedBanner() {
+    var deniedTo = '';
+    try { deniedTo = sessionStorage.getItem('ts_access_denied_to') || ''; } catch (e) {}
+    if (!deniedTo) return '';
+    return '<div class="sc-denied-banner">'
+      + '<div class="sc-denied-icon">🔒</div>'
+      + '<div class="sc-denied-body">'
+      + '<div class="sc-denied-title">当前身份仅限查看服务所需信息</div>'
+      + '<div class="sc-denied-info">当前身份：临时支持者 · 当前心青年：小雨（演示）</div>'
+      + '</div>'
+      + '</div>';
   }
 
   function buildCard() {

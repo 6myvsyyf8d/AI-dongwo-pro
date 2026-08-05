@@ -81,6 +81,8 @@
         migrated[k] = d.rawText;
       } else if (k === 'authorName' && d.author) {
         migrated[k] = d.author;
+      } else if (k === 'sourceType') {
+        migrated[k] = d.sourceType || 'temp_supporter_quick_record';
       } else {
         migrated[k] = DRAFT_DEFAULTS[k];
       }

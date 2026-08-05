@@ -398,7 +398,8 @@
     if (role === 'temp_supporter') {
       var allowedPages = ['supporter-card', 'quick-start', 'login', 'quick-record'];
       if (allowedPages.indexOf(basePage) === -1) {
-        window.showToast && window.showToast('当前身份仅限查看服务所需信息');
+        // 标记权限拒绝，速读卡页显示身份提示
+        try { sessionStorage.setItem('ts_access_denied_to', basePage); } catch (e) {}
         basePage = 'supporter-card';
         window.location.hash = '#supporter-card';
         return;
