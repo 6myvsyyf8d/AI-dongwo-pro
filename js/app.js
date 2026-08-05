@@ -318,6 +318,9 @@
 
     if (titleEl) {
       titleEl.textContent = pageTitles[pageName] || 'AI懂我';
+      // 有 sub-nav 的页面，tab 就是标题，隐藏 topbar 标题避免重复
+      var hasSubNav = (pageName === 'archive' || pageName === 'archive-topics' || pageName === 'timeline' || pageName === 'quickcard');
+      titleEl.style.display = hasSubNav ? 'none' : '';
     }
     // 对话页面自带顶栏，隐藏全局顶栏
     var isChatPage = (pageName === 'chat' || pageName === 'chat-conversation' || pageName === 'chat-review');
