@@ -13,15 +13,15 @@
   var dislikesList = C.dislikesList;
   var communicationGuide = C.communicationGuide;
   var emotionSupport = C.emotionSupport;
-  var careInfo = C.careInfo;
+  var Modules = window.Modules;
+  var DataStore = window.DataStore;
+  var showToast = window.showToast;
+  var careInfo = DataStore.getCareInfo();
   var workInfo = C.workInfo;
   var aboutMe = C.aboutMe;
   var SOURCE_TYPES = C.SOURCE_TYPES;
   var stressSignals = C.stressSignals;
   var verifiedStrategies = C.verifiedStrategies;
-  var Modules = window.Modules;
-  var DataStore = window.DataStore;
-  var showToast = window.showToast;
 
   /**
    * 渲染「关于我」子页面 — #life

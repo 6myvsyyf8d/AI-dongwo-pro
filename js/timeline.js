@@ -124,7 +124,7 @@
     html += '  </div>';
     html += '  <div style="background:#fff;border-radius:8px;padding:10px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,0.04);">';
     html += '    <div style="font-size:0.7rem;color:#999;">用药</div>';
-    html += '    <div style="font-size:0.82rem;font-weight:600;color:#722ED1;margin-top:2px;">每日睡前</div>';
+    html += '    <div style="font-size:0.82rem;font-weight:600;color:#722ED1;margin-top:2px;">' + (DataStore.getCareInfo().medicine || '无') + '</div>';
     html += '  </div>';
     html += '  <div style="background:#fff;border-radius:8px;padding:10px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,0.04);">';
     html += '    <div style="font-size:0.7rem;color:#999;">睡眠</div>';

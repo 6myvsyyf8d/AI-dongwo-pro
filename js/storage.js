@@ -1104,9 +1104,14 @@
       return true;
     },
 
-    // ========== 照护信息 ==========
+    // ========== 照护信息（权威单一数据源） ==========
 
     _getCareDefaults: function() {
+      // 优先从 Constants 取初始值，fallback 静态默认
+      var C = window.Constants;
+      if (C && C.careInfo) {
+        return JSON.parse(JSON.stringify(C.careInfo));
+      }
       return {
         allergy: { items: '无', level: '无' },
         medicine: '无',
@@ -1116,12 +1121,36 @@
       };
     },
 
+    /** 获取照护信息（读本地存储，首次从 Constants 初始化） */
     getCareInfo: function() {
       var data = this.load();
-      if (!data || !data.careInfo) return this._getCareDefaults();
-      return data.careInfo;
+      if (data && data.careInfo) return data.careInfo;
+      // 首次初始化
+      var defaults = this._getCareDefaults();
+      if (!data) data = { version: DATA_VERSION };
+      data.careInfo = defaults;
+      this.save(data);
+      return defaults;
     },
 
+    /**
+     * 更新照护信息（带冲突检测）
+     * 返回 { success, conflict?, data }
+     */
+    updateCareInfo: function(updates) {
+      var current = this.getCareInfo();
+      var merged = Object.assign({}, current, updates);
+      var conflict = this.validateMedicalConsistency(merged);
+      if (conflict) {
+        return { success: false, conflict: conflict, data: current };
+      }
+      var data = this.load() || {};
+      data.careInfo = merged;
+      this.save(data);
+      return { success: true, conflict: null, data: merged };
+    },
+
+    /** 强制写入（绕过冲突检测，高风险操作） */
     forceUpdateCareInfo: function(updates) {
       var data = this.load() || {};
       if (!data.careInfo) data.careInfo = this._getCareDefaults();
@@ -1129,14 +1158,48 @@
         data.careInfo[k] = updates[k];
       });
       this.save(data);
+      return data.careInfo;
     },
 
-    validateMedicalConsistency: function() {
-      var ci = this.getCareInfo();
+    /**
+     * 医疗信息一致性校验
+     * @param {object} [careInfoOverride] 可选，检测指定值而非当前存储值
+     */
+    validateMedicalConsistency: function(careInfoOverride) {
+      var ci = careInfoOverride || this.getCareInfo();
+      var medValue = (ci.medicine || '').trim();
+      // 有明确用药信息 → 不冲突
+      if (medValue && medValue !== '无' && medValue !== '无长期用药' && medValue !== '无用药') {
+        return null;
+      }
+
       var tasks = this.getTasks();
-      var medCount = tasks.filter(function(t) { return t.category === 'medication' && t.isActive !== false; }).length;
-      if (ci.medicine === '无' && medCount > 0) {
-        return { type: 'medicine_mismatch', message: '档案标注为"无用药"，但系统中存在 ' + medCount + ' 项用药任务' };
+      var medTasks = tasks.filter(function(t) {
+        return t.category === 'medication' && t.isActive !== false;
+      });
+      var events = this.getEvents ? this.getEvents() : [];
+      var medEvents = events.filter(function(e) {
+        return e.title && (e.title.indexOf('服药') !== -1 || e.title.indexOf('用药') !== -1);
+      });
+
+      var conflicts = [];
+      if (medTasks.length > 0) {
+        conflicts.push({ type: 'task', count: medTasks.length,
+          detail: medTasks.map(function(t) { return t.title; }).join('、') });
+      }
+      if (medEvents.length > 0) {
+        conflicts.push({ type: 'event', count: medEvents.length,
+          detail: medEvents.map(function(e) { return e.title; }).join('、') });
+      }
+
+      if (conflicts.length > 0) {
+        return {
+          type: 'medical_mismatch',
+          medicineValue: medValue || '无',
+          conflicts: conflicts,
+          message: '医疗信息不一致：档案标注为"' + (medValue || '无') + '"，但系统中存在用药相关的任务/事件/记录',
+          needsConfirm: true
+        };
       }
       return null;
     }
