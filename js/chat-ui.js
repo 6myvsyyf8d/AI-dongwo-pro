@@ -53,40 +53,40 @@
       var pendingCount = _getPendingCount();
       var lastSessionId = localStorage.getItem(LAST_SESSION_KEY);
       var hasHistory = _getSessionSummaries().length > 0;
+      var hasQuickActions = (lastSessionId && hasHistory) || pendingCount > 0;
 
       container.innerHTML = ''
         + '<div class="chat-page-container chat-home-ready">'
-        + '  <div class="chat-home-identity">'
+        // --- 问候区（紧凑居中） ---
+        + '  <div class="chat-home-greeting">'
         + '    <div class="chat-home-avatar">🌻</div>'
-        + '    <div class="chat-home-identity-info">'
-        + '      <div class="chat-home-identity-name">' + youthName + '</div>'
-        + '      <div class="chat-home-identity-desc">AI 聊聊 · 记录助手</div>'
-        + '    </div>'
+        + '    <h2 class="chat-home-question">' + youthName + '，今天想记录什么？</h2>'
+        + '    <p class="chat-home-hint">AI 会帮你把对话整理成草稿，说到哪儿算哪儿</p>'
         + '  </div>'
-        + '  <div class="chat-home-hero">'
-        + '    <div class="chat-home-deco-bubbles">'
-        + '      <div class="chat-home-deco-bubble purple"></div>'
-        + '      <div class="chat-home-deco-bubble white"></div>'
-        + '    </div>'
-        + '    <div class="chat-home-hero-question">今天想记录什么？</div>'
-        + '    <div class="chat-home-hero-hint">AI 会帮你把对话整理成草稿，说到哪儿算哪儿，不用着急。</div>'
-        + '  </div>'
-        + '  <button class="chat-home-btn-start" id="btn-start-chat">开始聊天</button>'
-        + (lastSessionId && hasHistory
-          ? '  <button class="chat-home-btn-continue" id="btn-continue-chat">继续上次对话</button>'
-          : '')
-        + (pendingCount > 0
-          ? '  <div class="chat-home-pending-card" id="card-pending-review">'
-          + '    <div class="chat-home-pending-info">'
-          + '      <div class="chat-home-pending-icon">📋</div>'
-          + '      <span class="chat-home-pending-label">待确认</span>'
-          + '      <span class="chat-home-pending-text">' + pendingCount + ' 条记录待确认</span>'
-          + '    </div>'
-          + '    <div class="chat-home-pending-arrow">›</div>'
+        // --- 主操作 ---
+        + '  <button class="chat-home-btn-start" id="btn-start-chat">'
+        + '    <span class="chat-home-btn-start-icon">💬</span>'
+        + '    <span>开始聊天</span>'
+        + '  </button>'
+        // --- 快捷入口（继续对话 + 待确认） ---
+        + (hasQuickActions
+          ? '  <div class="chat-home-quick-row">'
+          + (lastSessionId && hasHistory
+            ? '    <button class="chat-home-quick-btn" id="btn-continue-chat">'
+            + '      <span>📌 继续上次</span>'
+            + '    </button>'
+            : '')
+          + (pendingCount > 0
+            ? '    <button class="chat-home-quick-btn chat-home-quick-pending" id="card-pending-review">'
+            + '      <span>📋 待确认</span>'
+            + '      <span class="chat-home-quick-badge">' + pendingCount + '</span>'
+            + '    </button>'
+            : '')
           + '  </div>'
           : '')
-        + (hasHistory ? _renderHistoryList() : '')
-        + '  <a class="chat-home-records-link" id="link-all-records">查看全部聊天记录</a>'
+        // --- 最近对话（精简版，最多 3 条） ---
+        + (hasHistory ? _renderHistoryCompact() : '')
+        // --- 底部 ---
         + '  <div class="chat-home-footer">AI懂我 · 心智障碍者动态支持档案</div>'
         + '</div>';
 
@@ -101,10 +101,6 @@
       var pendingCard = document.getElementById('card-pending-review');
       if (pendingCard) {
         pendingCard.addEventListener('click', function () { window.location.hash = 'chat-review'; });
-      }
-      var recordsLink = document.getElementById('link-all-records');
-      if (recordsLink) {
-        recordsLink.addEventListener('click', function (e) { e.preventDefault(); _showAllRecords(); });
       }
       _bindHistoryEvents();
     },
@@ -444,6 +440,25 @@
       html += '<div class="chat-history-item" data-session-id="' + s.id + '">'
         + '  <div class="chat-history-item-info">'
         + '    <div class="chat-history-item-preview">' + _escapeHtml(s.firstText.substring(0, 30)) + '</div>'
+        + '    <div class="chat-history-item-meta">' + timeLabel + ' · ' + s.messageCount + '条消息' + (s.draftCount > 0 ? ' · ' + s.draftCount + '条草稿' : '') + '</div>'
+        + '  </div>'
+        + '  <div class="chat-history-item-arrow">›</div>'
+        + '</div>';
+    });
+    return html + '</div>';
+  }
+
+  function _renderHistoryCompact() {
+    var summaries = _getSessionSummaries();
+    if (summaries.length === 0) return '';
+    var html = '<div class="chat-home-recent">'
+      + '<div class="chat-home-recent-header"><span>最近</span><a class="chat-home-records-link" id="link-all-records">全部 ›</a></div>';
+    summaries.slice(0, 3).forEach(function (s) {
+      var timeLabel = _formatSessionTime(s.startTime);
+      html += '<div class="chat-history-item" data-session-id="' + s.id + '">'
+        + '  <div class="chat-history-item-icon">💬</div>'
+        + '  <div class="chat-history-item-info">'
+        + '    <div class="chat-history-item-preview">' + _escapeHtml(s.firstText.substring(0, 24)) + '</div>'
         + '    <div class="chat-history-item-meta">' + timeLabel + ' · ' + s.messageCount + '条消息' + (s.draftCount > 0 ? ' · ' + s.draftCount + '条草稿' : '') + '</div>'
         + '  </div>'
         + '  <div class="chat-history-item-arrow">›</div>'
