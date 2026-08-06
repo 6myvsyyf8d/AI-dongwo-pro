@@ -438,8 +438,7 @@
     {
       group: '分析',
       items: [
-        { hash: 'analytics', icon: '📈', label: '分析总览' },
-        { hash: 'charts', icon: '📊', label: '趋势分析' }
+        { hash: 'analytics', icon: '📈', label: '分析总览' }
       ]
     },
     {
@@ -457,8 +456,7 @@
   /** 政府角色侧边栏菜单 */
   var GOVERNMENT_NAV_ITEMS = [
     { group: '分析', items: [
-      { hash: 'analytics', icon: '📈', label: '分析总览' },
-      { hash: 'charts', icon: '📊', label: '宏观数据' }
+      { hash: 'analytics', icon: '📈', label: '分析总览' }
     ]},
     { group: '账号', items: [
       { hash: 'profile', icon: '⚙️', label: '账号信息' },
@@ -475,7 +473,7 @@
     ]},
     { group: '系统', items: [
       { hash: 'admin-data', icon: '📈', label: '系统数据' },
-      { hash: 'charts', icon: '📊', label: '数据可视化' }
+      { hash: 'analytics', icon: '📊', label: '数据分析' }
     ]}
   ];
 
