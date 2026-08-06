@@ -174,6 +174,7 @@
 
   /**
    * 渲染底部导航 TabBar（按角色差异化）
+   * 家长/老师角色 → 中央插入「记一笔」胶囊按钮
    */
   function renderBottomNav() {
     var navContainer = Utils.dom.get('bottom-nav');
@@ -186,7 +187,12 @@
       .filter(Boolean);
 
     var html = '';
-    visibleTabs.forEach(function (tab) {
+    var hasRecordBtn = (role === 'parent' || role === 'teacher' || role === 'caregiver');
+    var middleIndex = Math.ceil(visibleTabs.length / 2);
+    visibleTabs.forEach(function (tab, i) {
+      if (i === middleIndex && hasRecordBtn) {
+        html += '<button class="nav-record-btn" id="btn-record-center">✏️ 记一笔</button>';
+      }
       html += '<button class="nav-tab" data-route="' + tab.route + '">';
       html += '<span class="nav-tab-icon">' + tab.icon + '</span>';
       html += tab.label;
@@ -194,9 +200,10 @@
     });
 
     Utils.dom.html(navContainer, html);
-    navContainer.style.gridTemplateColumns = 'repeat(' + visibleTabs.length + ', 1fr)';
+    var colCount = hasRecordBtn ? visibleTabs.length + 1 : visibleTabs.length;
+    navContainer.style.gridTemplateColumns = 'repeat(' + colCount + ', 1fr)';
 
-    // 绑定点击事件
+    // 绑定 tab 点击事件
     var tabs = navContainer.querySelectorAll('.nav-tab');
     tabs.forEach(function (tab) {
       Utils.dom.on(tab, 'click', function () {
@@ -206,6 +213,14 @@
         }
       });
     });
+
+    // 绑定「记一笔」按钮事件
+    var recordBtn = navContainer.querySelector('#btn-record-center');
+    if (recordBtn) {
+      Utils.dom.on(recordBtn, 'click', function () {
+        window.RecordsPage.openAddRecordModal();
+      });
+    }
   }
 
   /**
@@ -689,9 +704,6 @@
 
     // 渲染最新动态区域
     renderLatestActivity(user);
-
-    // 渲染添加记录浮动按钮
-    renderFAB();
   }
 
   /**
