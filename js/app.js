@@ -625,6 +625,9 @@
       }
     }
 
+    // 渲染今日工作台
+    renderTodayWorkbench(role);
+
     // 渲染导航卡片 —— 根据角色定制
     if (cardGridEl) {
       var cards = getRoleCards(role);
@@ -676,50 +679,145 @@
   /**
    * 获取角色定制的导航卡片配置
    */
+    /**
+   * 渲染今日工作台 — 首页核心信息区
+   * 不同角色看到不同的今日摘要
+   */
+  function renderTodayWorkbench(role) {
+    var container = document.getElementById('today-workbench');
+    if (!container) return;
+
+    var today = getTodayString();
+    DataStore.generateDailyInstances(today);
+    var instances = DataStore.getTaskInstances(today);
+    var tasks = DataStore.getTasks(true);
+    var taskMap = {};
+    tasks.forEach(function(t) { taskMap[t.id] = t; });
+
+    // 今日规律任务
+    var todayRoutine = [];
+    instances.forEach(function(inst) {
+      var task = taskMap[inst.taskId];
+      if (task && task.type === 'routine') todayRoutine.push({ instance: inst, task: task });
+    });
+    todayRoutine.sort(function(a, b) { return (a.task.time || '99:99').localeCompare(b.task.time || '99:99'); });
+
+    var done = todayRoutine.filter(function(i) { return i.instance.status === 'done'; }).length;
+    var total = todayRoutine.length;
+    var pct = total > 0 ? Math.round(done / total * 100) : 0;
+
+    var weekLabels = ['日','一','二','三','四','五','六'];
+    var d = new Date(today + 'T00:00:00');
+    var dateDisplay = (d.getMonth() + 1) + '月' + d.getDate() + '日 周' + weekLabels[d.getDay()];
+
+    // 草稿数量
+    var drafts = [];
+    try { drafts = JSON.parse(localStorage.getItem('ai_dongwo_pending_drafts') || '[]'); } catch(e) {}
+    var pendingDrafts = drafts.filter(function(d) { return d.status === 'pending'; }).length;
+
+    var isYouth = role === 'youth';
+    var isSupport = ['parent', 'teacher', 'caregiver'].indexOf(role) >= 0;
+
+    var html = '<div class="twb-container">';
+
+    // ===== 头部：日期 + 问候 =====
+    html += '<div class="twb-header">';
+    html += '  <div class="twb-date">' + dateDisplay + '</div>';
+    html += '  <div class="twb-greeting">' + (isYouth ? '今天也要加油哦！' : '今日概览') + '</div>';
+    html += '</div>';
+
+    // ===== 进度环（有任务时显示） =====
+    if (total > 0) {
+      html += '<div class="twb-body">';
+      html += '  <div class="twb-ring-col">';
+      html += '    <svg class="twb-ring" viewBox="0 0 100 100">';
+      html += '      <circle class="twb-ring-bg" cx="50" cy="50" r="36" />';
+      html += '      <circle class="twb-ring-fill" cx="50" cy="50" r="36" stroke-dasharray="' + (pct * 2.26).toFixed(1) + ' 226" />';
+      html += '    </svg>';
+      html += '    <div class="twb-ring-center">';
+      html += '      <div class="twb-ring-pct">' + (pct || '0') + '%</div>';
+      html += '    </div>';
+      html += '  </div>';
+      html += '  <div class="twb-ring-info">';
+      html += '    <div class="twb-ring-stat">' + done + ' / ' + total + ' 项已完成</div>';
+      // 前 3 项今日任务
+      todayRoutine.slice(0, 3).forEach(function(item) {
+        var inst = item.instance;
+        var task = item.task;
+        var isDone = inst.status === 'done';
+        html += '    <div class="twb-task-item' + (isDone ? ' twb-done' : '') + '">';
+        html += '      <span class="twb-task-dot" style="' + (isDone ? 'background:#5B9B6F' : 'background:#E8A547') + '"></span>';
+        html += '      <span class="twb-task-name">' + (task.name || task.title || '') + '</span>';
+        html += '    </div>';
+      });
+      if (todayRoutine.length > 3) {
+        html += '    <div class="twb-task-more">还有 ' + (todayRoutine.length - 3) + ' 项…</div>';
+      }
+      html += '  </div>';
+      html += '</div>';
+    } else {
+      html += '<div class="twb-body twb-empty">';
+      html += '  <div class="twb-empty-icon">📋</div>';
+      html += '  <div class="twb-empty-text">今天还没有安排任务</div>';
+      html += '</div>';
+    }
+
+    // ===== 快捷操作（仅 support 角色） =====
+    if (isSupport) {
+      html += '<div class="twb-actions">';
+      html += '  <button class="twb-action-btn" id="twb-add-record">';
+      html += '    <span>➕ 快速记录</span>';
+      html += '  </button>';
+      if (pendingDrafts > 0) {
+        html += '  <button class="twb-action-btn twb-action-pending" id="twb-pending-review">';
+        html += '    <span>📋 待确认</span>';
+        html += '    <span class="twb-action-badge">' + pendingDrafts + '</span>';
+        html += '  </button>';
+      }
+      html += '</div>';
+    }
+
+    html += '</div>';
+    container.innerHTML = html;
+
+    // 绑定快捷操作事件
+    var addBtn = container.querySelector('#twb-add-record');
+    if (addBtn) {
+      addBtn.addEventListener('click', function() {
+        var user = window.AppState.currentUser || DataStore.getCurrentUser();
+        window.RecordsPage.createAddRecordModal(user, role, 'mood');
+      });
+    }
+    var pendingBtn = container.querySelector('#twb-pending-review');
+    if (pendingBtn) {
+      pendingBtn.addEventListener('click', function() {
+        window.location.hash = 'chat-review';
+      });
+    }
+  }
+
   function getRoleCards(role) {
-    // 卡片归属标注：module 字段标明该卡片跳转后属于哪个一级 Tab
+    // 精简到 3 张核心卡片，其余入口通过底部 Tab / 模块内子导航访问
     var roleCards = {
       parent: [
-        // 任务
-        { hash: 'tasks', icon: '✅', title: '任务清单', desc: '今日打卡清单与完成进度', module: 'home' },
-        { hash: 'calendar', icon: '📆', title: '日程日历', desc: '课程安排、照护提醒', module: 'home' },
-        // 档案
+        { hash: 'tasks', icon: '✅', title: '任务清单', desc: '今日打卡、日程安排', module: 'home' },
         { hash: 'archive', icon: '📋', title: '档案总览', desc: '六大主题档案分类查看', module: 'archive' },
-        { hash: 'timeline', icon: '📅', title: '动态时间轴', desc: '所有记录按时间排列', module: 'archive' },
-        { hash: 'quickcard', icon: '⚡', title: '速读卡', desc: '快速了解小雨的关键信息', module: 'archive' },
-        // 分析
-        { hash: 'analytics', icon: '📈', title: '分析总览', desc: '阶段总结、统计导出', module: 'charts' },
-        { hash: 'charts', icon: '📊', title: '趋势分析', desc: '心情趋势、统计图表', module: 'charts' },
-        // 管理
-        { hash: 'grants', icon: '👥', title: '授权管理', desc: '邀请家人、管理权限', module: 'profile' },
-        { hash: 'approvals', icon: '📋', title: '加入审批', desc: '审核家庭加入申请', module: 'profile' },
-        { hash: 'archive-code', icon: '📱', title: '档案码', desc: '生成分享二维码', module: 'profile' }
+        { hash: 'chat', icon: '💬', title: 'AI聊聊', desc: '开始记录今天的观察', module: 'chat' }
       ],
       teacher: [
-        // 任务
         { hash: 'tasks', icon: '✅', title: '任务清单', desc: '今日活动、打卡进度', module: 'home' },
-        { hash: 'calendar', icon: '📆', title: '日程日历', desc: '课程安排、重要事项', module: 'home' },
-        // 档案
         { hash: 'communication', icon: '💬', title: '沟通说明书', desc: '有效话术、禁忌用语', module: 'archive' },
-        { hash: 'quickcard', icon: '⚡', title: '速读卡', desc: '快速了解小雨', module: 'archive' },
-        // 管理
-        { hash: 'join', icon: '👨\u200d👩\u200d👧', title: '加入家庭', desc: '输入邀请码加入', module: 'profile' }
+        { hash: 'chat', icon: '💬', title: 'AI聊聊', desc: '开始记录课堂观察', module: 'chat' }
       ],
       caregiver: [
-        // 档案（默认落地页）
         { hash: 'quickcard', icon: '⚡', title: '今日速读卡', desc: '照护要点一览', module: 'archive' },
         { hash: 'care', icon: '💊', title: '照护要点', desc: '过敏、用药、作息提醒', module: 'archive' },
-        { hash: 'emotion', icon: '🌊', title: '情绪支持', desc: '触发因素、安抚策略', module: 'archive' },
-        // 任务
-        { hash: 'calendar', icon: '📆', title: '日程日历', desc: '今日安排、照护提醒', module: 'home' },
-        // 管理
-        { hash: 'join', icon: '👨\u200d👩\u200d👧', title: '加入家庭', desc: '输入邀请码加入', module: 'profile' }
+        { hash: 'calendar', icon: '📆', title: '日程日历', desc: '今日安排、照护提醒', module: 'home' }
       ],
       youth: [
         { hash: 'mood', icon: '💭', title: '记录心情', desc: '今天心情怎么样？', action: 'add-mood', module: 'home' },
         { hash: 'tasks', icon: '✅', title: '今日任务', desc: '今天要完成的事', module: 'home' },
-        { hash: 'calendar', icon: '📆', title: '日程日历', desc: '今天的安排', module: 'home' },
-        { hash: 'archive', icon: '📋', title: '我的档案', desc: '查看我的信息', module: 'archive' }
+        { hash: 'youth-chat', icon: '💬', title: 'AI聊聊', desc: '和AI聊聊天', module: 'chat' }
       ],
       government: [
         { hash: 'analytics', icon: '📈', title: '分析总览', desc: '区域数据统计分析', module: 'charts' },
@@ -728,16 +826,12 @@
       admin: [
         { hash: 'admin-users', icon: '👥', title: '用户管理', desc: '管理系统用户账号', module: 'profile' },
         { hash: 'batch-import', icon: '📥', title: '批量导入', desc: 'CSV批量导入记录数据', module: 'profile' },
-        { hash: 'admin-data', icon: '📈', title: '系统数据', desc: '系统运行数据看板', module: 'charts' },
-        { hash: 'charts', icon: '📊', title: '数据可视化', desc: '统计图表概览', module: 'charts' }
+        { hash: 'admin-data', icon: '📈', title: '系统数据', desc: '系统运行数据看板', module: 'charts' }
       ]
     };
     return roleCards[role] || roleCards.parent;
   }
 
-  /**
-   * 获取角色定制的今日重点提醒
-   */
   function getRoleAlerts(role) {
     var roleAlerts = {
       parent: '<div class="alert-item danger">🚫 严禁海鲜（虾、蟹、贝类）</div>' +
