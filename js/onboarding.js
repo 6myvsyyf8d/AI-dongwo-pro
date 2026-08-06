@@ -18,6 +18,15 @@
     return user && SAMPLE_USER_IDS.indexOf(user.id) >= 0;
   }
 
+  /** 统一判断：是否需要跳过引导（示例账号 / government / admin / 老用户） */
+  function skipsOnboarding(user) {
+    if (!user) return true;
+    if (isSampleUser(user)) return true;
+    if (user.role === 'government' || user.role === 'admin') return true;
+    if (user.createdAt && user.createdAt < '2026-08-05') return true;
+    return false;
+  }
+
   function getState() {
     try {
       var raw = localStorage.getItem(STORAGE_KEY);
@@ -34,10 +43,7 @@
   /** 检查当前用户是否需要进入引导 */
   function needsOnboarding(user) {
     if (!user) return false;
-    // 示例用户不强制引导
-    if (isSampleUser(user)) return false;
-    // 2026-08-05 之前注册的老用户自动跳过引导
-    if (user.createdAt && user.createdAt < '2026-08-05') return false;
+    if (skipsOnboarding(user)) return false;
     var s = getState();
     return !s.onboardingCompleted || s.onboardingCompleted !== true;
   }
@@ -45,7 +51,7 @@
   /** 检查是否已完成引导 */
   function isOnboardingComplete(user) {
     if (!user) return true;
-    if (isSampleUser(user)) return true;
+    if (skipsOnboarding(user)) return true;
     var s = getState();
     return s.onboardingCompleted === true;
   }

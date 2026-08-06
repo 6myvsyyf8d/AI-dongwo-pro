@@ -2102,6 +2102,9 @@
       });
     }
 
+    // 7. 任务完成里程碑（care 类任务：饮食/卫生/医疗）
+    events = events.concat(buildTaskMilestoneEvents(records));
+
     return events;
   }
 
@@ -2143,6 +2146,48 @@
     });
 
     return items.slice(0, 6);
+  }
+
+  // ============ 任务完成里程碑（公共 L3 规则，供 work/care 调用）============
+  function buildTaskMilestoneEvents(records) {
+    var events = [];
+    var checkinRecs = records.filter(function(r) { return r.source === 'task_checkin'; });
+    if (checkinRecs.length === 0) return events;
+
+    var cutoff7 = dateDaysAgo(7);
+    var cutoff30 = dateDaysAgo(30);
+
+    // 1. 近30天首次完成的新任务（按 _taskId 去重，最多3个）
+    var seenTasks = {};
+    var milestoneCount = 0;
+    checkinRecs.slice().sort(function(a, b) { return a.date.localeCompare(b.date); }).forEach(function(r) {
+      var tid = r._taskId;
+      if (tid && !seenTasks[tid] && r.date >= cutoff30) {
+        seenTasks[tid] = true;
+        if (milestoneCount < 3) {
+          events.push({
+            icon: '🎯', typeLabel: '任务完成里程碑',
+            text: '完成打卡：' + (r.title || '').replace(/^✅ 完成任务：/, ''),
+            dateDisplay: formatDateDisplay(r.date),
+            source: '来源：任务打卡 · ' + (r.author || '系统')
+          });
+          milestoneCount++;
+        }
+      }
+    });
+
+    // 2. 近7天完成 ≥5 次 → 执行稳定
+    var recent7 = checkinRecs.filter(function(r) { return r.date >= cutoff7; });
+    if (recent7.length >= 5) {
+      events.push({
+        icon: '🔥', typeLabel: '任务完成里程碑',
+        text: '近7天完成任务打卡 ' + recent7.length + ' 次，执行稳定',
+        dateDisplay: '近7天',
+        source: '来源：系统统计 · 非诊断性结论'
+      });
+    }
+
+    return events;
   }
 
   // ============ #work L3 关键事件 ============
@@ -2216,6 +2261,9 @@
         source: '来源：系统提醒'
       });
     }
+
+    // 7. 任务完成里程碑（work 类任务：活动/学习）
+    events = events.concat(buildTaskMilestoneEvents(records));
 
     return events;
   }
@@ -2696,7 +2744,9 @@
   }
 
   function renderAnalytics() {
-    var contentArea = Utils.dom.get('analytics-content');
+    var isCharts = window.location.hash.replace('#', '').split('?')[0] === 'charts';
+    var containerId = isCharts ? 'charts-content' : 'analytics-content';
+    var contentArea = Utils.dom.get(containerId);
     if (!contentArea) return;
     resetAnalyticsState();
     var html = '';
@@ -3953,7 +4003,10 @@
       if (toggleEl) {
         var instanceId = toggleEl.dataset.instanceId;
         var inst = DataStore.updateTaskInstance(instanceId, today, { status: 'done' });
-        if (inst) renderTasks();
+        if (inst) {
+          logTaskCompletion(instanceId, today);
+          renderTasks();
+        }
       }
 
       if (progressEl) {
@@ -3965,11 +4018,61 @@
       if (undoEl) {
         var instanceId = undoEl.dataset.instanceId;
         DataStore.updateTaskInstance(instanceId, today, { status: 'todo' });
+        removeTaskRecord(instanceId, today);
         renderTasks();
       }
 
       if (e.target.closest('#btn-add-task')) {
         showAddTaskModal();
+      }
+    });
+  }
+
+  // ===== 任务打卡 → 生成 record（打通档案 L3）=====
+  // 打卡(done)时生成一条 activity 记录写入 records，撤销时删除，保证幂等
+  function logTaskCompletion(instanceId, dateStr) {
+    var instances = DataStore.getTaskInstances(dateStr);
+    var inst = instances.find(function(i) { return i.id === instanceId; });
+    if (!inst || inst.status !== 'done') return;
+
+    var tasks = DataStore.getTasks ? DataStore.getTasks(true) : [];
+    var task = tasks.find(function(t) { return t.id === inst.taskId; });
+    if (!task) return;
+
+    // 幂等：已有该 instance 的打卡记录则跳过
+    var existing = DataStore.getRecords().filter(function(r) {
+      return r.source === 'task_checkin' && r._instanceId === instanceId;
+    });
+    if (existing.length > 0) return;
+
+    var cat = TASK_CATEGORY_CONFIG[task.category] || TASK_CATEGORY_CONFIG.other;
+    var moduleMap = { medication: 'care', meal: 'care', hygiene: 'care', activity: 'work', learning: 'work', other: 'life' };
+    var moduleKey = moduleMap[task.category] || 'life';
+    var user = DataStore.getCurrentUser() || (typeof appState !== 'undefined' && appState.currentUser) || {};
+
+    DataStore.addRecord({
+      type: 'activity',
+      module: moduleKey,
+      title: '✅ 完成任务：' + task.title,
+      content: task.title + '（' + cat.label + '）已完成',
+      author: user.name || '系统',
+      authorRole: user.role || 'unknown',
+      authorId: user.id || '',
+      authorAvatar: user.avatar || '',
+      date: dateStr,
+      tags: ['任务打卡'],
+      privacy: 'B',
+      source: 'task_checkin',
+      _instanceId: instanceId,
+      _taskId: task.id
+    });
+  }
+
+  function removeTaskRecord(instanceId, dateStr) {
+    var records = DataStore.getRecords();
+    records.forEach(function(r) {
+      if (r.source === 'task_checkin' && r._instanceId === instanceId) {
+        DataStore.deleteRecord(r.id);
       }
     });
   }
