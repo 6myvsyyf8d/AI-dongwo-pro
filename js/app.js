@@ -538,7 +538,7 @@
           window.ArchivePage.renderArchiveStatus();
         }
         break;
-      case 'analytics': renderAnalytics(); break;
+      case 'analytics': window.location.hash = 'charts'; return;
       case 'quickcard': window.QuickCard.renderPage(); break;
       case 'welcome': window.WelcomePage.renderWelcome(); break;
       case 'grants': window.GrantsPage.renderGrants(); break;
@@ -674,12 +674,6 @@
 
     // 渲染添加记录浮动按钮
     renderFAB();
-
-    // v2.0：渲染「认识我」卡片（首页核心新增）
-    renderKnowMeCard();
-
-    // v2.0：渲染演示工作链（AI发现有效支持经验）
-    renderDemoWorkflow();
   }
 
   /**
@@ -899,7 +893,7 @@
   }
 
   /**
-   * 渲染最新动态区域
+   * 渲染待关注区域 — 只保留需要行动的信息
    */
   function renderLatestActivity(user) {
     var existingActivity = document.getElementById('latest-activity');
@@ -909,25 +903,27 @@
     var cardGridEl = document.getElementById('card-grid');
     if (!cardGridEl || !mainContent) return;
 
-    var records = DataStore.getRecords();
+    var allRecords = DataStore.getRecords();
 
-    // 根据角色过滤可见的记录类型
+    // 过滤可行动项：负面情绪 / 预警标签 / 医疗冲突 / 未完成任务
     var role = user ? user.role : 'parent';
-    var roleRecordFilters = {
-      parent: null, // 家长看所有记录
-      teacher: ['activity', 'communication', 'emotion', 'note'],
-      caregiver: ['care', 'emotion', 'note'],
-      youth: ['mood', 'note'],
-      government: null,
-      admin: null
-    };
-    var allowedTypes = roleRecordFilters[role];
-    if (allowedTypes) {
-      records = records.filter(function (r) {
-        return allowedTypes.indexOf(r.type) !== -1;
-      });
-    }
-    var latestRecords = records.slice(0, 5);
+    var actionable = allRecords.filter(function(r) {
+      // 负面情绪
+      var negEmotions = ['焦虑', '难过', '生气', '恐惧', '烦躁'];
+      if (r.emotion_type && negEmotions.indexOf(r.emotion_type) >= 0) return true;
+      if (r.mood && (r.mood === 'anxious' || r.mood === 'sad')) return true;
+      // 预警标签
+      if (r.tags && (r.tags.indexOf('预警') >= 0 || r.tags.indexOf('触发') >= 0)) return true;
+      // 医疗冲突
+      if (r.type === 'care' && (r.title || '').indexOf('冲突') >= 0) return true;
+      return false;
+    });
+
+    // 限制数量并去旧
+    var latestActionable = actionable.slice(0, 3);
+
+    // 无待办时隐藏整个区块
+    if (latestActionable.length === 0) return;
 
     var activitySection = document.createElement('div');
     activitySection.id = 'latest-activity';
@@ -935,22 +931,14 @@
 
     var html = '';
     html += '<h2 style="font-size:1rem;color:#333;margin:12px 0 10px;display:flex;align-items:center;gap:8px;">';
-    html += '  <span>📰</span>最新动态';
+    html += '  <span>🔔</span>待关注';
     html += '  <a href="#timeline" style="margin-left:auto;font-size:0.82rem;color:#4A90D9;text-decoration:none;">查看全部 →</a>';
     html += '</h2>';
-
-    if (latestRecords.length === 0) {
-      html += '<div style="background:#fff;border-radius:12px;padding:24px;text-align:center;color:#999;font-size:0.9rem;box-shadow:0 1px 4px rgba(0,0,0,0.04);">';
-      html += '  <div style="font-size:2rem;margin-bottom:8px;">📝</div>';
-      html += '  还没有记录，点击右下角的 + 按钮添加第一条记录吧！';
-      html += '</div>';
-    } else {
-      html += '<div style="display:flex;flex-direction:column;gap:10px;">';
-      latestRecords.forEach(function (record) {
-        html += renderRecordCard(record, true);
-      });
-      html += '</div>';
-    }
+    html += '<div style="display:flex;flex-direction:column;gap:10px;">';
+    latestActionable.forEach(function (record) {
+      html += renderRecordCard(record, true);
+    });
+    html += '</div>';
 
     activitySection.innerHTML = html;
     cardGridEl.parentNode.insertBefore(activitySection, cardGridEl.nextSibling);
