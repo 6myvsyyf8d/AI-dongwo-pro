@@ -1047,103 +1047,17 @@
   function renderCommunication() {
     var contentArea = document.getElementById('communication-content');
     if (!contentArea) return;
-
-    var records = getCommRecords();
-    var now = new Date();
-
-    var html = '';
-    html += '<div class="comm-four-layer">';
-
-    // ====== L1: 当前摘要 ======
-    var l1 = buildL1Summary(records);
-    html += '<div class="comm-layer comm-layer-l1">';
-    html += '  <div class="comm-layer-title">📌 当前摘要</div>';
-    html += '  <div class="comm-layer-sub">当前怎样和他沟通最有效</div>';
-    if (l1.length > 0) {
-      l1.forEach(function (item) {
-        html += '  <div class="comm-l1-item" data-rid="' + item.rid + '">';
-        html += '    <div class="comm-l1-text">' + item.text + '</div>';
-        html += '    <div class="comm-l1-meta">';
-        html += '      <span class="comm-source-badge ' + item.statusClass + '">' + item.statusLabel + '</span>';
-        html += '      <span class="comm-source-info">来源：' + item.author + ' · ' + item.dateDisplay + '</span>';
-        html += '      <a class="comm-view-evidence" data-rid="' + item.rid + '">查看依据 →</a>';
-        html += '    </div>';
-        html += '  </div>';
-      });
-    } else {
-      html += '  <div class="comm-empty">暂无摘要数据</div>';
-    }
-    html += '</div>';
-
-    // ====== L2: 最近变化 ======
-    html += '<div class="comm-layer comm-layer-l2">';
-    html += '  <div class="comm-layer-title">🕐 最近变化</div>';
-    html += '  <div class="comm-time-tabs" id="comm-time-tabs">';
-    ['7天', '30天', '3个月', '半年'].forEach(function (label, i) {
-      var activeClass = (i === 0) ? ' active' : '';
-      html += '    <button class="comm-time-tab' + activeClass + '" data-range="' + i + '">' + label + '</button>';
-    });
-    html += '  </div>';
-    html += '  <div id="comm-l2-content"></div>';
-    html += '</div>';
-
-    // ====== L3: 关键事件 ======
-    var l3 = buildL3Events(records);
-    html += '<div class="comm-layer comm-layer-l3">';
-    html += '  <div class="comm-layer-title">⚡ 关键事件</div>';
-    html += '  <div class="comm-layer-sub">值得关注的变化节点</div>';
-    if (l3.length > 0) {
-      l3.forEach(function (evt) {
-        html += '  <div class="comm-l3-item">';
-        html += '    <div class="comm-l3-header">';
-        html += '      <span class="comm-l3-icon">' + evt.icon + '</span>';
-        html += '      <span class="comm-l3-type">' + evt.typeLabel + '</span>';
-        html += '      <span class="comm-l3-date">' + evt.dateDisplay + '</span>';
-        html += '    </div>';
-        html += '    <div class="comm-l3-text">' + evt.text + '</div>';
-        html += '    <div class="comm-l3-source">来源：' + evt.author + '（' + evt.roleLabel + '）';
-        if (evt.rid) {
-          html += ' <a class="comm-view-evidence" data-rid="' + evt.rid + '">查看依据 →</a>';
-        }
-        html += '    </div>';
-        html += '  </div>';
-      });
-    } else {
-      html += '  <div class="comm-empty">暂未检测到关键事件</div>';
-    }
-    html += '</div>';
-
-    // ====== L4: 全部记录 ======
-    html += '<div class="comm-layer comm-layer-l4">';
-    html += '  <div class="comm-layer-title">📋 全部记录</div>';
-    html += '  <div id="comm-l4-content"></div>';
-    html += '</div>';
-
-    html += '</div>';
-    contentArea.innerHTML = (opts.prependHtml || '') + html;
-
-    // 首次渲染 L2 和 L4
-    renderL2Content(0, records);
-    renderL4Content(records);
-
-    // 绑定 L2 时间范围切换
-    var timeTabs = document.getElementById('comm-time-tabs');
-    if (timeTabs) {
-      timeTabs.addEventListener('click', function (e) {
-        var tab = e.target.closest('.comm-time-tab');
-        if (!tab) return;
-        timeTabs.querySelectorAll('.comm-time-tab').forEach(function (t) { t.classList.remove('active'); });
-        tab.classList.add('active');
-        renderL2Content(parseInt(tab.getAttribute('data-range')), records);
-      });
-    }
-
-    // 绑定"查看依据"事件
-    contentArea.addEventListener('click', function (e) {
-      var evidence = e.target.closest('.comm-view-evidence');
-      if (!evidence) return;
-      var rid = evidence.getAttribute('data-rid');
-      if (rid) showRecordDetail(rid);
+    renderTopicFourLayer(contentArea, 'communication', {
+      l1Title: '📌 当前摘要',
+      l1Sub: '当前怎样和他沟通最有效',
+      emptyText: '暂无摘要数据',
+      showEvidence: true,
+      l2Render: function(contentArea, records, rangeIdx) {
+        renderL2Content(contentArea, records, rangeIdx);
+      },
+      l4Render: function(contentArea, records) {
+        renderL4Content(contentArea, records);
+      }
     });
   }
 
@@ -1151,12 +1065,6 @@
    * 沟通模块数据层 — 四层模型分析函数
    * ========================================================== */
 
-  /** 获取沟通模块全部记录，按日期倒序 */
-  function getCommRecords() {
-    var all = DataStore.getRecords();
-    return all.filter(function (r) { return r.module === 'communication'; })
-              .sort(function (a, b) { return (b.date + b.time).localeCompare(a.date + a.time); });
-  }
 
   var STATUS_CONFIG = {
     youth:    { label: '💬 自述',     cls: 'source-self' },
@@ -1217,8 +1125,8 @@
   /**
    * L2 最近变化 — 按时间范围对比，给出人话总结
    */
-  function renderL2Content(rangeIdx, records) {
-    var container = document.getElementById('comm-l2-content');
+  function renderL2Content(contentArea, records, rangeIdx) {
+    var container = contentArea.querySelector('#topic-l2-content');
     if (!container) return;
 
     var ranges = [
@@ -1386,8 +1294,8 @@
   /**
    * L4 全部记录 — 按今天/本周/本月/更早分组，可展开
    */
-  function renderL4Content(records) {
-    var container = document.getElementById('comm-l4-content');
+  function renderL4Content(contentArea, records) {
+    var container = contentArea.querySelector('#topic-l4-content');
     if (!container) return;
 
     var now = new Date();
@@ -1528,6 +1436,10 @@
       l1Rules: function(records) { return buildLifeL1(records); },
       l3Rules: function(records) { return buildLifeL3(records); }
     },
+    communication: {
+      l1Rules: function(records) { return buildL1Summary(records); },
+      l3Rules: function(records) { return buildL3Events(records); }
+    },
     emotion: {
       l1Rules: function(records) { return buildEmotionL1(records); },
       l3Rules: function(records) { return buildEmotionL3(records); }
@@ -1553,32 +1465,36 @@
   }
 
   function renderTopicFourLayer(contentArea, moduleKey, opts) {
+    opts = opts || {};
     var records = getTopicRecords(moduleKey);
     var config = TOPIC_CONFIG[moduleKey] || {};
-    var html = '';
+    var html = (opts.prependHtml || '');
     html += '<div class="comm-four-layer">';
 
-    // L1
+    // L1: 当前摘要
     var l1 = config.l1Rules ? config.l1Rules(records) : [];
     html += '<div class="comm-layer comm-layer-l1">';
     html += '  <div class="comm-layer-title">' + (opts.l1Title || '📌 当前摘要') + '</div>';
     html += '  <div class="comm-layer-sub">' + (opts.l1Sub || '') + '</div>';
     if (l1.length > 0) {
       l1.forEach(function(item) {
-        html += '<div class="comm-l1-item">';
+        html += '<div class="comm-l1-item"' + (item.rid ? ' data-rid="' + item.rid + '"' : '') + '>';
         html += '  <div class="comm-l1-text">' + item.text + '</div>';
         html += '  <div class="comm-l1-meta">';
         html += '    <span class="comm-source-badge ' + (item.statusClass || 'source-confirmed') + '">' + (item.statusLabel || '已确认') + '</span>';
         html += '    <span class="comm-source-info">' + (item.source || '') + '</span>';
+        if (opts.showEvidence && item.rid) {
+          html += '    <a class="comm-view-evidence" data-rid="' + item.rid + '">查看依据 →</a>';
+        }
         html += '  </div>';
         html += '</div>';
       });
     } else {
-      html += '<div class="comm-empty">' + (opts.emptyText || '暂无数据') + '</div>';
+      html += '<div class="comm-empty">' + (opts.emptyText || '暂无摘要数据') + '</div>';
     }
     html += '</div>';
 
-    // L2
+    // L2: 最近变化
     html += '<div class="comm-layer comm-layer-l2">';
     html += '  <div class="comm-layer-title">🕐 最近变化</div>';
     html += '  <div class="comm-time-tabs" id="topic-time-tabs">';
@@ -1589,7 +1505,7 @@
     html += '  <div id="topic-l2-content"></div>';
     html += '</div>';
 
-    // L3
+    // L3: 关键事件
     var l3 = config.l3Rules ? config.l3Rules(records) : [];
     html += '<div class="comm-layer comm-layer-l3">';
     html += '  <div class="comm-layer-title">⚡ 关键事件</div>';
@@ -1603,7 +1519,11 @@
         html += '    <span class="comm-l3-date">' + (evt.dateDisplay || '') + '</span>';
         html += '  </div>';
         html += '  <div class="comm-l3-text">' + (evt.text || '') + '</div>';
-        html += '  <div class="comm-l3-source">' + (evt.source || '') + '</div>';
+        html += '  <div class="comm-l3-source">' + (evt.source || '');
+        if (opts.showEvidence && evt.rid) {
+          html += ' <a class="comm-view-evidence" data-rid="' + evt.rid + '">查看依据 →</a>';
+        }
+        html += '  </div>';
         html += '</div>';
       });
     } else {
@@ -1611,7 +1531,7 @@
     }
     html += '</div>';
 
-    // L4
+    // L4: 全部记录
     html += '<div class="comm-layer comm-layer-l4">';
     html += '  <div class="comm-layer-title">📋 全部记录</div>';
     html += '  <div id="topic-l4-content"></div>';
@@ -1620,9 +1540,19 @@
     html += '</div>';
     contentArea.innerHTML = html;
 
-    // 渲染 L2 和 L4（传入 contentArea 做作用域查询，避免多页面 ID 冲突）
-    renderGenericL2Content(contentArea, 'topic-l2-content', records);
-    renderGenericL4Content(contentArea, 'topic-l4-content', records);
+    // 渲染 L2（支持自定义渲染器）
+    if (opts.l2Render) {
+      opts.l2Render(contentArea, records, 0);
+    } else {
+      renderGenericL2Content(contentArea, 'topic-l2-content', records);
+    }
+
+    // 渲染 L4（支持自定义渲染器）
+    if (opts.l4Render) {
+      opts.l4Render(contentArea, records);
+    } else {
+      renderGenericL4Content(contentArea, 'topic-l4-content', records);
+    }
 
     // L2 时间切换
     var tabs = contentArea.querySelector('#topic-time-tabs');
@@ -1632,9 +1562,22 @@
         if (!tab) return;
         tabs.querySelectorAll('.comm-time-tab').forEach(function(t) { t.classList.remove('active'); });
         tab.classList.add('active');
-        renderGenericL2Content(contentArea, 'topic-l2-content', records, parseInt(tab.getAttribute('data-range')));
+        var idx = parseInt(tab.getAttribute('data-range'));
+        if (opts.l2Render) {
+          opts.l2Render(contentArea, records, idx);
+        } else {
+          renderGenericL2Content(contentArea, 'topic-l2-content', records, idx);
+        }
       });
     }
+
+    // "查看依据" 事件绑定
+    contentArea.addEventListener('click', function(e) {
+      var evidence = e.target.closest('.comm-view-evidence');
+      if (!evidence) return;
+      var rid = evidence.getAttribute('data-rid');
+      if (rid) showRecordDetail(rid);
+    });
   }
 
   function renderGenericL2Content(contentArea, containerId, records, rangeIdx) {
