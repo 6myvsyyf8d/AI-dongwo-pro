@@ -73,18 +73,46 @@
     });
   }
 
+  // ========== P1-1-2.1 修复：用药/过敏/冲突/权限/复核周期 ==========
+
+  /** 用药字段是否为空（无有效值） */
+  function _medIsEmpty(val) {
+    if (!val) return true;
+    var v = String(val).trim();
+    if (v === '' || v === '未知' || v === '未填写') return true;
+    return false;
+  }
+
+  /** 过敏字段是否为空 */
+  function _allergyIsEmpty(val) {
+    if (!val) return true;
+    if (val.items && val.items.length > 0 && val.items !== '无') return false;
+    if (typeof val === 'string' && val.length > 0 && val !== '无') return false;
+    return true;
+  }
+
+  /** 复查周期配置（天数） */
+  var REVIEW_PERIODS = {
+    care: 30,           // 医疗/用药：较短
+    emotion: 30,        // 情绪策略：中等
+    communication: 60,  // 沟通策略：中等
+    work: 90,           // 工作能力：较长
+    relations: 90,      // 关系：较长
+    life: 90            // 兴趣/生活：较长
+  };
+
   /**
    * 渲染「档案状态」页面 — #archive-status
-   * 专门回答：哪些档案信息缺失、过期、冲突或尚未确认？下一步应该处理什么？
-   * 权限：temp_supporter 和 government 禁止访问
+   * 当前基于演示档案常量检查字段（P1-1-3 将迁移至 DataStore 统一数据源）
    */
   function renderArchiveStatus() {
     var contentArea = document.getElementById('archive-status-content');
     if (!contentArea) return;
 
-    // === 权限拦截 ===
     var user = DataStore.getCurrentUser();
     var role = user ? user.role : 'parent';
+
+    // === 权限拦截 ===
     if (role === 'temp_supporter' || role === 'government') {
       contentArea.innerHTML = '<div style="padding:32px;text-align:center;color:#999;">' +
         '<div style="font-size:2.5rem;margin-bottom:12px;">🔒</div>' +
@@ -93,7 +121,6 @@
       return;
     }
 
-    var HTML = C.escapeHtml || (function(s) { return String(s).replace(/[&<>"]/g, function(m) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]; }); });
     var statusItems = [];
 
     // ========== 关键字段定义 ==========
@@ -102,34 +129,34 @@
         checks: [
           { name: '有效沟通方式', src: function() { var g = C.communicationGuide; return g && g.best && g.best.length > 0; } },
           { name: '需要避免的表达', src: function() { var g = C.communicationGuide; return g && g.avoid && g.avoid.length > 0; } }
-        ], severity: 1 },
+        ], severity: 1, reviewDays: REVIEW_PERIODS.communication },
       { module: 'emotion', label: '情绪与行为支持', hash: 'emotion',
         checks: [
           { name: '压力信号', src: function() { var e = C.emotionSupport; return e && e.warnings && e.warnings.length > 0; } },
           { name: '触发因素', src: function() { var e = C.emotionSupport; return e && e.triggers && e.triggers.length > 0; } },
           { name: '有效安抚方式', src: function() { var e = C.emotionSupport; return e && e.soothing && e.soothing.length > 0; } }
-        ], severity: 1 },
+        ], severity: 1, reviewDays: REVIEW_PERIODS.emotion },
       { module: 'care', label: '照护与医疗', hash: 'care',
         checks: [
-          { name: '过敏信息', src: function() { var c = C.careInfo; return c && c.allergy && c.allergy.items && c.allergy.items.length > 0 && c.allergy.items !== '无'; } },
-          { name: '用药状态', src: function() { var c = C.careInfo; return c && c.medicine && c.medicine !== '无'; } },
+          { name: '过敏信息', src: function() { var c = C.careInfo; return c && !_allergyIsEmpty(c.allergy); } },
+          { name: '用药状态', src: function() { var c = C.careInfo; return c && !_medIsEmpty(c.medicine); } },
           { name: '紧急处理方式', src: function() { var c = C.careInfo; return c && c.special && c.special.length > 0; } }
-        ], severity: 0 },
+        ], severity: 0, reviewDays: REVIEW_PERIODS.care },
       { module: 'work', label: '工作支持', hash: 'work',
         checks: [
           { name: '可独立完成事项', src: function() { var w = C.workInfo; return w && w.canDo && w.canDo.length > 0; } },
           { name: '需要协助事项', src: function() { var w = C.workInfo; return w && w.needSupport && w.needSupport.length > 0; } }
-        ], severity: 2 },
+        ], severity: 2, reviewDays: REVIEW_PERIODS.work },
       { module: 'relations', label: '关系与社交', hash: 'relations',
         checks: [
           { name: '紧急联系人', src: function() { var r = C.relationsInfo; return r && r.core && r.core.length > 0; } },
           { name: '核心支持者', src: function() { var r = C.relationsInfo; return r && r.core && r.core.length > 0; } }
-        ], severity: 0 },
+        ], severity: 0, reviewDays: REVIEW_PERIODS.relations },
       { module: 'life', label: '我喜欢的生活', hash: 'life',
         checks: [
           { name: '主要偏好', src: function() { var l = C.likesList; return l && l.length > 0; } },
           { name: '作息或重要生活习惯', src: function() { var d = C.dailyRoutine; return d && d.length > 0; } }
-        ], severity: 2 }
+        ], severity: 2, reviewDays: REVIEW_PERIODS.life }
     ];
 
     // ========== 1. 关键字段缺失 ==========
@@ -153,32 +180,43 @@
       });
     });
 
-    // ========== 2. 信息冲突（安全级 severity=0）==========
+    // ========== 2. 信息冲突 ==========
+
+    // 2a. 用药冲突：明确"无用药"但存在服药任务/事件
     var medConflict = DataStore.validateMedicalConsistency ? DataStore.validateMedicalConsistency() : null;
     if (medConflict) {
       statusItems.push({
         type: 'conflict', severity: 0,
         typeLabel: '安全/医疗冲突', icon: '⚠️',
-        text: '用药数据不一致：存在冲突记录',
-        detail: medConflict.detail || '',
+        text: medConflict.message || '用药数据不一致',
+        detail: '档案标注无用药，但系统中存在服药相关安排',
         hash: 'care', actionLabel: '去处理',
         updatedAt: '来源：系统检测'
       });
     }
 
-    // 检查过敏信息不一致
+    // 2b. 过敏信息值比较（非简单计数）
     var allergyRecs = (DataStore.getRecordsByModule('care') || []).filter(function(r) {
       return (r.title || '').indexOf('过敏') >= 0 || (r.content || '').indexOf('过敏') >= 0;
     });
-    if (allergyRecs.length >= 2 && C.careInfo && C.careInfo.allergy) {
-      statusItems.push({
-        type: 'conflict', severity: 0,
-        typeLabel: '安全/医疗冲突', icon: '⚠️',
-        text: '过敏信息有多条记录，请核实一致性',
-        detail: '共 ' + allergyRecs.length + ' 条过敏相关记录',
-        hash: 'care', actionLabel: '去核实',
-        updatedAt: '来源：系统检测'
+    if (allergyRecs.length >= 2) {
+      // 提取所有过敏内容去重比较
+      var allergyContents = {};
+      allergyRecs.forEach(function(r) {
+        var key = (r.title || '') + '|' + (r.content || '').substring(0, 80);
+        allergyContents[key] = true;
       });
+      var uniqueAllergyKeys = Object.keys(allergyContents);
+      if (uniqueAllergyKeys.length >= 2) {
+        statusItems.push({
+          type: 'verify', severity: 0,
+          typeLabel: '信息待核实', icon: '📋',
+          text: '过敏信息存在多条不同记录，建议核实一致性',
+          detail: '共 ' + allergyRecs.length + ' 条来自 ' + uniqueAllergyKeys.length + ' 个不同来源',
+          hash: 'care', actionLabel: '去核实',
+          updatedAt: '来源：系统检测'
+        });
+      }
     }
 
     // ========== 3. AI 待确认草稿 ==========
@@ -207,27 +245,27 @@
       }
     } catch (e) { /* ignore */ }
 
-    // ========== 4. 长期未复核 ==========
+    // ========== 4. 长期未复核（按模块区分周期）==========
     var today = new Date();
-    var cutoff14 = new Date(today.getTime() - 14 * 24 * 60 * 60 * 1000);
-    var cutoff14Str = cutoff14.getFullYear() + '-' + String(cutoff14.getMonth()+1).padStart(2,'0') + '-' + String(cutoff14.getDate()).padStart(2,'0');
-    var cutoff60 = new Date(today.getTime() - 60 * 24 * 60 * 60 * 1000);
-    var cutoff60Str = cutoff60.getFullYear() + '-' + String(cutoff60.getMonth()+1).padStart(2,'0') + '-' + String(cutoff60.getDate()).padStart(2,'0');
 
     KEY_FIELDS.forEach(function(mod) {
       var recs = DataStore.getRecordsByModule(mod.module);
       if (!recs || recs.length === 0) return;
-      var hasRecent = recs.some(function(r) { return r.date >= cutoff14Str; });
+      var reviewDays = mod.reviewDays || 60;
+      var cutoffDate = new Date(today.getTime() - reviewDays * 24 * 60 * 60 * 1000);
+      var cutoffStr = cutoffDate.getFullYear() + '-' + String(cutoffDate.getMonth()+1).padStart(2,'0') + '-' + String(cutoffDate.getDate()).padStart(2,'0');
+
+      var hasRecent = recs.some(function(r) { return r.date >= cutoffStr; });
       if (!hasRecent) {
         var latest = recs[0];
         var daysAgo = Math.round((today - new Date(latest.date + 'T00:00:00')) / 86400000);
         statusItems.push({
           type: 'stale', severity: 2,
           typeLabel: '长期未复核', icon: '⏰',
-          text: mod.label + '：超过 ' + daysAgo + ' 天未更新',
+          text: mod.label + '：超过 ' + daysAgo + ' 天未更新（复核周期 ' + reviewDays + ' 天）',
           detail: '最新：' + latest.date + ' · ' + (latest.author || '系统'),
           hash: mod.hash, actionLabel: '去更新',
-          updatedAt: '超过 ' + (daysAgo >= 60 ? '60' : '14') + ' 天未变动'
+          updatedAt: ''
         });
       }
     });
@@ -246,7 +284,6 @@
       html += '<a href="#archive" style="font-size:0.9rem;color:#4A90D9;">← 返回档案总览</a>';
       html += '</div>';
     } else {
-      // 按 severity 分组
       var groups = [
         { key: 0, title: '⚠️ 安全与冲突', cls: 'danger' },
         { key: 1, title: '📋 关键资料缺失 / 待审核', cls: 'warning' },
@@ -282,7 +319,7 @@
       });
     }
 
-    html += '<div class="as-footer">最后检查时间：' + (new Date().toLocaleString('zh-CN')) + '</div>';
+    html += '<div class="as-footer">基于演示档案字段检查 · 最后检查时间：' + (new Date().toLocaleString('zh-CN')) + '</div>';
 
     contentArea.innerHTML = html;
   }

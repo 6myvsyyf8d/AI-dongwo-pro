@@ -404,12 +404,17 @@
     if (role === 'temp_supporter') {
       var allowedPages = ['supporter-card', 'quick-start', 'login', 'quick-record'];
       if (allowedPages.indexOf(basePage) === -1) {
-        // 标记权限拒绝，速读卡页显示身份提示
         try { sessionStorage.setItem('ts_access_denied_to', basePage); } catch (e) {}
         basePage = 'supporter-card';
         window.location.hash = '#supporter-card';
         return;
       }
+    }
+
+    // 权限拦截：政府端不得访问档案状态
+    if (role === 'government' && basePage === 'archive-status') {
+      window.location.hash = '#charts';
+      return;
     }
 
     // 离开 youth-chat 时恢复 viewport + 清理 TTS
@@ -2511,7 +2516,7 @@
       html += '    <div style="flex:1;height:4px;background:#E8E8E8;border-radius:2px;overflow:hidden;">';
       html += '      <div style="height:100%;width:' + completeness + '%;background:' + (completeness >= 60 ? '#52C41A' : completeness >= 30 ? '#FAAD14' : '#F5222D') + ';border-radius:2px;"></div>';
       html += '    </div>';
-      html += '    <span style="font-size:0.7rem;color:#999;white-space:nowrap;">' + count + '条</span>';
+      html += '    <span style="font-size:0.7rem;color:#999;white-space:nowrap;">' + count + '条记录</span>';
       html += '  </div>';
       html += '</div>';
     });
