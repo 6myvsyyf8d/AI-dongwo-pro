@@ -591,7 +591,7 @@
       if (!topicKey || VALID_TOPIC_KEYS.indexOf(topicKey) === -1) {
         // 无效 topicKey → 清理残留标记，兜底到主题档案列表
         try { sessionStorage.removeItem('dr_scroll_to_l4'); } catch (e) {}
-        window.location.hash = 'archive-topics';
+        window.location.hash = 'archive';
         return;
       }
       try { sessionStorage.setItem('dr_scroll_to_l4', topicKey); } catch (e) {}

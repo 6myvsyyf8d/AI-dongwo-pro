@@ -213,7 +213,6 @@
   var MODULE_SUB_NAV = {
     'archive': [
       { hash: 'archive', label: '总览' },
-      { hash: 'archive-topics', label: '主题档案' },
       { hash: 'timeline', label: '时间轴' },
       { hash: 'quickcard', label: '速读卡' }
     ]
@@ -240,7 +239,7 @@
     var html = '';
     items.forEach(function (item) {
       var isActive = (item.hash === pageName) ||
-        (item.hash === 'archive-topics' && themePages.indexOf(pageName) !== -1);
+        (item.hash === 'archive' && themePages.indexOf(pageName) !== -1);
       html += '<button class="sub-nav-tab' + (isActive ? ' active' : '') + '" data-hash="' + item.hash + '">';
       html += item.label;
       html += '</button>';
@@ -395,7 +394,7 @@
     // 如果页面不存在则清理标记并降级到主题档案
     if (!routeMap[basePage]) {
       try { sessionStorage.removeItem('dr_scroll_to_l4'); } catch (e) {}
-      window.location.hash = '#archive-topics';
+      window.location.hash = '#archive';
       return;
     }
 
@@ -477,7 +476,7 @@
     window.Permissions.applyPrivacy(currentRole);
 
     // FAB 可见性：主题详情页 + 档案主题列表页隐藏
-    var fabHidePages = ['life', 'communication', 'emotion', 'care', 'work', 'relations', 'archive-topics'];
+    var fabHidePages = ['life', 'communication', 'emotion', 'care', 'work', 'relations'];
     var fab = document.getElementById('fab-container');
     if (fab) {
       fab.style.display = fabHidePages.indexOf(basePage) !== -1 ? 'none' : '';
@@ -527,12 +526,8 @@
       case 'charts': renderAnalytics(); break;
       case 'tasks': renderTasks(); break;
       case 'calendar': renderCalendar(); break;
-      case 'archive': window.ProfilePage.renderProfile(); break;
-      case 'archive-topics':
-        if (window.ArchivePage && window.ArchivePage.renderArchiveTopics) {
-          window.ArchivePage.renderArchiveTopics();
-        }
-        break;
+      case 'archive': renderArchive(); break;
+      case 'archive-topics': window.location.hash = 'archive'; return;
       case 'archive-status':
         if (window.ArchivePage && window.ArchivePage.renderArchiveStatus) {
           window.ArchivePage.renderArchiveStatus();
@@ -2491,22 +2486,33 @@
     html += '  <div style="font-size:0.88rem;opacity:0.9;">六大主题分类，全面了解小雨的 support profile</div>';
     html += '</div>';
 
-    // 六大主题档案卡片
+    // 六大主题档案卡片（含完整度摘要）
     var archiveThemes = [
-      { hash: 'life', icon: '❤️', title: '喜好档案', desc: '喜欢和不喜欢的事物、活动偏好', color: '#4A90D9', privacy: 'A' },
-      { hash: 'communication', icon: '💬', title: '沟通档案', desc: '沟通指南、有效话术、禁忌用语', color: '#722ED1', privacy: 'B' },
-      { hash: 'emotion', icon: '😰', title: '情绪档案', desc: '情绪触发因素、安抚策略、预警信号', color: '#F5222D', privacy: 'C' },
-      { hash: 'care', icon: '🏥', title: '照护档案', desc: '过敏、用药、作息、医疗提醒', color: '#52C41A', privacy: 'B' },
-      { hash: 'work', icon: '💼', title: '支持档案', desc: '工作能力、社交关系、支持网络', color: '#FAAD14', privacy: 'B' },
-      { hash: 'relations', icon: '👥', title: '关系档案', desc: '核心支持圈、日常接触、避免场景', color: '#13C2C2', privacy: 'B' }
+      { hash: 'life', icon: '❤️', title: '喜好档案', desc: '喜欢和不喜欢的事物、活动偏好', color: '#4A90D9', module: 'life' },
+      { hash: 'communication', icon: '💬', title: '沟通档案', desc: '沟通指南、有效话术、禁忌用语', color: '#722ED1', module: 'communication' },
+      { hash: 'emotion', icon: '😰', title: '情绪档案', desc: '情绪触发因素、安抚策略、预警信号', color: '#F5222D', module: 'emotion' },
+      { hash: 'care', icon: '🏥', title: '照护档案', desc: '过敏、用药、作息、医疗提醒', color: '#52C41A', module: 'care' },
+      { hash: 'work', icon: '💼', title: '支持档案', desc: '工作能力、社交关系、支持网络', color: '#FAAD14', module: 'work' },
+      { hash: 'relations', icon: '👥', title: '关系档案', desc: '核心支持圈、日常接触、避免场景', color: '#13C2C2', module: 'relations' }
     ];
 
     html += '<div class="card-grid">';
     archiveThemes.forEach(function (theme) {
-      html += '<div class="nav-card archive-card" data-navigate="' + theme.hash + '" data-privacy="' + theme.privacy + '">';
+      var recs = DataStore.getRecordsByModule(theme.module);
+      var count = recs.length;
+      var completeness = count >= 5 ? Math.min(100, Math.round(count / 8 * 100)) : (count === 0 ? 0 : Math.round(count / 5 * 60));
+
+      html += '<div class="nav-card archive-card" data-navigate="' + theme.hash + '">';
       html += '  <span class="card-icon" style="background:' + theme.color + '15;color:' + theme.color + ';">' + theme.icon + '</span>';
       html += '  <div class="card-title">' + theme.title + '</div>';
       html += '  <div class="card-desc">' + theme.desc + '</div>';
+      // 完整度条
+      html += '  <div style="display:flex;align-items:center;gap:6px;margin-top:8px;">';
+      html += '    <div style="flex:1;height:4px;background:#E8E8E8;border-radius:2px;overflow:hidden;">';
+      html += '      <div style="height:100%;width:' + completeness + '%;background:' + (completeness >= 60 ? '#52C41A' : completeness >= 30 ? '#FAAD14' : '#F5222D') + ';border-radius:2px;"></div>';
+      html += '    </div>';
+      html += '    <span style="font-size:0.7rem;color:#999;white-space:nowrap;">' + count + '条</span>';
+      html += '  </div>';
       html += '</div>';
     });
     html += '</div>';
@@ -2518,6 +2524,7 @@
     html += '    <button class="btn btn-outline" onclick="location.hash=\'timeline\'">📅 查看动态时间轴</button>';
     html += '    <button class="btn btn-outline" onclick="location.hash=\'charts\'">📊 数据可视化</button>';
     html += '    <button class="btn btn-outline" id="btn-archive-quickcard">📋 打开速读卡</button>';
+    html += '    <button class="btn btn-outline" onclick="location.hash=\'archive-status\'">📋 档案状态</button>';
     html += '  </div>';
     html += '</div>';
 
@@ -3740,7 +3747,7 @@
     window.Permissions.applyPrivacy(currentRole);
 
     // FAB 可见性：主题详情页 + 档案主题列表页隐藏
-    var fabHidePages = ['life', 'communication', 'emotion', 'care', 'work', 'relations', 'archive-topics'];
+    var fabHidePages = ['life', 'communication', 'emotion', 'care', 'work', 'relations'];
     var fab = document.getElementById('fab-container');
     if (fab) {
       fab.style.display = fabHidePages.indexOf(basePage) !== -1 ? 'none' : '';

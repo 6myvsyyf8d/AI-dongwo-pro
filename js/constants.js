@@ -378,12 +378,12 @@
   var PAGE_BACK_PARENT = {
     'archive-topics': 'archive',
     'archive-status': 'archive',
-    'life': 'archive-topics',
-    'communication': 'archive-topics',
-    'emotion': 'archive-topics',
-    'care': 'archive-topics',
-    'work': 'archive-topics',
-    'relations': 'archive-topics',
+    'life': 'archive',
+    'communication': 'archive',
+    'emotion': 'archive',
+    'care': 'archive',
+    'work': 'archive',
+    'relations': 'archive',
     'timeline': 'archive',
     'quickcard': 'archive',
     'records': 'archive'
