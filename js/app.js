@@ -518,7 +518,7 @@
       case 'records':
         window.RecordsPage.renderRecordsPage(queryParams.module || null);
         break;
-      case 'charts': window.ChartsPage.renderCharts(); break;
+      case 'charts': renderAnalytics(); break;
       case 'tasks': renderTasks(); break;
       case 'calendar': renderCalendar(); break;
       case 'archive': window.ProfilePage.renderProfile(); break;
@@ -2502,156 +2502,226 @@
    * 十、数据价值层 - 统计分析与数据导出
    * ========================================================== */
 
-  /**
-   * 数据统计分析工具函数
-   */
+  /* ==========================================================
+   * 十、分析模块 — 三Tab统一页（数据概览 / 日报 / 趋势）
+   * ========================================================== */
+
+  // 分析模块内部状态
+  var analyticsState = {
+    activeTab: 'overview',
+    trendSubTab: 'weekly',
+    dailyDate: null,
+    weeklyStart: null,
+    monthlyYM: null
+  };
+
+  function resetAnalyticsState() {
+    analyticsState.activeTab = 'overview';
+    analyticsState.trendSubTab = 'weekly';
+    analyticsState.dailyDate = null;
+    analyticsState.weeklyStart = null;
+    analyticsState.monthlyYM = null;
+  }
+
   function getAnalyticsData() {
     var records = DataStore.getRecords();
-    var now = new Date();
-    var thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-
-    // 近30天记录
     var recentRecords = records.filter(function (r) {
       return Utils.date.isRecent(r.date, 30);
     });
-
-    // 按类型统计
     var typeStats = Utils.array.countBy(recentRecords, 'type');
-
-    // 按角色统计
     var roleStats = Utils.array.countBy(recentRecords, 'authorRole');
-
-    // 情绪统计（兼容中英文值）
     var emotionStats = { happy: 0, calm: 0, anxious: 0, angry: 0, sad: 0, excited: 0 };
     var emotionMapping = {
-      'happy': 'happy', '开心': 'happy',
-      'calm': 'calm', '平静': 'calm',
-      'anxious': 'anxious', '焦虑': 'anxious',
-      'angry': 'angry', '生气': 'angry',
-      'sad': 'sad', '难过': 'sad',
-      'excited': 'excited', '兴奋': 'excited'
+      'happy': 'happy', '开心': 'happy', 'calm': 'calm', '平静': 'calm',
+      'anxious': 'anxious', '焦虑': 'anxious', 'angry': 'angry', '生气': 'angry',
+      'sad': 'sad', '难过': 'sad', 'excited': 'excited', '兴奋': 'excited'
     };
     recentRecords.forEach(function (r) {
       var mood = r.mood || r.emotion_type;
       var normalized = emotionMapping[mood];
-      if (normalized && emotionStats[normalized] !== undefined) {
-        emotionStats[normalized]++;
-      }
+      if (normalized && emotionStats[normalized] !== undefined) { emotionStats[normalized]++; }
     });
-
-    // 策略效果统计
-    var strategyRecords = records.filter(function (r) {
-      return r.type === 'strategy' && r.effectiveness;
-    });
-    var avgEffectiveness = 0;
-    if (strategyRecords.length > 0) {
-      avgEffectiveness = Utils.array.sumBy(strategyRecords, 'effectiveness') / strategyRecords.length;
-    }
-
+    var strategyRecords = records.filter(function (r) { return r.type === 'strategy' && r.effectiveness; });
+    var avgEffectiveness = strategyRecords.length > 0
+      ? (Utils.array.sumBy(strategyRecords, 'effectiveness') / strategyRecords.length) : 0;
     return {
-      totalRecords: records.length,
-      recentRecords: recentRecords.length,
-      typeStats: typeStats,
-      roleStats: roleStats,
-      emotionStats: emotionStats,
-      strategyRecords: strategyRecords.length,
-      avgEffectiveness: avgEffectiveness.toFixed(1),
+      totalRecords: records.length, recentRecords: recentRecords.length,
+      typeStats: typeStats, roleStats: roleStats, emotionStats: emotionStats,
+      strategyRecords: strategyRecords.length, avgEffectiveness: avgEffectiveness.toFixed(1),
       dataDate: new Date().toLocaleDateString('zh-CN')
     };
   }
 
-  /**
-   * 数据脱敏处理 —— 移除所有身份信息
-   */
   function anonymizeData(data) {
     var result = JSON.parse(JSON.stringify(data));
-
-    // 移除身份信息
     if (result.users) {
       result.users.forEach(function (u) {
-        u.name = '用户' + Math.floor(Math.random() * 1000);
-        u.avatar = '👤';
-        delete u.id;
-        delete u.pin;
+        u.name = '用户' + Math.floor(Math.random() * 1000); u.avatar = '👤'; delete u.id; delete u.pin;
       });
     }
-
-    // 移除记录中的身份信息
     if (result.records) {
-      result.records.forEach(function (r) {
-        r.author = '记录者';
-        delete r.authorId;
-        delete r.authorAvatar;
-        // 保留角色类型用于统计，但不暴露具体人员
-      });
+      result.records.forEach(function (r) { r.author = '记录者'; delete r.authorId; delete r.authorAvatar; });
     }
-
-    // 移除基本信息中的姓名
-    if (result.profile) {
-      result.profile.name = '匿名用户';
-    }
-
+    if (result.profile) { result.profile.name = '匿名用户'; }
     return result;
   }
 
-  /**
-   * 导出CSV
-   */
   function exportCSV(data, filename) {
     var records = data.records || [];
     var headers = ['日期', '时间', '类型', '标题', '内容', '作者角色', '心情', '策略效果'];
     var rows = [headers.join(',')];
-
     records.forEach(function (r) {
-      var row = [
-        r.date || '',
-        r.time || '',
+      rows.push([r.date || '', r.time || '',
         RECORD_TYPES[r.type] ? RECORD_TYPES[r.type].label : r.type,
-        r.title || '',
-        r.content ? r.content.replace(/,/g, '，') : '',
+        r.title || '', r.content ? r.content.replace(/,/g, '，') : '',
         ROLES[r.authorRole] ? ROLES[r.authorRole].label : r.authorRole,
-        r.mood || r.emotion_type || '',
-        r.effectiveness || ''
-      ];
-      rows.push(row.join(','));
+        r.mood || r.emotion_type || '', r.effectiveness || ''].join(','));
     });
-
     Utils.download(rows.join('\n'), filename + '.csv', 'text/csv');
   }
 
-  /**
-   * 导出JSON
-   */
   function exportJSON(data, filename, anonymize) {
-    var exportData = anonymize ? anonymizeData(data) : data;
-    Utils.download(JSON.stringify(exportData, null, 2), filename + '.json', 'application/json');
+    Utils.download(JSON.stringify(anonymize ? anonymizeData(data) : data, null, 2), filename + '.json', 'application/json');
   }
 
-  /**
-   * 渲染数据价值页面
-   */
+  /* -- 辅助函数 -- */
+  function esc(str) { return str ? String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;') : ''; }
+
+  function getSourceLabel(r) {
+    var labels = { parent: '家长', teacher: '老师', caregiver: '影子老师', youth: '心青年', temp_supporter: '临时支持者' };
+    return labels[r.authorRole] || r.authorRole || '未知';
+  }
+
+  function renderSourceBadge(type) {
+    return type === 'ai'
+      ? '<span class="a-source-badge ai">🔍 系统推测</span>'
+      : '<span class="a-source-badge">📋 客观记录</span>';
+  }
+
+  function renderTagCloudHTML(tags, maxShow) {
+    maxShow = maxShow || 10;
+    if (!tags || tags.length === 0) return '<div class="a-empty">暂无标签数据</div>';
+    var html = '';
+    tags.slice(0, maxShow).forEach(function (t) {
+      var cls = (t.tag === '焦虑' || t.tag === '预警' || t.tag === '触发') ? 'a-tag stress' : 'a-tag';
+      html += '<span class="' + cls + '">' + esc(t.tag) + '<span class="a-tag-count">' + t.count + '</span></span>';
+    });
+    return html;
+  }
+
+  function trendBadgeHTML(direction) {
+    if (direction === 'up' || direction === 'up_new') return '<span class="a-trend up">📈 上升</span>';
+    if (direction === 'down') return '<span class="a-trend down">📉 下降</span>';
+    return '<span class="a-trend stable">➡️ 平稳</span>';
+  }
+
+  function renderInsightCard(icon, headline, detail) {
+    return '<div class="a-insight-card"><span class="a-insight-icon">' + icon + '</span>' +
+      '<div class="a-insight-content"><div class="a-insight-headline">' + headline + '</div>' +
+      '<div class="a-insight-detail">' + detail + '</div></div></div>';
+  }
+
+  function renderAICard(summaryLines) {
+    if (!summaryLines) return '';
+    var lines = Array.isArray(summaryLines) ? summaryLines : summaryLines.split('\n');
+    return '<div class="a-ai-card"><div class="a-ai-header">' +
+      '<span class="a-ai-icon">🔍</span><span class="a-ai-title">AI 观察线索</span>' +
+      '<span class="a-ai-badge">系统推测，仅供参考</span></div>' +
+      '<div class="a-ai-body">' + lines.map(function (l) { return '<p>' + esc(l) + '</p>'; }).join('') +
+      '</div><div class="a-ai-footer">' +
+      '<span class="a-ai-disclaimer">此内容由 AI 基于记录自动生成，不替代专业判断。</span></div></div>';
+  }
+
+  function renderDrillDown(records, filterLabel) {
+    var container = document.getElementById('analytics-drilldown');
+    if (!container) return;
+    var html = '';
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">';
+    html += '<h3 style="margin:0;font-size:1.05rem;">📋 ' + (filterLabel || '相关记录') + '（' + records.length + '条）</h3>';
+    html += '<button class="btn btn-ghost" style="padding:6px 14px;font-size:0.85rem;" id="drilldown-back-btn">← 返回分析</button></div>';
+    if (records.length === 0) {
+      html += '<div class="empty-state"><div class="empty-icon">📭</div><div class="empty-text">暂无相关记录</div></div>';
+    } else {
+      records.sort(function (a, b) { return (b.date + (b.time || '')).localeCompare(a.date + (a.time || '')); });
+      records.forEach(function (r) {
+        var rt = RECORD_TYPES[r.type] || { label: r.type, color: '#4A90D9', icon: '📝' };
+        html += '<div class="drilldown-item">';
+        html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">';
+        html += '<div style="display:flex;align-items:center;gap:8px;"><span style="font-size:1.1rem;">' + rt.icon + '</span>';
+        html += '<span style="font-weight:600;font-size:0.92rem;">' + esc(r.title || rt.label) + '</span></div>';
+        html += '<span style="font-size:0.78rem;color:#999;white-space:nowrap;">' + esc(r.date) + ' ' + esc(r.time || '') + '</span></div>';
+        html += '<div style="font-size:0.88rem;color:#555;line-height:1.5;margin-bottom:6px;">' + esc(r.content || '') + '</div>';
+        if (r.mood) html += '<span style="font-size:0.82rem;color:#52C41A;">😊 ' + esc(r.mood) + '</span> ';
+        if (r.emotion_type) html += '<span style="font-size:0.82rem;color:#F5222D;">⚡ ' + esc(r.emotion_type) + '</span> ';
+        html += '<div style="font-size:0.78rem;color:#bbb;margin-top:6px;">👤 ' + esc(r.author || '') + ' · ' + getSourceLabel(r) + '</div></div>';
+      });
+    }
+    container.innerHTML = html;
+    container.style.display = 'block';
+    setTimeout(function () {
+      var backBtn = document.getElementById('drilldown-back-btn');
+      if (backBtn) backBtn.addEventListener('click', function () {
+        container.style.display = 'none';
+        var activePanel = document.getElementById('panel-' + analyticsState.activeTab);
+        if (activePanel) activePanel.style.display = 'block';
+      });
+    }, 50);
+  }
+
+  function bindAnalyticsTabs() {
+    var tabs = document.querySelectorAll('#analytics-tabs .a-tab');
+    tabs.forEach(function (tab) {
+      tab.addEventListener('click', function () {
+        var name = this.dataset.tab;
+        if (analyticsState.activeTab === name) return;
+        analyticsState.activeTab = name;
+        tabs.forEach(function (t) { t.classList.remove('active'); });
+        this.classList.add('active');
+        var panels = document.querySelectorAll('#analytics-content .a-panel');
+        panels.forEach(function (p) { p.style.display = 'none'; });
+        var active = document.getElementById('panel-' + name);
+        if (active) active.style.display = 'block';
+        var dd = document.getElementById('analytics-drilldown');
+        if (dd) dd.style.display = 'none';
+        if (name === 'daily') renderDailyPanel();
+        else if (name === 'trend') renderTrendPanel();
+      });
+    });
+  }
+
   function renderAnalytics() {
     var contentArea = Utils.dom.get('analytics-content');
     if (!contentArea) return;
-
-    var stats = getAnalyticsData();
+    resetAnalyticsState();
     var html = '';
+    html += '<div class="a-tabs" id="analytics-tabs">';
+    html += '<button class="a-tab active" data-tab="overview">📊 数据概览</button>';
+    html += '<button class="a-tab" data-tab="daily">📋 日报</button>';
+    html += '<button class="a-tab" data-tab="trend">📈 趋势</button></div>';
+    html += '<div id="panel-overview" class="a-panel"></div>';
+    html += '<div id="panel-daily" class="a-panel" style="display:none;"></div>';
+    html += '<div id="panel-trend" class="a-panel" style="display:none;"></div>';
+    html += '<div id="analytics-drilldown" style="display:none;"></div>';
+    Utils.dom.html(contentArea, html);
+    renderOverviewPanel();
+    bindAnalyticsTabs();
+  }
 
-    html += '<div class="analytics-hero">';
-    html += '  <div class="analytics-hero-title">📊 数据价值中心</div>';
-    html += '  <div class="analytics-hero-desc">基于记录数据生成统计分析，支持导出用于科研和政策参考</div>';
+  function renderOverviewPanel() {
+    var panel = document.getElementById('panel-overview');
+    if (!panel) return;
+    var stats = getAnalyticsData();
+    var records = DataStore.getRecords();
+    var html = '';
+    html += '<div class="a-metrics">';
+    html += '<div class="a-metric"><div class="a-metric-value">' + stats.totalRecords + '</div><div class="a-metric-label">总记录数</div></div>';
+    html += '<div class="a-metric"><div class="a-metric-value" style="color:#52C41A;">' + stats.recentRecords + '</div><div class="a-metric-label">近30天</div></div>';
+    html += '<div class="a-metric"><div class="a-metric-value" style="color:#EB2F96;">' + stats.strategyRecords + '</div><div class="a-metric-label">策略记录</div></div>';
+    html += '<div class="a-metric"><div class="a-metric-value" style="color:#FAAD14;">' + stats.avgEffectiveness + '</div><div class="a-metric-label">平均效果/5</div></div>';
     html += '</div>';
 
-    html += '<div class="stats-grid">';
-    html += '  <div class="stat-card"><div class="stat-icon">📝</div><div class="stat-value">' + stats.totalRecords + '</div><div class="stat-label">总记录数</div></div>';
-    html += '  <div class="stat-card"><div class="stat-icon">📅</div><div class="stat-value" style="color:#52C41A;">' + stats.recentRecords + '</div><div class="stat-label">近30天记录</div></div>';
-    html += '  <div class="stat-card"><div class="stat-icon">🧩</div><div class="stat-value" style="color:#EB2F96;">' + stats.strategyRecords + '</div><div class="stat-label">策略记录数</div></div>';
-    html += '  <div class="stat-card"><div class="stat-icon">⭐</div><div class="stat-value" style="color:#FAAD14;">' + stats.avgEffectiveness + '/5</div><div class="stat-label">平均策略效果</div></div>';
-    html += '</div>';
-
-    html += '<h2 class="section-title">😰 情绪分布（近30天）</h2>';
-    html += '<div class="card">';
-    var emotionOptions = [
+    html += '<div class="a-section"><div class="a-section-head"><h2 class="a-section-title">😰 情绪分布（近30天）</h2>' + renderSourceBadge('data') + '</div>';
+    var emotions = [
       { key: 'happy', label: '开心', emoji: '😄', color: '#52C41A' },
       { key: 'calm', label: '平静', emoji: '😌', color: '#1890FF' },
       { key: 'anxious', label: '焦虑', emoji: '😰', color: '#FAAD14' },
@@ -2659,120 +2729,361 @@
       { key: 'sad', label: '难过', emoji: '😢', color: '#722ED1' },
       { key: 'excited', label: '兴奋', emoji: '🤩', color: '#EB2F96' }
     ];
-    var totalEmotions = emotionOptions.reduce(function (sum, e) {
-      return sum + (stats.emotionStats[e.key] || 0);
-    }, 0);
-    emotionOptions.forEach(function (e) {
-      var count = stats.emotionStats[e.key] || 0;
-      var percent = totalEmotions > 0 ? Math.round((count / totalEmotions) * 100) : 0;
-      html += '<div style="margin-bottom:12px;">';
-      html += '  <div class="flex justify-between" style="margin-bottom:4px;">';
-      html += '    <span style="display:flex;align-items:center;gap:6px;">';
-      html += '      <span>' + e.emoji + '</span><span style="font-size:0.88rem;color:#555;">' + e.label + '</span>';
-      html += '    </span>';
-      html += '    <span style="font-size:0.88rem;color:#888;">' + count + '次 (' + percent + '%)</span>';
-      html += '  </div>';
-      html += '  <div class="progress-bar-container"><div class="progress-bar" style="width:' + percent + '%;background:' + e.color + ';"></div></div>';
-      html += '</div>';
+    var totalE = emotions.reduce(function (s, e) { return s + (stats.emotionStats[e.key] || 0); }, 0);
+    emotions.forEach(function (e) {
+      var c = stats.emotionStats[e.key] || 0;
+      var p = totalE > 0 ? Math.round((c / totalE) * 100) : 0;
+      html += '<div style="margin-bottom:10px;">';
+      html += '<div class="flex justify-between" style="margin-bottom:3px;">';
+      html += '<span style="display:flex;align-items:center;gap:6px;"><span>' + e.emoji + '</span><span style="font-size:0.85rem;">' + e.label + '</span></span>';
+      html += '<span style="font-size:0.82rem;color:#888;">' + c + '次 (' + p + '%)</span></div>';
+      html += '<div class="progress-bar-container"><div class="progress-bar" style="width:' + p + '%;background:' + e.color + ';"></div></div></div>';
     });
     html += '</div>';
 
-    html += '<h2 class="section-title">📋 记录类型分布（近30天）</h2>';
-    html += '<div class="card">';
+    html += '<div class="a-section"><div class="a-section-head"><h2 class="a-section-title">📋 记录类型分布</h2>' + renderSourceBadge('data') + '</div>';
     var typeKeys = Object.keys(stats.typeStats);
-    var totalTypes = typeKeys.reduce(function (sum, k) {
-      return sum + stats.typeStats[k];
-    }, 0);
-    typeKeys.forEach(function (typeKey) {
-      var typeInfo = RECORD_TYPES[typeKey] || { label: typeKey, color: '#999' };
-      var count = stats.typeStats[typeKey];
-      var percent = totalTypes > 0 ? Math.round((count / totalTypes) * 100) : 0;
-      html += '<div style="margin-bottom:10px;">';
-      html += '  <div class="flex justify-between" style="margin-bottom:3px;">';
-      html += '    <span style="display:flex;align-items:center;gap:6px;">';
-      html += '      <span>' + typeInfo.icon + '</span><span style="font-size:0.88rem;color:#555;">' + typeInfo.label + '</span>';
-      html += '    </span>';
-      html += '    <span style="font-size:0.88rem;color:#888;">' + count + '次 (' + percent + '%)</span>';
-      html += '  </div>';
-      html += '  <div class="progress-bar-container" style="height:6px;"><div class="progress-bar progress-bar-sm" style="width:' + percent + '%;background:' + typeInfo.color + ';"></div></div>';
-      html += '</div>';
+    var totalT = typeKeys.reduce(function (s, k) { return s + stats.typeStats[k]; }, 0);
+    typeKeys.forEach(function (k) {
+      var info = RECORD_TYPES[k] || { label: k, color: '#999', icon: '📝' };
+      var c = stats.typeStats[k];
+      var p = totalT > 0 ? Math.round((c / totalT) * 100) : 0;
+      html += '<div style="margin-bottom:8px;">';
+      html += '<div class="flex justify-between" style="margin-bottom:2px;">';
+      html += '<span style="display:flex;align-items:center;gap:6px;"><span>' + info.icon + '</span><span style="font-size:0.85rem;">' + info.label + '</span></span>';
+      html += '<span style="font-size:0.82rem;color:#888;">' + c + '次 (' + p + '%)</span></div>';
+      html += '<div class="progress-bar-container" style="height:5px;"><div class="progress-bar" style="width:' + p + '%;background:' + info.color + ';"></div></div></div>';
     });
-    if (typeKeys.length === 0) {
-      html += '<div style="text-align:center;color:#999;padding:16px;">暂无记录数据</div>';
+    if (typeKeys.length === 0) html += '<div class="a-empty">暂无记录数据</div>';
+    html += '</div>';
+
+    html += '<div class="a-section"><div class="a-section-head"><h2 class="a-section-title">📈 心情趋势（近30天）</h2>' + renderSourceBadge('data') + '</div>';
+    var moodMap = { 'happy': 5, 'excited': 5, 'calm': 4, 'anxious': 2, 'sad': 1, 'angry': 1 };
+    var moodRecs = records.filter(function (r) { return r.type === 'mood' && r.mood; });
+    if (moodRecs.length >= 2) {
+      var buckets = {};
+      moodRecs.forEach(function (r) {
+        if (!buckets[r.date]) buckets[r.date] = [];
+        buckets[r.date].push(moodMap[r.mood] || 3);
+      });
+      var dates = Object.keys(buckets).sort().slice(-14);
+      html += '<div class="a-chart-bars">';
+      dates.forEach(function (d) {
+        var vals = buckets[d], avg = Math.round(vals.reduce(function (a, b) { return a + b; }, 0) / vals.length);
+        var colors = ['', '#F5222D', '#FAAD14', '#1890FF', '#52C41A', '#52C41A'];
+        html += '<div class="a-bar-col"><div class="a-bar" style="height:' + (avg / 5 * 100) + '%;background:' + (colors[avg] || '#1890FF') + ';"></div>';
+        html += '<div class="a-bar-label">' + d.slice(5) + '</div></div>';
+      });
+      html += '</div><div class="a-chart-hint">柱高表示当日心情均值（1-5）</div>';
+    } else { html += '<div class="a-empty">心情记录不足（需要至少2条）</div>'; }
+    html += '</div>';
+
+    html += '<div class="a-section"><div class="a-section-head"><h2 class="a-section-title">📊 记录类型统计</h2>' + renderSourceBadge('data') + '</div>';
+    if (typeKeys.length > 0) {
+      var maxC = typeKeys.reduce(function (m, k) { return Math.max(m, stats.typeStats[k]); }, 0);
+      html += '<div class="a-chart-bars">';
+      typeKeys.forEach(function (k) {
+        var info = RECORD_TYPES[k] || { label: k, color: '#4A90D9' };
+        html += '<div class="a-bar-col"><div class="a-bar" style="height:' + (maxC > 0 ? (stats.typeStats[k] / maxC * 100) : 0) + '%;background:' + info.color + ';"></div>';
+        html += '<div class="a-bar-label">' + info.label + '</div><div class="a-bar-count">' + stats.typeStats[k] + '</div></div>';
+      });
+      html += '</div>';
     }
     html += '</div>';
 
-    html += '<h2 class="section-title">👥 角色贡献分布（近30天）</h2>';
-    html += '<div class="card">';
-    var roleKeys = Object.keys(stats.roleStats);
-    var totalRoles = roleKeys.reduce(function (sum, k) {
-      return sum + stats.roleStats[k];
-    }, 0);
-    roleKeys.forEach(function (roleKey) {
-      var roleInfo = ROLES[roleKey] || { label: roleKey, color: '#999' };
-      var count = stats.roleStats[roleKey];
-      var percent = totalRoles > 0 ? Math.round((count / totalRoles) * 100) : 0;
-      html += '<div style="margin-bottom:10px;">';
-      html += '  <div class="flex justify-between" style="margin-bottom:3px;">';
-      html += '    <span style="display:flex;align-items:center;gap:6px;">';
-      html += '      <span>' + roleInfo.avatar + '</span><span style="font-size:0.88rem;color:#555;">' + roleInfo.label + '</span>';
-      html += '    </span>';
-      html += '    <span style="font-size:0.88rem;color:#888;">' + count + '次 (' + percent + '%)</span>';
-      html += '  </div>';
-      html += '  <div class="progress-bar-container" style="height:6px;"><div class="progress-bar progress-bar-sm" style="width:' + percent + '%;background:' + roleInfo.color + ';"></div></div>';
-      html += '</div>';
-    });
-    if (roleKeys.length === 0) {
-      html += '<div style="text-align:center;color:#999;padding:16px;">暂无记录数据</div>';
-    }
-    html += '</div>';
+    html += '<div class="a-section"><div class="a-section-head"><h2 class="a-section-title">📥 数据导出</h2></div>';
+    html += '<div style="font-size:0.85rem;color:#888;margin-bottom:12px;">支持导出原始数据或脱敏数据。</div>';
+    html += '<div class="export-buttons">';
+    html += '<button id="btn-export-csv" class="export-btn export-btn-primary">📄 CSV（原始）</button>';
+    html += '<button id="btn-export-json" class="export-btn export-btn-success">📊 JSON（原始）</button>';
+    html += '<button id="btn-export-anon-csv" class="export-btn export-btn-warning">🔒 CSV（脱敏）</button>';
+    html += '<button id="btn-export-anon-json" class="export-btn export-btn-danger">🔑 JSON（脱敏）</button>';
+    html += '</div></div>';
 
-    html += '<h2 class="section-title">📥 数据导出</h2>';
-    html += '<div class="card">';
-    html += '  <div style="font-size:0.88rem;color:#888;margin-bottom:16px;">';
-    html += '    支持导出原始数据（含身份信息）或脱敏数据（适合科研共享）。脱敏数据将自动移除所有个人身份信息，仅保留统计分析所需的结构化数据。';
-    html += '  </div>';
-    html += '  <div class="export-buttons">';
-    html += '    <button id="btn-export-csv" class="export-btn export-btn-primary"><span>📄</span>导出CSV（原始）</button>';
-    html += '    <button id="btn-export-json" class="export-btn export-btn-success"><span>📊</span>导出JSON（原始）</button>';
-    html += '    <button id="btn-export-anon-csv" class="export-btn export-btn-warning"><span>🔒</span>导出CSV（脱敏）</button>';
-    html += '    <button id="btn-export-anon-json" class="export-btn export-btn-danger"><span>🔑</span>导出JSON（脱敏）</button>';
-    html += '  </div>';
-    html += '</div>';
+    html += '<div class="info-box"><div class="info-box-title">💡 数据价值说明</div><ul>';
+    html += '<li><strong>个体层面：</strong>了解心青年的情绪模式和照护效果</li>';
+    html += '<li><strong>机构层面：</strong>汇总群体数据，分析特征和干预效果</li>';
+    html += '<li><strong>政策层面：</strong>脱敏数据可用于科研和政策参考</li></ul></div>';
 
-    html += '<div class="info-box">';
-    html += '  <div class="info-box-title">💡 数据价值说明</div>';
-    html += '  <ul>';
-    html += '    <li><strong>个体层面：</strong>通过统计分析了解心青年的情绪模式和照护效果，优化照护策略</li>';
-    html += '    <li><strong>机构层面：</strong>汇总多个心青年的数据，分析群体特征和干预效果</li>';
-    html += '    <li><strong>政策层面：</strong>脱敏数据可用于科研和政策制定，为孤独症群体争取更多支持</li>';
-    html += '    <li><strong>隐私保护：</strong>脱敏导出功能确保个人身份信息不被泄露</li>';
-    html += '  </ul>';
-    html += '</div>';
-
-    Utils.dom.html(contentArea, html);
+    panel.innerHTML = html;
 
     var baseData = DataStore.getAllData();
+    var btns = [
+      ['btn-export-csv', function () { exportCSV(baseData, 'ai-dongwo-data'); showToast('✅ CSV导出成功！'); }],
+      ['btn-export-json', function () { exportJSON(baseData, 'ai-dongwo-data', false); showToast('✅ JSON导出成功！'); }],
+      ['btn-export-anon-csv', function () { exportCSV(anonymizeData(baseData), 'ai-dongwo-data-anon'); showToast('✅ 脱敏CSV导出成功！'); }],
+      ['btn-export-anon-json', function () { exportJSON(baseData, 'ai-dongwo-data-anon', true); showToast('✅ 脱敏JSON导出成功！'); }]
+    ];
+    btns.forEach(function (b) { var el = document.getElementById(b[0]); if (el) el.addEventListener('click', b[1]); });
+  }
 
-    Utils.dom.on(Utils.dom.get('btn-export-csv'), 'click', function () {
-      exportCSV(baseData, 'ai-dongwo-data');
-      showToast('✅ CSV导出成功！');
+  function renderDailyPanel() {
+    var panel = document.getElementById('panel-daily');
+    if (!panel) return;
+    var AE = window.AnalyticsEngine;
+    var report = AE ? AE.getDailyReport(analyticsState.dailyDate) : null;
+    if (!report) { panel.innerHTML = '<div class="a-empty">暂无数据</div>'; return; }
+    var s = report.statistics || {};
+    var html = '';
+    html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">';
+    html += '<button id="daily-prev" class="btn btn-ghost" style="padding:6px 12px;font-size:0.85rem;">◀ 前一天</button>';
+    html += '<span style="font-weight:600;font-size:1rem;">' + (report.displayDate || report.date) + '</span>';
+    html += '<button id="daily-next" class="btn btn-ghost" style="padding:6px 12px;font-size:0.85rem;">后一天 ▶</button></div>';
+
+    var icon = '📋', headline = '', detail = '';
+    if (s.totalRecords === 0) {
+      icon = '📭'; headline = '今日暂无记录'; detail = '建议各角色及时记录日常情况。';
+    } else if (s.needsAttentionCount > 0) {
+      icon = '🔔'; headline = '有 ' + s.needsAttentionCount + ' 条记录需要关注';
+      detail = '共 ' + s.totalRecords + ' 条记录，' + s.expressionCount + ' 次积极表现。';
+    } else {
+      icon = s.expressionCount > s.totalRecords * 0.4 ? '🌟' : '📋';
+      headline = '今日记录了 ' + s.totalRecords + ' 条信息';
+      detail = '整体状态平稳。';
+    }
+    html += renderInsightCard(icon, headline, detail);
+
+    html += '<div class="a-metrics">';
+    html += '<div class="a-metric"><div class="a-metric-value">' + (s.totalRecords || 0) + '</div><div class="a-metric-label">今日记录</div></div>';
+    html += '<div class="a-metric"><div class="a-metric-value" style="color:#52C41A;">' + (s.expressionCount || 0) + '</div><div class="a-metric-label">积极表现</div></div>';
+    html += '<div class="a-metric"><div class="a-metric-value" style="color:#F5222D;">' + (s.needsAttentionCount || 0) + '</div><div class="a-metric-label">需要关注</div></div>';
+    html += '</div>';
+
+    if (report.topTags && report.topTags.length > 0) {
+      html += '<div class="a-section"><div class="a-section-head"><h2 class="a-section-title">高频标签</h2>' + renderSourceBadge('data') + '</div>';
+      html += '<div class="a-tag-cloud">' + renderTagCloudHTML(report.topTags, 8) + '</div></div>';
+    }
+
+    html += '<div class="a-section"><div class="a-section-head"><h2 class="a-section-title">今天发生了什么</h2>' + renderSourceBadge('data') + '</div>';
+    var timeline = report.timeline || [];
+    if (timeline.length === 0) {
+      html += '<div class="a-empty">今日暂无记录</div>';
+    } else {
+      html += '<div class="a-timeline">';
+      timeline.forEach(function (r) {
+        html += '<div class="a-timeline-item"><div class="a-timeline-dot"></div>';
+        html += '<div class="a-timeline-time">' + esc(r.time || '') + '</div>';
+        html += '<div class="a-timeline-title">' + esc(r.title || r.content || '') + '</div>';
+        html += '<div class="a-timeline-desc">' + esc(r.content || '') + '</div>';
+        html += '<div class="a-timeline-meta"><span class="a-timeline-author">' + esc(r.author || '') + '</span>';
+        html += '<span class="a-source-tag">' + getSourceLabel(r) + '</span></div></div>';
+      });
+      html += '</div>';
+      html += '<button id="daily-drilldown-btn" class="btn btn-outline" style="margin-top:10px;font-size:0.85rem;">📋 查看全部记录 →</button>';
+    }
+    html += '</div>';
+    if (report.summary) html += renderAICard(report.summary);
+    panel.innerHTML = html;
+
+    var prev = document.getElementById('daily-prev'), next = document.getElementById('daily-next');
+    if (prev) prev.addEventListener('click', function () {
+      var p = report.date.split('-');
+      var d = new Date(parseInt(p[0]), parseInt(p[1]) - 1, parseInt(p[2]));
+      d.setDate(d.getDate() - 1);
+      analyticsState.dailyDate = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+      renderDailyPanel();
+    });
+    if (next) next.addEventListener('click', function () {
+      var p = report.date.split('-');
+      var d = new Date(parseInt(p[0]), parseInt(p[1]) - 1, parseInt(p[2]));
+      d.setDate(d.getDate() + 1);
+      if (d > new Date()) return;
+      analyticsState.dailyDate = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+      renderDailyPanel();
     });
 
-    Utils.dom.on(Utils.dom.get('btn-export-json'), 'click', function () {
-      exportJSON(baseData, 'ai-dongwo-data', false);
-      showToast('✅ JSON导出成功！');
+    var ddBtn = document.getElementById('daily-drilldown-btn');
+    if (ddBtn) ddBtn.addEventListener('click', function () {
+      panel.style.display = 'none';
+      renderDrillDown(timeline, report.displayDate + ' 记录');
     });
+  }
 
-    Utils.dom.on(Utils.dom.get('btn-export-anon-csv'), 'click', function () {
-      var anonData = anonymizeData(baseData);
-      exportCSV(anonData, 'ai-dongwo-data-anon');
-      showToast('✅ 脱敏CSV导出成功！');
+  function renderTrendPanel() {
+    var panel = document.getElementById('panel-trend');
+    if (!panel) return;
+    var isWeekly = analyticsState.trendSubTab === 'weekly';
+    var html = '';
+    html += '<div class="a-subtabs">';
+    html += '<button class="a-subtab ' + (isWeekly ? 'active' : '') + '" data-subtab="weekly">📊 周报</button>';
+    html += '<button class="a-subtab ' + (!isWeekly ? 'active' : '') + '" data-subtab="monthly">📈 月报</button></div>';
+    html += '<div id="trend-sub-content"></div>';
+    panel.innerHTML = html;
+    panel.querySelectorAll('.a-subtab').forEach(function (btn) {
+      btn.addEventListener('click', function () { analyticsState.trendSubTab = this.dataset.subtab; renderTrendPanel(); });
     });
+    if (isWeekly) renderWeeklyContent(); else renderMonthlyContent();
+  }
 
-    Utils.dom.on(Utils.dom.get('btn-export-anon-json'), 'click', function () {
-      exportJSON(baseData, 'ai-dongwo-data-anon', true);
-      showToast('✅ 脱敏JSON导出成功！');
+  function renderWeeklyContent() {
+    var c = document.getElementById('trend-sub-content');
+    if (!c) return;
+    var AE = window.AnalyticsEngine;
+    var r = AE ? AE.getWeeklyReport(analyticsState.weeklyStart) : null;
+    if (!r) { c.innerHTML = '<div class="a-empty">暂无数据</div>'; return; }
+    var s = r.statistics || {}, h = '';
+    h += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">';
+    h += '<button id="weekly-prev" class="btn btn-ghost" style="padding:6px 12px;font-size:0.85rem;">◀ 上一周</button>';
+    h += '<span style="font-weight:600;font-size:0.95rem;">' + r.weekStart + ' ~ ' + r.weekEnd + '</span>';
+    h += '<button id="weekly-next" class="btn btn-ghost" style="padding:6px 12px;font-size:0.85rem;">下一周 ▶</button></div>';
+    h += '<div class="a-metrics">';
+    h += '<div class="a-metric"><div class="a-metric-value">' + (s.totalRecords || 0) + '</div><div class="a-metric-label">有效记录</div><div class="a-metric-sub">日均 ' + (s.avgDailyRecords || 0) + '</div></div>';
+    h += '<div class="a-metric"><div class="a-metric-value" style="color:#52C41A;">' + (s.positiveCount || 0) + '</div><div class="a-metric-label">积极表现</div></div>';
+    h += '<div class="a-metric"><div class="a-metric-value" style="color:#F5222D;">' + (s.needsAttentionCount || 0) + '</div><div class="a-metric-label">需要关注</div></div></div>';
+    h += '<div class="a-section"><div class="a-section-head"><h2 class="a-section-title">本周记录趋势</h2>' + renderSourceBadge('data') + '</div>';
+    var maxC = Math.max.apply(null, r.dailyCounts.concat([1]));
+    var days = ['一', '二', '三', '四', '五', '六', '日'];
+    h += '<div class="a-chart-bars">';
+    r.dailyCounts.forEach(function (v, i) {
+      h += '<div class="a-bar-col"><div class="a-bar' + (v === maxC && v > 0 ? ' peak' : '') + '" style="height:' + (v / maxC * 100) + '%;"></div>';
+      h += '<div class="a-bar-label">' + days[i] + '</div><div class="a-bar-count">' + v + '</div></div>';
+    });
+    h += '</div></div>';
+
+    if (r.emotionTrend && r.emotionTrend.length > 0) {
+      h += '<div class="a-section"><div class="a-section-head"><h2 class="a-section-title">情绪趋势</h2>' + renderSourceBadge('data') + '</div>';
+      h += '<div class="a-chart-bars">';
+      r.emotionTrend.forEach(function (et) {
+        var colors = ['', '#F5222D', '#FAAD14', '#1890FF', '#52C41A', '#52C41A'];
+        h += '<div class="a-bar-col"><div class="a-bar" style="height:' + (et.score ? et.score / 5 * 100 : 0) + '%;background:' + (et.score ? (colors[Math.round(et.score)] || '#1890FF') : '#ccc') + ';"></div>';
+        h += '<div class="a-bar-label">' + (et.displayDate || '').slice(5) + '</div><div class="a-bar-count">' + (et.score || '-') + '</div></div>';
+      });
+      h += '</div></div>';
+    }
+
+    var pd = r.patternDetection;
+    if (pd) {
+      h += '<div class="a-section"><div class="a-section-head"><h2 class="a-section-title">值得关注的变化</h2>' + renderSourceBadge('ai') + '</div>';
+      h += '<div class="a-patterns">';
+      if (pd.stressPatterns && pd.stressPatterns.length) {
+        h += '<div class="a-pattern">⚠️ 常见压力情境：' + pd.stressPatterns.map(function (p) { return p.tag + '(' + p.count + '次)'; }).join('、') + '</div>';
+      }
+      if (pd.effectiveStrategies && pd.effectiveStrategies.length) {
+        h += '<div class="a-pattern">✅ 有效方法：' + pd.effectiveStrategies.map(function (p) { return p.title || p.tag; }).join('、') + '</div>';
+      }
+      if (pd.newAbilities && pd.newAbilities.length) {
+        h += '<div class="a-pattern">🌟 新能力：' + pd.newAbilities.map(function (p) { return p.tag; }).join('、') + '</div>';
+      }
+      if ((!pd.stressPatterns || !pd.stressPatterns.length) && (!pd.effectiveStrategies || !pd.effectiveStrategies.length) && (!pd.newAbilities || !pd.newAbilities.length)) {
+        h += '<div class="a-pattern">本周暂无显著模式发现</div>';
+      }
+      h += '</div></div>';
+    }
+
+    if (r.topContributors && r.topContributors.length) {
+      h += '<div class="a-section"><div class="a-section-head"><h2 class="a-section-title">活跃贡献者</h2>' + renderSourceBadge('data') + '</div>';
+      h += '<div class="a-tag-cloud">';
+      r.topContributors.forEach(function (ct) { h += '<span class="a-tag">' + esc(ct.name || ct.author) + '<span class="a-tag-count">' + ct.count + '</span></span>'; });
+      h += '</div></div>';
+    }
+
+    if (r.summary) h += renderAICard(r.summary);
+    h += '<button id="weekly-drilldown-btn" class="btn btn-outline" style="margin-top:10px;font-size:0.85rem;width:100%;">📋 查看本周全部记录 →</button>';
+    c.innerHTML = h;
+
+    var prev = document.getElementById('weekly-prev'), next = document.getElementById('weekly-next');
+    if (prev) prev.addEventListener('click', function () {
+      var p = r.weekStart.split('-');
+      var d = new Date(parseInt(p[0]), parseInt(p[1]) - 1, parseInt(p[2]));
+      d.setDate(d.getDate() - 7);
+      analyticsState.weeklyStart = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+      renderWeeklyContent();
+    });
+    if (next) next.addEventListener('click', function () {
+      var p = r.weekStart.split('-');
+      var d = new Date(parseInt(p[0]), parseInt(p[1]) - 1, parseInt(p[2]));
+      d.setDate(d.getDate() + 7);
+      if (d > new Date()) return;
+      analyticsState.weeklyStart = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+      renderWeeklyContent();
+    });
+    var ddBtn = document.getElementById('weekly-drilldown-btn');
+    if (ddBtn) ddBtn.addEventListener('click', function () {
+      var trendPanel = document.getElementById('panel-trend');
+      if (trendPanel) trendPanel.style.display = 'none';
+      renderDrillDown(DataStore.getRecords().filter(function (rec) { return rec.date >= r.weekStart && rec.date <= r.weekEnd; }), r.weekStart + ' ~ ' + r.weekEnd);
+    });
+  }
+
+  function renderMonthlyContent() {
+    var c = document.getElementById('trend-sub-content');
+    if (!c) return;
+    var AE = window.AnalyticsEngine;
+    var r = AE ? AE.getMonthlyReport(analyticsState.monthlyYM) : null;
+    if (!r) { c.innerHTML = '<div class="a-empty">暂无数据</div>'; return; }
+    var s = r.statistics || {}, h = '';
+    h += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">';
+    h += '<button id="monthly-prev" class="btn btn-ghost" style="padding:6px 12px;font-size:0.85rem;">◀ 上月</button>';
+    h += '<span style="font-weight:600;font-size:0.95rem;">' + r.yearMonth + '</span>';
+    h += '<button id="monthly-next" class="btn btn-ghost" style="padding:6px 12px;font-size:0.85rem;">下月 ▶</button></div>';
+    h += '<div class="a-metrics">';
+    h += '<div class="a-metric"><div class="a-metric-value">' + (s.totalRecords || 0) + '</div><div class="a-metric-label">有效记录</div><div class="a-metric-sub">日均 ' + (s.avgDailyRecords || 0) + '</div></div>';
+    h += '<div class="a-metric"><div class="a-metric-value" style="color:#52C41A;">' + (s.positiveCount || 0) + '</div><div class="a-metric-label">积极表现</div></div>';
+    h += '<div class="a-metric"><div class="a-metric-value" style="color:#EB2F96;">' + (s.expressionCount || 0) + '</div><div class="a-metric-label">主动表达</div></div></div>';
+
+    var mc = r.monthComparison;
+    if (mc && mc.totalRecords) {
+      h += '<div class="a-section"><div class="a-section-head"><h2 class="a-section-title">与上月对比</h2>' + renderSourceBadge('data') + '</div>';
+      h += '<div class="a-compare-grid">';
+      [
+        { label: '总记录', curr: mc.totalRecords.current, prev: mc.totalRecords.previous, dir: mc.totalRecords.direction, diff: mc.totalRecords.diff },
+        { label: '积极表现', curr: mc.positiveCount.current, prev: mc.positiveCount.previous, dir: mc.positiveCount.direction, diff: mc.positiveCount.diff },
+        { label: '需要关注', curr: mc.needsAttentionCount.current, prev: mc.needsAttentionCount.previous, dir: mc.needsAttentionCount.direction, diff: mc.needsAttentionCount.diff },
+        { label: '主动表达', curr: mc.expressionCount.current, prev: mc.expressionCount.previous, dir: mc.expressionCount.direction, diff: mc.expressionCount.diff }
+      ].forEach(function (it) {
+        h += '<div class="a-compare-item"><div class="a-compare-label">' + it.label + '</div>';
+        h += '<div class="a-compare-values"><span class="a-compare-curr">' + it.curr + '</span><span class="a-compare-arrow">→</span><span class="a-compare-prev">上月 ' + it.prev + '</span></div>';
+        h += '<div>' + trendBadgeHTML(it.dir) + ' <span style="font-size:0.78rem;color:#888;">(' + it.diff + ')</span></div></div>';
+      });
+      h += '</div></div>';
+    }
+
+    if (r.topTags && r.topTags.length) {
+      h += '<div class="a-section"><div class="a-section-head"><h2 class="a-section-title">本月高频标签</h2>' + renderSourceBadge('data') + '</div>';
+      h += '<div class="a-tag-cloud">' + renderTagCloudHTML(r.topTags, 10) + '</div></div>';
+    }
+
+    var gp = r.goalProgress;
+    if (gp) {
+      h += '<div class="a-section"><div class="a-section-head"><h2 class="a-section-title">支持目标进展</h2>' + renderSourceBadge('data') + '</div>';
+      h += '<div class="a-progress-list">';
+      h += '<div class="a-progress-item"><span>🎯 活动记录</span><span>' + (gp.activityCount || 0) + ' 次</span></div>';
+      h += '<div class="a-progress-item"><span>🧩 策略记录</span><span>' + (gp.strategyCount || 0) + ' 次</span></div>';
+      if (gp.activities) gp.activities.slice(0, 5).forEach(function (a) {
+        h += '<div class="a-progress-item sub"><span>' + esc(a.title) + '</span><span style="font-size:0.78rem;color:#999;">' + a.date + '</span></div>';
+      });
+      h += '</div></div>';
+    }
+
+    if (r.suggestions && r.suggestions.length) {
+      h += '<div class="a-section"><div class="a-section-head"><h2 class="a-section-title">💡 下月建议</h2>' + renderSourceBadge('ai') + '</div>';
+      r.suggestions.forEach(function (sg) { h += '<div class="a-suggestion">' + esc(sg) + '</div>'; });
+      h += '</div>';
+    }
+
+    if (r.summary) h += renderAICard(r.summary);
+    h += '<button id="monthly-drilldown-btn" class="btn btn-outline" style="margin-top:10px;font-size:0.85rem;width:100%;">📋 查看本月全部记录 →</button>';
+    c.innerHTML = h;
+
+    var prev = document.getElementById('monthly-prev'), next = document.getElementById('monthly-next');
+    if (prev) prev.addEventListener('click', function () {
+      var p = r.yearMonth.split('-'), y = parseInt(p[0]), m = parseInt(p[1]);
+      if (m === 1) { y--; m = 12; } else { m--; }
+      analyticsState.monthlyYM = y + '-' + String(m).padStart(2, '0'); renderMonthlyContent();
+    });
+    if (next) next.addEventListener('click', function () {
+      var p = r.yearMonth.split('-'), y = parseInt(p[0]), m = parseInt(p[1]);
+      if (m === 12) { y++; m = 1; } else { m++; }
+      var nextYM = y + '-' + String(m).padStart(2, '0');
+      var now = new Date();
+      if (nextYM > (now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0'))) return;
+      analyticsState.monthlyYM = nextYM; renderMonthlyContent();
+    });
+    var ddBtn = document.getElementById('monthly-drilldown-btn');
+    if (ddBtn) ddBtn.addEventListener('click', function () {
+      var trendPanel = document.getElementById('panel-trend');
+      if (trendPanel) trendPanel.style.display = 'none';
+      renderDrillDown(DataStore.getRecords().filter(function (rec) { return rec.date && rec.date.slice(0, 7) === r.yearMonth; }), r.yearMonth + ' 记录');
     });
   }
 
