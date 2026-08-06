@@ -1109,7 +1109,7 @@
       '<div style="flex:1;color:#666;">' +
       '  <span style="font-weight:600;color:#333;">' + welcomeText + '</span> ' + subText +
       '</div>' +
-      '<a href="#profile" style="color:#4A90D9;text-decoration:none;white-space:nowrap;font-size:0.8rem;">个人中心 →</a>';
+      '<a href="#profile" style="color:#D9785F;text-decoration:none;white-space:nowrap;font-size:0.8rem;">个人中心 →</a>';
 
     heroSection.parentNode.insertBefore(banner, heroSection.nextSibling);
   }
@@ -1154,7 +1154,7 @@
     var html = '';
     html += '<h2 style="font-size:1rem;color:#333;margin:12px 0 10px;display:flex;align-items:center;gap:8px;">';
     html += '  <span>🔔</span>待关注';
-    html += '  <a href="#timeline" style="margin-left:auto;font-size:0.82rem;color:#4A90D9;text-decoration:none;">查看全部 →</a>';
+    html += '  <a href="#timeline" style="margin-left:auto;font-size:0.82rem;color:#D9785F;text-decoration:none;">查看全部 →</a>';
     html += '</h2>';
     html += '<div style="display:flex;flex-direction:column;gap:10px;">';
     latestActionable.forEach(function (record) {
@@ -1218,7 +1218,7 @@
         var effEmojis = ['', '😞', '🙁', '😐', '🙂', '😄'];
         var effIdx = record.effectiveness;
         if (effIdx >= 1 && effIdx <= 5) {
-          html += '    <span style="font-size:0.8rem;padding:2px 8px;border-radius:6px;background:#fff0f6;color:#EB2F96;">' + effEmojis[effIdx] + ' 效果:' + effLabels[effIdx] + '</span>';
+          html += '    <span style="font-size:0.8rem;padding:2px 8px;border-radius:6px;background:#fff0f6;color:#D99A4E;">' + effEmojis[effIdx] + ' 效果:' + effLabels[effIdx] + '</span>';
         }
       }
       html += '  </div>';
@@ -1233,7 +1233,92 @@
   }
 
   /**
-   * 渲染浮动添加按钮（FAB）—— 角色感知，支持快捷操作
+   * 为FAB按钮添加拖拽能力
+   */
+  function makeDraggable(el, container) {
+    var startX = 0, startY = 0, startLeft = 0, startTop = 0;
+    var dragged = false;
+    var DRAG_THRESHOLD = 5;
+
+    function getPhoneBounds() {
+      var phone = document.querySelector('.phone');
+      if (!phone) return { left: 0, top: 0, right: window.innerWidth, bottom: window.innerHeight };
+      var rect = phone.getBoundingClientRect();
+      return { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom };
+    }
+
+    function onStart(e) {
+      e.preventDefault();
+      dragged = false;
+      var touch = e.touches ? e.touches[0] : e;
+      startX = touch.clientX;
+      startY = touch.clientY;
+      var rect = container.getBoundingClientRect();
+      startLeft = rect.left;
+      startTop = rect.top;
+      // 切换到 left/top 定位
+      container.style.right = 'auto';
+      container.style.bottom = 'auto';
+      container.style.left = startLeft + 'px';
+      container.style.top = startTop + 'px';
+    }
+
+    function onMove(e) {
+      if (startX === 0 && startY === 0) return;
+      var touch = e.touches ? e.touches[0] : e;
+      var dx = touch.clientX - startX;
+      var dy = touch.clientY - startY;
+      if (Math.abs(dx) < DRAG_THRESHOLD && Math.abs(dy) < DRAG_THRESHOLD) return;
+      dragged = true;
+      var bounds = getPhoneBounds();
+      var newLeft = startLeft + dx;
+      var newTop = startTop + dy;
+      var size = 56;
+      newLeft = Math.max(bounds.left, Math.min(bounds.right - size, newLeft));
+      newTop = Math.max(bounds.top, Math.min(bounds.bottom - size - 80, newTop));
+      container.style.left = newLeft + 'px';
+      container.style.top = newTop + 'px';
+    }
+
+    function onEnd(e) {
+      if (!dragged) {
+        // 如果没有拖拽，恢复 right/bottom 定位
+        container.style.left = 'auto';
+        container.style.top = 'auto';
+        container.style.right = '24px';
+        container.style.bottom = '24px';
+        // 触发原始 click 事件
+        return;
+      }
+      // 保存位置
+      var rect = container.getBoundingClientRect();
+      try {
+        localStorage.setItem('fab_position', JSON.stringify({ left: rect.left, top: rect.top }));
+      } catch (_) {}
+      startX = 0; startY = 0;
+    }
+
+    // 恢复保存的位置
+    try {
+      var saved = JSON.parse(localStorage.getItem('fab_position'));
+      if (saved) {
+        container.style.right = 'auto';
+        container.style.bottom = 'auto';
+        container.style.left = saved.left + 'px';
+        container.style.top = saved.top + 'px';
+      }
+    } catch (_) {}
+
+    el.addEventListener('touchstart', onStart, { passive: false });
+    el.addEventListener('touchmove', onMove, { passive: false });
+    el.addEventListener('touchend', onEnd);
+    el.addEventListener('mousedown', onStart);
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onEnd);
+  }
+
+  /**
+   * 渲染浮动添加按钮（FAB）—— 角色感知，支持快捷操作 + 拖拽
    */
   function renderFAB() {
     var existingFab = document.getElementById('fab-add-record');
@@ -1250,7 +1335,7 @@
     // 创建FAB容器
     var fabContainer = document.createElement('div');
     fabContainer.id = 'fab-container';
-    fabContainer.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:100;';
+    fabContainer.style.cssText = 'position:fixed;bottom:96px;right:24px;z-index:100;';
 
     // 快捷菜单（展开时显示）
     var quickMenu = document.createElement('div');
@@ -1274,12 +1359,13 @@
         window.RecordsPage.renderAddRecordStep2(user, role, role.canAdd[0]);
       });
       fabContainer.appendChild(fab1);
+      makeDraggable(fab1, fabContainer);
     } else {
       // 多类型，FAB点击展开快捷菜单
       var fab = document.createElement('button');
       fab.id = 'fab-add-record';
       fab.textContent = '+';
-      fab.style.cssText = 'width:56px;height:56px;border-radius:50%;background:#4A90D9;color:#fff;font-size:28px;border:none;box-shadow:0 4px 12px rgba(74,144,217,0.4);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.3s;';
+      fab.style.cssText = 'width:56px;height:56px;border-radius:50%;background:#D9785F;color:#fff;font-size:28px;border:none;box-shadow:0 4px 12px rgba(217,120,95,0.4);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.3s;';
 
       // 构建快捷菜单项
       role.canAdd.forEach(function (typeKey) {
@@ -1333,6 +1419,7 @@
 
       fabContainer.appendChild(quickMenu);
       fabContainer.appendChild(fab);
+      makeDraggable(fab, fabContainer);
     }
 
     document.body.appendChild(fabContainer);
@@ -2708,19 +2795,19 @@
     var html = '';
 
     // 档案概览说明
-    html += '<div style="background:linear-gradient(135deg,#4A90D9,#5B9BD5);border-radius:16px;padding:20px;margin-bottom:20px;color:#fff;">';
+    html += '<div style="background:linear-gradient(135deg,#D9785F,#5B9BD5);border-radius:16px;padding:20px;margin-bottom:20px;color:#fff;">';
     html += '  <div style="font-size:1.2rem;font-weight:600;margin-bottom:6px;">📋 小雨的完整档案</div>';
     html += '  <div style="font-size:0.88rem;opacity:0.9;">六大主题分类，全面了解小雨的 support profile</div>';
     html += '</div>';
 
     // 六大主题档案卡片（含完整度摘要）
     var archiveThemes = [
-      { hash: 'life', icon: '❤️', title: '喜好档案', desc: '喜欢和不喜欢的事物、活动偏好', color: '#4A90D9', module: 'life' },
-      { hash: 'communication', icon: '💬', title: '沟通档案', desc: '沟通指南、有效话术、禁忌用语', color: '#722ED1', module: 'communication' },
-      { hash: 'emotion', icon: '😰', title: '情绪档案', desc: '情绪触发因素、安抚策略、预警信号', color: '#F5222D', module: 'emotion' },
-      { hash: 'care', icon: '🏥', title: '照护档案', desc: '过敏、用药、作息、医疗提醒', color: '#52C41A', module: 'care' },
-      { hash: 'work', icon: '💼', title: '支持档案', desc: '工作能力、社交关系、支持网络', color: '#FAAD14', module: 'work' },
-      { hash: 'relations', icon: '👥', title: '关系档案', desc: '核心支持圈、日常接触、避免场景', color: '#13C2C2', module: 'relations' }
+      { hash: 'life', icon: '❤️', title: '喜好档案', desc: '喜欢和不喜欢的事物、活动偏好', color: '#D9785F', module: 'life' },
+      { hash: 'communication', icon: '💬', title: '沟通档案', desc: '沟通指南、有效话术、禁忌用语', color: '#E8A87C', module: 'communication' },
+      { hash: 'emotion', icon: '😰', title: '情绪档案', desc: '情绪触发因素、安抚策略、预警信号', color: '#C96E68', module: 'emotion' },
+      { hash: 'care', icon: '🏥', title: '照护档案', desc: '过敏、用药、作息、医疗提醒', color: '#6FA789', module: 'care' },
+      { hash: 'work', icon: '💼', title: '支持档案', desc: '工作能力、社交关系、支持网络', color: '#E7B95E', module: 'work' },
+      { hash: 'relations', icon: '👥', title: '关系档案', desc: '核心支持圈、日常接触、避免场景', color: '#D99A4E', module: 'relations' }
     ];
 
     html += '<div class="card-grid">';
@@ -2736,7 +2823,7 @@
       // 完整度条
       html += '  <div style="display:flex;align-items:center;gap:6px;margin-top:8px;">';
       html += '    <div style="flex:1;height:4px;background:#E8E8E8;border-radius:2px;overflow:hidden;">';
-      html += '      <div style="height:100%;width:' + completeness + '%;background:' + (completeness >= 60 ? '#52C41A' : completeness >= 30 ? '#FAAD14' : '#F5222D') + ';border-radius:2px;"></div>';
+      html += '      <div style="height:100%;width:' + completeness + '%;background:' + (completeness >= 60 ? '#6FA789' : completeness >= 30 ? '#E7B95E' : '#C96E68') + ';border-radius:2px;"></div>';
       html += '    </div>';
       html += '    <span style="font-size:0.7rem;color:#999;white-space:nowrap;">' + count + '条记录</span>';
       html += '  </div>';
@@ -2920,15 +3007,15 @@
     } else {
       records.sort(function (a, b) { return (b.date + (b.time || '')).localeCompare(a.date + (a.time || '')); });
       records.forEach(function (r) {
-        var rt = RECORD_TYPES[r.type] || { label: r.type, color: '#4A90D9', icon: '📝' };
+        var rt = RECORD_TYPES[r.type] || { label: r.type, color: '#D9785F', icon: '📝' };
         html += '<div class="drilldown-item">';
         html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">';
         html += '<div style="display:flex;align-items:center;gap:8px;"><span style="font-size:1.1rem;">' + rt.icon + '</span>';
         html += '<span style="font-weight:600;font-size:0.92rem;">' + esc(r.title || rt.label) + '</span></div>';
         html += '<span style="font-size:0.78rem;color:#999;white-space:nowrap;">' + esc(r.date) + ' ' + esc(r.time || '') + '</span></div>';
         html += '<div style="font-size:0.88rem;color:#555;line-height:1.5;margin-bottom:6px;">' + esc(r.content || '') + '</div>';
-        if (r.mood) html += '<span style="font-size:0.82rem;color:#52C41A;">😊 ' + esc(r.mood) + '</span> ';
-        if (r.emotion_type) html += '<span style="font-size:0.82rem;color:#F5222D;">⚡ ' + esc(r.emotion_type) + '</span> ';
+        if (r.mood) html += '<span style="font-size:0.82rem;color:#6FA789;">😊 ' + esc(r.mood) + '</span> ';
+        if (r.emotion_type) html += '<span style="font-size:0.82rem;color:#C96E68;">⚡ ' + esc(r.emotion_type) + '</span> ';
         html += '<div style="font-size:0.78rem;color:#bbb;margin-top:6px;">👤 ' + esc(r.author || '') + ' · ' + getSourceLabel(r) + '</div></div>';
       });
     }
@@ -2993,19 +3080,19 @@
     var html = '';
     html += '<div class="a-metrics">';
     html += '<div class="a-metric"><div class="a-metric-value">' + stats.totalRecords + '</div><div class="a-metric-label">总记录数</div></div>';
-    html += '<div class="a-metric"><div class="a-metric-value" style="color:#52C41A;">' + stats.recentRecords + '</div><div class="a-metric-label">近30天</div></div>';
-    html += '<div class="a-metric"><div class="a-metric-value" style="color:#EB2F96;">' + stats.strategyRecords + '</div><div class="a-metric-label">策略记录</div></div>';
-    html += '<div class="a-metric"><div class="a-metric-value" style="color:#FAAD14;">' + stats.avgEffectiveness + '</div><div class="a-metric-label">平均效果/5</div></div>';
+    html += '<div class="a-metric"><div class="a-metric-value" style="color:#6FA789;">' + stats.recentRecords + '</div><div class="a-metric-label">近30天</div></div>';
+    html += '<div class="a-metric"><div class="a-metric-value" style="color:#D99A4E;">' + stats.strategyRecords + '</div><div class="a-metric-label">策略记录</div></div>';
+    html += '<div class="a-metric"><div class="a-metric-value" style="color:#E7B95E;">' + stats.avgEffectiveness + '</div><div class="a-metric-label">平均效果/5</div></div>';
     html += '</div>';
 
     html += '<div class="a-section"><div class="a-section-head"><h2 class="a-section-title">😰 情绪分布（近30天）</h2>' + renderSourceBadge('data') + '</div>';
     var emotions = [
-      { key: 'happy', label: '开心', emoji: '😄', color: '#52C41A' },
-      { key: 'calm', label: '平静', emoji: '😌', color: '#1890FF' },
-      { key: 'anxious', label: '焦虑', emoji: '😰', color: '#FAAD14' },
-      { key: 'angry', label: '生气', emoji: '😠', color: '#F5222D' },
-      { key: 'sad', label: '难过', emoji: '😢', color: '#722ED1' },
-      { key: 'excited', label: '兴奋', emoji: '🤩', color: '#EB2F96' }
+      { key: 'happy', label: '开心', emoji: '😄', color: '#6FA789' },
+      { key: 'calm', label: '平静', emoji: '😌', color: '#D9785F' },
+      { key: 'anxious', label: '焦虑', emoji: '😰', color: '#E7B95E' },
+      { key: 'angry', label: '生气', emoji: '😠', color: '#C96E68' },
+      { key: 'sad', label: '难过', emoji: '😢', color: '#E8A87C' },
+      { key: 'excited', label: '兴奋', emoji: '🤩', color: '#D99A4E' }
     ];
     var totalE = emotions.reduce(function (s, e) { return s + (stats.emotionStats[e.key] || 0); }, 0);
     emotions.forEach(function (e) {
@@ -3048,8 +3135,8 @@
       html += '<div class="a-chart-bars">';
       dates.forEach(function (d) {
         var vals = buckets[d], avg = Math.round(vals.reduce(function (a, b) { return a + b; }, 0) / vals.length);
-        var colors = ['', '#F5222D', '#FAAD14', '#1890FF', '#52C41A', '#52C41A'];
-        html += '<div class="a-bar-col"><div class="a-bar" style="height:' + (avg / 5 * 100) + '%;background:' + (colors[avg] || '#1890FF') + ';"></div>';
+        var colors = ['', '#C96E68', '#E7B95E', '#D9785F', '#6FA789', '#6FA789'];
+        html += '<div class="a-bar-col"><div class="a-bar" style="height:' + (avg / 5 * 100) + '%;background:' + (colors[avg] || '#D9785F') + ';"></div>';
         html += '<div class="a-bar-label">' + d.slice(5) + '</div></div>';
       });
       html += '</div><div class="a-chart-hint">柱高表示当日心情均值（1-5）</div>';
@@ -3061,7 +3148,7 @@
       var maxC = typeKeys.reduce(function (m, k) { return Math.max(m, stats.typeStats[k]); }, 0);
       html += '<div class="a-chart-bars">';
       typeKeys.forEach(function (k) {
-        var info = RECORD_TYPES[k] || { label: k, color: '#4A90D9' };
+        var info = RECORD_TYPES[k] || { label: k, color: '#D9785F' };
         html += '<div class="a-bar-col"><div class="a-bar" style="height:' + (maxC > 0 ? (stats.typeStats[k] / maxC * 100) : 0) + '%;background:' + info.color + ';"></div>';
         html += '<div class="a-bar-label">' + info.label + '</div><div class="a-bar-count">' + stats.typeStats[k] + '</div></div>';
       });
@@ -3123,8 +3210,8 @@
 
     html += '<div class="a-metrics">';
     html += '<div class="a-metric"><div class="a-metric-value">' + (s.totalRecords || 0) + '</div><div class="a-metric-label">今日记录</div></div>';
-    html += '<div class="a-metric"><div class="a-metric-value" style="color:#52C41A;">' + (s.expressionCount || 0) + '</div><div class="a-metric-label">积极表现</div></div>';
-    html += '<div class="a-metric"><div class="a-metric-value" style="color:#F5222D;">' + (s.needsAttentionCount || 0) + '</div><div class="a-metric-label">需要关注</div></div>';
+    html += '<div class="a-metric"><div class="a-metric-value" style="color:#6FA789;">' + (s.expressionCount || 0) + '</div><div class="a-metric-label">积极表现</div></div>';
+    html += '<div class="a-metric"><div class="a-metric-value" style="color:#C96E68;">' + (s.needsAttentionCount || 0) + '</div><div class="a-metric-label">需要关注</div></div>';
     html += '</div>';
 
     // 任务完成度
@@ -3133,8 +3220,8 @@
       html += '<div class="a-section"><div class="a-section-head"><h2 class="a-section-title">✅ 任务完成度</h2>' + renderSourceBadge('data') + '</div>';
       html += '<div style="display:flex;align-items:center;gap:12px;">';
       html += '<div style="flex:1;"><div style="font-size:0.82rem;color:#888;margin-bottom:4px;">已完成 ' + ts.done + '/' + ts.total + ' 项</div>';
-      html += '<div class="progress-bar-container" style="height:10px;"><div class="progress-bar" style="width:' + ts.rate + '%;background:' + (ts.rate >= 80 ? '#52C41A' : ts.rate >= 40 ? '#FAAD14' : '#F5222D') + ';"></div></div></div>';
-      html += '<div style="font-size:1.5rem;font-weight:700;color:' + (ts.rate >= 80 ? '#52C41A' : ts.rate >= 40 ? '#FAAD14' : '#F5222D') + ';">' + ts.rate + '%</div>';
+      html += '<div class="progress-bar-container" style="height:10px;"><div class="progress-bar" style="width:' + ts.rate + '%;background:' + (ts.rate >= 80 ? '#6FA789' : ts.rate >= 40 ? '#E7B95E' : '#C96E68') + ';"></div></div></div>';
+      html += '<div style="font-size:1.5rem;font-weight:700;color:' + (ts.rate >= 80 ? '#6FA789' : ts.rate >= 40 ? '#E7B95E' : '#C96E68') + ';">' + ts.rate + '%</div>';
       html += '</div></div>';
     }
 
@@ -3217,8 +3304,8 @@
     h += '<button id="weekly-next" class="btn btn-ghost" style="padding:6px 12px;font-size:0.85rem;">下一周 ▶</button></div>';
     h += '<div class="a-metrics">';
     h += '<div class="a-metric"><div class="a-metric-value">' + (s.totalRecords || 0) + '</div><div class="a-metric-label">有效记录</div><div class="a-metric-sub">日均 ' + (s.avgDailyRecords || 0) + '</div></div>';
-    h += '<div class="a-metric"><div class="a-metric-value" style="color:#52C41A;">' + (s.positiveCount || 0) + '</div><div class="a-metric-label">积极表现</div></div>';
-    h += '<div class="a-metric"><div class="a-metric-value" style="color:#F5222D;">' + (s.needsAttentionCount || 0) + '</div><div class="a-metric-label">需要关注</div></div></div>';
+    h += '<div class="a-metric"><div class="a-metric-value" style="color:#6FA789;">' + (s.positiveCount || 0) + '</div><div class="a-metric-label">积极表现</div></div>';
+    h += '<div class="a-metric"><div class="a-metric-value" style="color:#C96E68;">' + (s.needsAttentionCount || 0) + '</div><div class="a-metric-label">需要关注</div></div></div>';
     h += '<div class="a-section"><div class="a-section-head"><h2 class="a-section-title">本周记录趋势</h2>' + renderSourceBadge('data') + '</div>';
     var maxC = Math.max.apply(null, r.dailyCounts.concat([1]));
     var days = ['一', '二', '三', '四', '五', '六', '日'];
@@ -3233,8 +3320,8 @@
       h += '<div class="a-section"><div class="a-section-head"><h2 class="a-section-title">情绪趋势</h2>' + renderSourceBadge('data') + '</div>';
       h += '<div class="a-chart-bars">';
       r.emotionTrend.forEach(function (et) {
-        var colors = ['', '#F5222D', '#FAAD14', '#1890FF', '#52C41A', '#52C41A'];
-        h += '<div class="a-bar-col"><div class="a-bar" style="height:' + (et.score ? et.score / 5 * 100 : 0) + '%;background:' + (et.score ? (colors[Math.round(et.score)] || '#1890FF') : '#ccc') + ';"></div>';
+        var colors = ['', '#C96E68', '#E7B95E', '#D9785F', '#6FA789', '#6FA789'];
+        h += '<div class="a-bar-col"><div class="a-bar" style="height:' + (et.score ? et.score / 5 * 100 : 0) + '%;background:' + (et.score ? (colors[Math.round(et.score)] || '#D9785F') : '#ccc') + ';"></div>';
         h += '<div class="a-bar-label">' + (et.displayDate || '').slice(5) + '</div><div class="a-bar-count">' + (et.score || '-') + '</div></div>';
       });
       h += '</div></div>';
@@ -3307,8 +3394,8 @@
     h += '<button id="monthly-next" class="btn btn-ghost" style="padding:6px 12px;font-size:0.85rem;">下月 ▶</button></div>';
     h += '<div class="a-metrics">';
     h += '<div class="a-metric"><div class="a-metric-value">' + (s.totalRecords || 0) + '</div><div class="a-metric-label">有效记录</div><div class="a-metric-sub">日均 ' + (s.avgDailyRecords || 0) + '</div></div>';
-    h += '<div class="a-metric"><div class="a-metric-value" style="color:#52C41A;">' + (s.positiveCount || 0) + '</div><div class="a-metric-label">积极表现</div></div>';
-    h += '<div class="a-metric"><div class="a-metric-value" style="color:#EB2F96;">' + (s.expressionCount || 0) + '</div><div class="a-metric-label">主动表达</div></div></div>';
+    h += '<div class="a-metric"><div class="a-metric-value" style="color:#6FA789;">' + (s.positiveCount || 0) + '</div><div class="a-metric-label">积极表现</div></div>';
+    h += '<div class="a-metric"><div class="a-metric-value" style="color:#D99A4E;">' + (s.expressionCount || 0) + '</div><div class="a-metric-label">主动表达</div></div></div>';
 
     var mc = r.monthComparison;
     if (mc && mc.totalRecords) {
@@ -3408,7 +3495,7 @@
       html += '<div style="display:flex;align-items:center;justify-content:center;gap:8px;">';
       html += '<span style="font-size:1.5rem;">' + (currentUser.avatar || roleInfo.avatar) + '</span>';
       html += '<span style="font-size:1rem;font-weight:500;">' + (currentUser.name || '用户') + '</span>';
-      html += '<span style="padding:2px 10px;border-radius:10px;font-size:0.78rem;background:rgba(74,144,217,0.1);color:#4A90D9;">' + roleInfo.label + '</span>';
+      html += '<span style="padding:2px 10px;border-radius:10px;font-size:0.78rem;background:rgba(217,120,95,0.1);color:#D9785F;">' + roleInfo.label + '</span>';
       html += '</div></div>';
 
       if (currentUser.role === 'parent') {
@@ -3441,7 +3528,7 @@
         html += '</button>';
       });
       html += '</div>';
-      html += '<p style="font-size:0.78rem;color:#aaa;">已有账号？<a href="#login" style="color:#4A90D9;">去登录</a></p>';
+      html += '<p style="font-size:0.78rem;color:#aaa;">已有账号？<a href="#login" style="color:#D9785F;">去登录</a></p>';
     }
 
     html += '</div>';
@@ -3638,20 +3725,20 @@
     }
 
     var html = '';
-    html += '<div style="margin-bottom:12px;padding:10px 14px;background:#f0f7ff;border-radius:8px;font-size:0.85rem;color:#4A90D9;">';
+    html += '<div style="margin-bottom:12px;padding:10px 14px;background:#f0f7ff;border-radius:8px;font-size:0.85rem;color:#D9785F;">';
     html += '  💡 ' + recommendation.message;
     html += '</div>';
 
     recommendation.strategies.forEach(function (item, idx) {
       var s = item.strategy;
-      var badge = idx === 0 ? '<span style="background:#52C41A;color:#fff;font-size:0.7rem;padding:1px 6px;border-radius:8px;margin-left:6px;">推荐</span>' : '';
+      var badge = idx === 0 ? '<span style="background:#6FA789;color:#fff;font-size:0.7rem;padding:1px 6px;border-radius:8px;margin-left:6px;">推荐</span>' : '';
       var effectBadge = '';
       if (item.usageCount > 0) {
-        effectBadge = '<span style="background:#fff0f6;color:#EB2F96;font-size:0.7rem;padding:1px 6px;border-radius:8px;margin-left:4px;">' +
+        effectBadge = '<span style="background:#fff0f6;color:#D99A4E;font-size:0.7rem;padding:1px 6px;border-radius:8px;margin-left:4px;">' +
                        '历史效果 ' + item.avgEffectiveness.toFixed(1) + '/5 (' + item.usageCount + '次)</span>';
       }
 
-      html += '<div class="strategy-card" style="background:#fff;border-radius:12px;padding:16px;margin-bottom:12px;box-shadow:0 1px 6px rgba(0,0,0,0.06);border-left:4px solid ' + (idx === 0 ? '#52C41A' : '#ddd') + ';">';
+      html += '<div class="strategy-card" style="background:#fff;border-radius:12px;padding:16px;margin-bottom:12px;box-shadow:0 1px 6px rgba(0,0,0,0.06);border-left:4px solid ' + (idx === 0 ? '#6FA789' : '#ddd') + ';">';
       html += '  <div style="font-weight:600;color:#333;font-size:0.95rem;margin-bottom:8px;">' + s.name + badge + effectBadge + '</div>';
       html += '  <div style="margin-bottom:8px;">';
       html += '    <div style="font-size:0.8rem;color:#888;margin-bottom:4px;">实施步骤：</div>';
@@ -3662,10 +3749,10 @@
       html += '    </ol>';
       html += '  </div>';
       html += '  <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:0.8rem;">';
-      html += '    <span style="color:#FAAD14;">⚠️ ' + s.caution + '</span>';
-      html += '    <span style="color:#52C41A;">✅ ' + s.expected + '</span>';
+      html += '    <span style="color:#E7B95E;">⚠️ ' + s.caution + '</span>';
+      html += '    <span style="color:#6FA789;">✅ ' + s.expected + '</span>';
       html += '  </div>';
-      html += '  <button class="btn-use-strategy" data-strategy="' + s.name + '" data-emotion="' + recommendation.emotionLabel + '" style="margin-top:10px;padding:6px 16px;background:#4A90D9;color:#fff;border:none;border-radius:6px;font-size:0.8rem;cursor:pointer;">记录使用此策略</button>';
+      html += '  <button class="btn-use-strategy" data-strategy="' + s.name + '" data-emotion="' + recommendation.emotionLabel + '" style="margin-top:10px;padding:6px 16px;background:#D9785F;color:#fff;border:none;border-radius:6px;font-size:0.8rem;cursor:pointer;">记录使用此策略</button>';
       html += '</div>';
     });
 
@@ -3679,9 +3766,9 @@
    */
   function renderEmotionAlert(alert) {
     var colors = {
-      normal: { bg: '#f6ffed', border: '#52C41A', icon: '✅' },
-      attention: { bg: '#fffbe6', border: '#FAAD14', icon: '🔔' },
-      warning: { bg: '#fff2f0', border: '#F5222D', icon: '⚠️' }
+      normal: { bg: '#f6ffed', border: '#6FA789', icon: '✅' },
+      attention: { bg: '#fffbe6', border: '#E7B95E', icon: '🔔' },
+      warning: { bg: '#fff2f0', border: '#C96E68', icon: '⚠️' }
     };
     var c = colors[alert.level] || colors.normal;
 
@@ -3694,7 +3781,7 @@
       html += '    <span>近7天记录：' + alert.totalRecords + '条</span>';
       html += '    <span>负面情绪：' + alert.negativeCount + '条 (' + alert.negativeRatio + '%)</span>';
       if (alert.trendUp && alert.level !== 'normal') {
-        html += '    <span style="color:#F5222D;">📈 近3天上升趋势</span>';
+        html += '    <span style="color:#C96E68;">📈 近3天上升趋势</span>';
       }
       html += '  </div>';
     }
@@ -3985,11 +4072,11 @@
    * 十三、每日任务页面 — Outlook 风格
    * ========================================================== */
   var TASK_CATEGORY_CONFIG = {
-    medication: { label: '医疗', color: '#F5222D', bg: 'rgba(245,34,45,0.08)' },
+    medication: { label: '医疗', color: '#C96E68', bg: 'rgba(245,34,45,0.08)' },
     meal:       { label: '饮食', color: '#FA8C16', bg: 'rgba(250,140,22,0.08)' },
-    hygiene:    { label: '卫生', color: '#1890FF', bg: 'rgba(24,144,255,0.08)' },
-    activity:   { label: '活动', color: '#52C41A', bg: 'rgba(82,196,26,0.08)' },
-    learning:   { label: '学习', color: '#722ED1', bg: 'rgba(114,46,209,0.08)' },
+    hygiene:    { label: '卫生', color: '#D9785F', bg: 'rgba(24,144,255,0.08)' },
+    activity:   { label: '活动', color: '#6FA789', bg: 'rgba(82,196,26,0.08)' },
+    learning:   { label: '学习', color: '#E8A87C', bg: 'rgba(114,46,209,0.08)' },
     other:      { label: '其他', color: '#8C8C8C', bg: 'rgba(140,140,140,0.08)' }
   };
 
@@ -4202,7 +4289,7 @@
       html += '  <div class="ot-week-label">周' + dayLabel + '</div>';
       html += '  <div class="ot-week-ring" style="--ratio:' + ratio + '">';
       html += '    <svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="16" fill="none" stroke="#E5E7EB" stroke-width="3"/>';
-      html += '    <circle cx="20" cy="20" r="16" fill="none" stroke="' + (ratio > 0.5 ? '#52C41A' : '#1890FF') + '" stroke-width="3" ' +
+      html += '    <circle cx="20" cy="20" r="16" fill="none" stroke="' + (ratio > 0.5 ? '#6FA789' : '#D9785F') + '" stroke-width="3" ' +
               'stroke-dasharray="' + (ratio * 100.5).toFixed(1) + ' 100.5" stroke-linecap="round" transform="rotate(-90 20 20)"/>';
       html += '    </svg>';
       html += '    <span class="ot-week-num">' + (ratio > 0 ? dayDone : '') + '</span>';
@@ -4505,7 +4592,7 @@
       html += '<div style="margin-bottom:20px;">';
       html += '<h3 style="font-size:0.95rem;margin-bottom:8px;">🔔 即将到来</h3>';
       upcoming.forEach(function(e) {
-        html += '<div class="cal-upcoming-item" style="border-left:4px solid ' + (e.color||'#4A90D9') + ';background:#fff;border-radius:0 8px 8px 0;padding:10px 14px;margin-bottom:8px;box-shadow:0 1px 4px rgba(0,0,0,0.04);">';
+        html += '<div class="cal-upcoming-item" style="border-left:4px solid ' + (e.color||'#D9785F') + ';background:#fff;border-radius:0 8px 8px 0;padding:10px 14px;margin-bottom:8px;box-shadow:0 1px 4px rgba(0,0,0,0.04);">';
         html += '<div style="display:flex;justify-content:space-between;align-items:center;">';
         html += '<span style="font-weight:600;">' + e.icon + ' ' + e.title + '</span>';
         html += '<span style="font-size:0.8rem;color:#999;">' + e.date + (e.time ? ' ' + e.time : '') + '</span>';
@@ -4548,7 +4635,7 @@
       if (dayEvents.length > 0) {
         html += '<div class="cal-dots">';
         dayEvents.slice(0, 3).forEach(function(e) {
-          html += '<span class="cal-dot" style="background:' + (e.color || '#4A90D9') + ';"></span>';
+          html += '<span class="cal-dot" style="background:' + (e.color || '#D9785F') + ';"></span>';
         });
         if (dayEvents.length > 3) html += '<span style="font-size:0.6rem;color:#999;">+' + (dayEvents.length-3) + '</span>';
         html += '</div>';
@@ -4569,13 +4656,13 @@
     } else {
       selEvents.sort(function(a,b) { return (a.time||'').localeCompare(b.time||''); });
       selEvents.forEach(function(evt) {
-        html += '<div class="cal-event-item" style="border-left:4px solid ' + (evt.color||'#4A90D9') + ';background:#fff;border-radius:0 8px 8px 0;padding:12px 16px;margin-bottom:8px;box-shadow:0 1px 4px rgba(0,0,0,0.04);">';
+        html += '<div class="cal-event-item" style="border-left:4px solid ' + (evt.color||'#D9785F') + ';background:#fff;border-radius:0 8px 8px 0;padding:12px 16px;margin-bottom:8px;box-shadow:0 1px 4px rgba(0,0,0,0.04);">';
         html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">';
         html += '<span style="font-weight:600;">' + evt.icon + ' ' + evt.title + '</span>';
         if (evt.time) html += '<span style="font-size:0.82rem;color:#999;">' + evt.time + (evt.endTime ? ' - ' + evt.endTime : '') + '</span>';
         html += '</div>';
         if (evt.description) html += '<div style="font-size:0.85rem;color:#666;">' + evt.description + '</div>';
-        html += '<div style="text-align:right;margin-top:6px;"><button class="cal-event-del" data-id="' + evt.id + '" style="font-size:0.78rem;color:#F5222D;background:none;border:none;cursor:pointer;">删除</button></div>';
+        html += '<div style="text-align:right;margin-top:6px;"><button class="cal-event-del" data-id="' + evt.id + '" style="font-size:0.78rem;color:#C96E68;background:none;border:none;cursor:pointer;">删除</button></div>';
         html += '</div>';
       });
     }
@@ -4645,12 +4732,12 @@
     var desc = document.getElementById('new-event-desc').value.trim();
     var type = document.getElementById('new-event-type').value;
     var icons = { medical: '🏥', activity: '🎨', meeting: '📋', reminder: '💊', custom: '📌' };
-    var colors = { medical: '#F5222D', activity: '#FAAD14', meeting: '#4A90D9', reminder: '#722ED1', custom: '#13C2C2' };
+    var colors = { medical: '#C96E68', activity: '#E7B95E', meeting: '#D9785F', reminder: '#E8A87C', custom: '#D99A4E' };
     var user = appState.currentUser;
     DataStore.addEvent({
       title: title, type: type, icon: icons[type] || '📌',
       date: date, time: time, description: desc,
-      recurring: 'none', priority: 'medium', color: colors[type] || '#4A90D9',
+      recurring: 'none', priority: 'medium', color: colors[type] || '#D9785F',
       author: user ? user.name : '未知', authorRole: user ? user.role : 'parent'
     });
     document.getElementById('add-event-modal').remove();
@@ -4689,18 +4776,18 @@
       container.style.cssText = 'position:absolute;left:-9999px;top:0;width:800px;background:#fff;padding:32px;font-family:"Microsoft YaHei",sans-serif;color:#333;';
       var html = '';
       html += '<div style="text-align:center;margin-bottom:24px;">';
-      html += '<h1 style="font-size:1.5rem;color:#4A90D9;margin:0;">AI懂我 - 心智障碍者动态支持档案</h1>';
+      html += '<h1 style="font-size:1.5rem;color:#D9785F;margin:0;">AI懂我 - 心智障碍者动态支持档案</h1>';
       html += '<p style="color:#999;font-size:0.85rem;">记录导出 · ' + getTodayString() + '</p>';
       html += '</div>';
       records.sort(function(a,b) { return (b.date+b.time).localeCompare(a.date+a.time); });
       var lastDate = '';
       records.forEach(function(r) {
         if (r.date !== lastDate) {
-          html += '<h2 style="font-size:1rem;color:#4A90D9;border-bottom:1px solid #eee;padding-bottom:4px;margin:16px 0 8px;">' + r.date + '</h2>';
+          html += '<h2 style="font-size:1rem;color:#D9785F;border-bottom:1px solid #eee;padding-bottom:4px;margin:16px 0 8px;">' + r.date + '</h2>';
           lastDate = r.date;
         }
         var typeLabel = RECORD_TYPES[r.type] ? RECORD_TYPES[r.type].label : r.type;
-        html += '<div style="background:#f9fafb;border-radius:8px;padding:12px 16px;margin-bottom:8px;border-left:3px solid #4A90D9;">';
+        html += '<div style="background:#f9fafb;border-radius:8px;padding:12px 16px;margin-bottom:8px;border-left:3px solid #D9785F;">';
         html += '<div style="display:flex;justify-content:space-between;font-size:0.8rem;color:#999;margin-bottom:4px;">';
         html += '<span>' + (r.author||'') + ' · ' + typeLabel + '</span>';
         html += '<span>' + (r.time||'') + '</span>';

@@ -30,8 +30,8 @@
   margin-bottom: 12px;
   border-radius: 24px;
   color: white;
-  background: linear-gradient(135deg, #7562a6, #9b85b8 56%, #c69fc0);
-  box-shadow: 0 10px 30px rgba(82, 63, 113, .10);
+  background: linear-gradient(135deg, #D9785F, #E8A87C 56%, #F0C9A0);
+  box-shadow: 0 10px 30px rgba(111, 74, 58, .10);
 }
 
 .qc-identity::after {
@@ -86,7 +86,7 @@
 
 /* ==========================================
    2. "⏱️ 1分钟认识我" 提示横幅
-   浅紫底 #eee8f7
+   浅紫底 #FBE9E3
    ========================================== */
 .qc-banner {
   display: flex;
@@ -94,11 +94,11 @@
   gap: 10px;
   padding: 12px 16px;
   margin-bottom: 12px;
-  background: #eee8f7;
+  background: #FBE9E3;
   border-radius: 12px;
   font-size: 14px;
   font-weight: 600;
-  color: #5b3e96;
+  color: #B95F4B;
 }
 
 .qc-banner-icon {
@@ -134,17 +134,17 @@
 }
 
 .qc-behavior-card {
-  background: linear-gradient(145deg, #fff, #fbf8ff);
+  background: linear-gradient(145deg, #fff, #FFF9F5);
   border-radius: 14px;
   padding: 14px;
-  box-shadow: 0 4px 16px rgba(82, 63, 113, .08);
-  border: 1px solid rgba(119,98,168,0.08);
+  box-shadow: 0 4px 16px rgba(111, 74, 58, .08);
+  border: 1px solid rgba(217,120,95,0.08);
 }
 
 .qc-behavior-card .qc-behavior-title {
   font-size: 13px;
   font-weight: 700;
-  color: #5b3e96;
+  color: #B95F4B;
   margin-bottom: 8px;
 }
 
@@ -166,11 +166,11 @@
   position: absolute;
   left: 2px;
   font-weight: 700;
-  color: #9b85b8;
+  color: #E8A87C;
 }
 
 /* ==========================================
-   4. "🤝 请这样支持我" — 三步编号，绿底 #edf6ee，圆形数字
+   4. "🤝 请这样支持我" — 三步编号，绿底 #EEF5F1，圆形数字
    ========================================== */
 .qc-steps {
   display: flex;
@@ -182,7 +182,7 @@
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  background: #edf6ee;
+  background: #EEF5F1;
   border-radius: 12px;
   padding: 12px 14px;
 }
@@ -194,7 +194,7 @@
   display: grid;
   place-items: center;
   border-radius: 50%;
-  background: #52C41A;
+  background: #6FA789;
   color: white;
   font-size: 14px;
   font-weight: 700;
@@ -222,7 +222,7 @@
   padding: 10px 14px;
   background: #fff;
   border-radius: 8px;
-  border-left: 4px solid #7562a6;
+  border-left: 4px solid #D9785F;
   font-size: 13px;
   color: var(--text-secondary);
   line-height: 1.6;
@@ -310,8 +310,8 @@
   background: #fff;
   border-radius: 14px;
   padding: 14px 16px;
-  box-shadow: 0 4px 16px rgba(82, 63, 113, .08);
-  border: 1px solid rgba(119,98,168,0.08);
+  box-shadow: 0 4px 16px rgba(111, 74, 58, .08);
+  border: 1px solid rgba(217,120,95,0.08);
   margin-bottom: 12px;
 }
 
@@ -415,7 +415,7 @@
 }
 
 .qc-btn-pdf:hover {
-  background: #3A7BC8;
+  background: #D9785F;
   transform: translateY(-1px);
   box-shadow: 0 6px 20px rgba(45, 122, 122, 0.35);
 }

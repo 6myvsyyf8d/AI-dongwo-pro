@@ -82,10 +82,10 @@
 
     // ====== 状态概览 ======
     html += '<div class="admin-stats-row">';
-    html += buildStatCard('👥', activeGrants.length, '已授权', '#52C41A');
-    html += buildStatCard('📋', pendingRequests.length, '待审批', pendingRequests.length > 0 ? '#FAAD14' : '#999');
-    html += buildStatCard('⏰', expiringGrants.length, '即将到期', expiringGrants.length > 0 ? '#F5222D' : '#999');
-    html += buildStatCard('📝', auditLog.length, '操作记录', '#4A90D9');
+    html += buildStatCard('👥', activeGrants.length, '已授权', '#6FA789');
+    html += buildStatCard('📋', pendingRequests.length, '待审批', pendingRequests.length > 0 ? '#E7B95E' : '#9A8F88');
+    html += buildStatCard('⏰', expiringGrants.length, '即将到期', expiringGrants.length > 0 ? '#C96E68' : '#9A8F88');
+    html += buildStatCard('📝', auditLog.length, '操作记录', '#D9785F');
     html += '</div>';
 
     // ====== 风险提示 ======
@@ -104,11 +104,11 @@
     }
 
     if (pendingRequests.length > 0) {
-      html += '<div class="admin-alert-section" style="border-left-color:#FAAD14;">';
-      html += '<div class="admin-alert-title" style="color:#FAAD14;">📋 待处理</div>';
+      html += '<div class="admin-alert-section" style="border-left-color:#E7B95E;">';
+      html += '<div class="admin-alert-title" style="color:#E7B95E;">📋 待处理</div>';
       pendingRequests.forEach(function (r) {
         html += '<div class="admin-alert-item">';
-        html += '  <span class="alert-dot" style="background:#FAAD14;"></span>';
+        html += '  <span class="alert-dot" style="background:#E7B95E;"></span>';
         html += '  <span>' + r.userName + ' 申请加入</span>';
         html += '</div>';
       });
@@ -217,10 +217,10 @@
 
     // ====== 系统概览 ======
     html += '<div class="admin-stats-row">';
-    html += buildStatCard('👤', allUsers.length, '总用户', '#4A90D9');
-    html += buildStatCard('🔗', allGrants.filter(function (g) { return g.status === 'active'; }).length, '活跃授权', '#52C41A');
-    html += buildStatCard('📋', joinRequests.filter(function (r) { return r.status === 'pending'; }).length, '待审批', '#FAAD14');
-    html += buildStatCard('📝', auditLog.length, '操作日志', '#999');
+    html += buildStatCard('👤', allUsers.length, '总用户', '#D9785F');
+    html += buildStatCard('🔗', allGrants.filter(function (g) { return g.status === 'active'; }).length, '活跃授权', '#6FA789');
+    html += buildStatCard('📋', joinRequests.filter(function (r) { return r.status === 'pending'; }).length, '待审批', '#E7B95E');
+    html += buildStatCard('📝', auditLog.length, '操作日志', '#9A8F88');
     html += '</div>';
 
     // ====== 用户管理 ======
@@ -232,7 +232,7 @@
 
     html += '<div class="admin-user-list">';
     allUsers.forEach(function (u) {
-      var roleInfo = ROLES[u.role] || { label: u.role, color: '#999' };
+      var roleInfo = ROLES[u.role] || { label: u.role, color: '#9A8F88' };
       html += '<div class="admin-user-card">';
       html += '  <div class="admin-user-avatar">' + (u.avatar || '👤') + '</div>';
       html += '  <div class="admin-user-info">';
@@ -256,7 +256,7 @@
     var maxCount = Math.max.apply(null, Object.values(roleCounts).concat([1]));
     roleOrder.forEach(function (rKey) {
       var count = roleCounts[rKey] || 0;
-      var roleInfo = ROLES[rKey] || { label: rKey, color: '#999' };
+      var roleInfo = ROLES[rKey] || { label: rKey, color: '#9A8F88' };
       var pct = Math.round(count / maxCount * 100);
       html += '<div style="margin-bottom:10px;display:flex;align-items:center;gap:10px;">';
       html += '<span style="font-size:0.85rem;width:70px;text-align:right;">' + roleInfo.label + '</span>';
@@ -320,7 +320,7 @@
     ct.innerHTML = '<div style="padding:48px 24px;text-align:center;">' +
       '<div style="font-size:3rem;">🏛️</div>' +
       '<p style="color:#888;margin-top:12px;">政府角色可查看宏观数据看板</p>' +
-      '<button onclick="location.hash=\'home\'" style="margin-top:16px;padding:10px 24px;background:#4A90D9;color:#fff;border:none;border-radius:10px;font-size:0.9rem;cursor:pointer;">前往政府看板</button>' +
+      '<button onclick="location.hash=\'home\'" style="margin-top:16px;padding:10px 24px;background:#D9785F;color:#fff;border:none;border-radius:10px;font-size:0.9rem;cursor:pointer;">前往政府看板</button>' +
       '</div>';
   }
 
@@ -329,7 +329,7 @@
    * ========================================================== */
   function renderMemberView(ct, user) {
     var grants = DataStore.getGrantsByUser(user.id);
-    var roleInfo = ROLES[user.role] || { label: '成员', avatar: '👤', color: '#999' };
+    var roleInfo = ROLES[user.role] || { label: '成员', avatar: '👤', color: '#9A8F88' };
 
     var html = '';
     html += '<div class="profile-scroll">';
@@ -353,7 +353,7 @@
       html += '<div style="text-align:center;padding:32px 16px;color:#bbb;">';
       html += '<div style="font-size:2rem;">📭</div>';
       html += '<p>尚未加入任何家庭支持网络</p>';
-      html += '<button onclick="location.hash=\'join\'" style="margin-top:12px;padding:10px 24px;background:#4A90D9;color:#fff;border:none;border-radius:10px;font-size:0.9rem;cursor:pointer;">加入家庭</button>';
+      html += '<button onclick="location.hash=\'join\'" style="margin-top:12px;padding:10px 24px;background:#D9785F;color:#fff;border:none;border-radius:10px;font-size:0.9rem;cursor:pointer;">加入家庭</button>';
       html += '</div>';
     } else {
       grants.forEach(function (g) {
@@ -401,7 +401,7 @@
         var gu = DataStore.findUserById(g.userId);
         var name = gu ? gu.name : '未知用户';
         var avatar = gu ? gu.avatar : '👤';
-        var roleInfo = ROLES[g.role] || { label: g.role, color: '#999' };
+        var roleInfo = ROLES[g.role] || { label: g.role, color: '#9A8F88' };
         var isExpiring = expiringIds.indexOf(g.id) !== -1;
         var isParentRole = g.role === 'parent';
 
@@ -428,7 +428,7 @@
     // 待审批卡片
     if (filter === 'all' || filter === 'pending') {
       pendingRequests.forEach(function (r) {
-        var roleInfo = ROLES[r.userRole] || { label: r.userRole, color: '#999' };
+        var roleInfo = ROLES[r.userRole] || { label: r.userRole, color: '#9A8F88' };
         html += '<div class="admin-person-card pending" data-req-id="' + r.id + '" data-status="pending">';
         html += '  <div class="admin-person-avatar">👤</div>';
         html += '  <div class="admin-person-body">';
@@ -449,7 +449,7 @@
       revokedGrants.forEach(function (g) {
         var gu = DataStore.findUserById(g.userId);
         var name = gu ? gu.name : '未知用户';
-        var roleInfo = ROLES[g.role] || { label: g.role, color: '#999' };
+        var roleInfo = ROLES[g.role] || { label: g.role, color: '#9A8F88' };
         html += '<div class="admin-person-card revoked" data-grant-id="' + g.id + '" data-status="revoked">';
         html += '  <div class="admin-person-avatar" style="opacity:0.5;">' + (gu ? gu.avatar : '👤') + '</div>';
         html += '  <div class="admin-person-body">';
@@ -488,7 +488,7 @@
     };
     var actionLabel = actionLabels[log.action] || log.action;
     var revertedClass = log.reverted ? ' admin-log-reverted' : '';
-    var revertedMark = log.reverted ? ' <span style="font-size:0.7rem;color:#F5222D;">(已撤销)</span>' : '';
+    var revertedMark = log.reverted ? ' <span style="font-size:0.7rem;color:#C96E68;">(已撤销)</span>' : '';
 
     return '<div class="admin-log-item' + revertedClass + '">' +
       '<div class="admin-log-icon">' + getLogIcon(log.action) + '</div>' +
@@ -687,9 +687,9 @@
       resultArea.innerHTML =
         '<div style="background:#f0f7ff;border-radius:12px;padding:20px;text-align:center;">' +
         '  <div style="font-size:0.85rem;color:#888;margin-bottom:8px;">邀请码已生成</div>' +
-        '  <div style="font-size:2rem;font-weight:700;color:#4A90D9;letter-spacing:4px;margin-bottom:8px;user-select:all;">' + invitation.code + '</div>' +
+        '  <div style="font-size:2rem;font-weight:700;color:#D9785F;letter-spacing:4px;margin-bottom:8px;user-select:all;">' + invitation.code + '</div>' +
         '  <div style="font-size:0.78rem;color:#aaa;">有效期至 ' + invitation.expiresAt + '</div>' +
-        '  <button id="btn-copy-invite" style="margin-top:12px;padding:8px 20px;background:#4A90D9;color:#fff;border:none;border-radius:8px;cursor:pointer;">📋 复制邀请码</button>' +
+        '  <button id="btn-copy-invite" style="margin-top:12px;padding:8px 20px;background:#D9785F;color:#fff;border:none;border-radius:8px;cursor:pointer;">📋 复制邀请码</button>' +
         '</div>';
       document.getElementById('btn-copy-invite').addEventListener('click', function () {
         navigator.clipboard.writeText(invitation.code).then(function () {
@@ -724,7 +724,7 @@
       '<button class="btn btn-primary" id="btn-do-role-change" style="width:100%;padding:12px;border-radius:10px;margin-bottom:8px;">确认调整角色</button>' +
       '<div style="border-top:1px solid #f0f0f0;margin:16px 0;padding-top:16px;">' +
       '  <p style="font-size:0.82rem;color:#999;margin-bottom:10px;">高风险操作区域</p>' +
-      '  <button class="btn btn-danger" id="btn-do-revoke" style="width:100%;padding:12px;border-radius:10px;background:#fff;color:#F5222D;border:1px solid #F5222D;">撤销「' + grantUser + '」的授权</button>' +
+      '  <button class="btn btn-danger" id="btn-do-revoke" style="width:100%;padding:12px;border-radius:10px;background:#fff;color:#C96E68;border:1px solid #C96E68;">撤销「' + grantUser + '」的授权</button>' +
       '  <p style="font-size:0.75rem;color:#999;margin-top:6px;">⚠️ 撤销后，该成员将无法查看任何档案信息。此操作可恢复。</p>' +
       '</div>';
 
@@ -770,8 +770,8 @@
       '</div>' +
       '<p style="font-size:0.82rem;color:#888;margin-bottom:16px;">批准后，该成员将获得对应角色的档案访问权限。</p>' +
       '<div style="display:flex;gap:10px;">' +
-      '  <button id="btn-do-reject" style="flex:1;padding:12px;border:1px solid #ddd;border-radius:10px;background:#fff;color:#F5222D;font-size:0.9rem;cursor:pointer;">拒绝</button>' +
-      '  <button id="btn-do-approve" style="flex:1;padding:12px;border:none;border-radius:10px;background:#52C41A;color:#fff;font-size:0.9rem;cursor:pointer;">批准</button>' +
+      '  <button id="btn-do-reject" style="flex:1;padding:12px;border:1px solid #ddd;border-radius:10px;background:#fff;color:#C96E68;font-size:0.9rem;cursor:pointer;">拒绝</button>' +
+      '  <button id="btn-do-approve" style="flex:1;padding:12px;border:none;border-radius:10px;background:#6FA789;color:#fff;font-size:0.9rem;cursor:pointer;">批准</button>' +
       '</div>';
 
     document.getElementById('btn-do-approve').addEventListener('click', function () {
@@ -977,7 +977,7 @@
 
     html += '<div class="admin-user-list" id="auser-list">';
     allUsers.forEach(function (u) {
-      var roleInfo = ROLES[u.role] || { label: u.role, color: '#999' };
+      var roleInfo = ROLES[u.role] || { label: u.role, color: '#9A8F88' };
       var userGrants = aliveGrants.filter(function (g) { return g.userId === u.id; });
       var grantCount = userGrants.length;
       // 查找关联的心青年
@@ -1056,7 +1056,7 @@
       '    <select id="auser-new-role" style="width:100%;padding:10px;border:1.5px solid #ddd;border-radius:8px;">' + roleOpts + '</select>' +
       '    <button class="btn btn-primary" id="auser-btn-role" style="width:100%;margin-top:12px;padding:10px;border-radius:8px;">确认调整</button>' +
       '    <div style="border-top:1px solid #eee;margin:16px 0;padding-top:12px;">' +
-      '      <button class="btn btn-danger" id="auser-btn-delete" style="width:100%;padding:10px;border-radius:8px;background:#fff;color:#F5222D;border:1px solid #F5222D;">删除用户</button>' +
+      '      <button class="btn btn-danger" id="auser-btn-delete" style="width:100%;padding:10px;border-radius:8px;background:#fff;color:#C96E68;border:1px solid #C96E68;">删除用户</button>' +
       '      <p style="font-size:0.75rem;color:#999;margin-top:6px;">⚠️ 删除后数据不可恢复</p>' +
       '    </div>' +
       '  </div></div>';
@@ -1145,10 +1145,10 @@
     html += '<div class="profile-scroll">';
 
     html += '<div class="admin-stats-row">';
-    html += buildStatCard('👤', allUsers.length, '总用户', '#4A90D9');
-    html += buildStatCard('📝', allRecords.length, '总记录', '#52C41A');
-    html += buildStatCard('🔗', activeGrants.length, '活跃授权', '#FAAD14');
-    html += buildStatCard('📅', recent30d.length, '近30天活跃', '#EB2F96');
+    html += buildStatCard('👤', allUsers.length, '总用户', '#D9785F');
+    html += buildStatCard('📝', allRecords.length, '总记录', '#6FA789');
+    html += buildStatCard('🔗', activeGrants.length, '活跃授权', '#E7B95E');
+    html += buildStatCard('📅', recent30d.length, '近30天活跃', '#D99A4E');
     html += '</div>';
 
     // 记录趋势图
@@ -1159,7 +1159,7 @@
     fourteenDays.forEach(function (ds) {
       var v = dailyActive[ds] || 0;
       var pct = (v / maxDaily) * 100;
-      html += '<div class="a-bar-col"><div class="a-bar" style="height:' + pct + '%;background:#4A90D9;"></div>';
+      html += '<div class="a-bar-col"><div class="a-bar" style="height:' + pct + '%;background:#D9785F;"></div>';
       html += '<div class="a-bar-label">' + ds.slice(5) + '</div><div class="a-bar-count">' + v + '</div></div>';
     });
     html += '</div>';
@@ -1176,7 +1176,7 @@
         var pct = Math.round(moduleDist[m] / totalMod * 100);
         html += '<div style="margin-bottom:8px;display:flex;align-items:center;gap:8px;">';
         html += '<span style="width:50px;font-size:0.8rem;">' + (modLabels[m] || m) + '</span>';
-        html += '<div style="flex:1;background:#f0f0f0;border-radius:4px;height:16px;"><div style="height:100%;width:' + pct + '%;background:#4A90D9;border-radius:4px;"></div></div>';
+        html += '<div style="flex:1;background:#f0f0f0;border-radius:4px;height:16px;"><div style="height:100%;width:' + pct + '%;background:#D9785F;border-radius:4px;"></div></div>';
         html += '<span style="font-size:0.75rem;color:#888;width:40px;">' + moduleDist[m] + '</span>';
         html += '</div>';
       });

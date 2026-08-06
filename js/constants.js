@@ -204,19 +204,19 @@
 
   /** 多角色配置 */
   var ROLES = {
-    youth: { label: '心青年', name: '小雨', avatar: '🌻', color: '#4A90D9',
+    youth: { label: '心青年', name: '小雨', avatar: '🌻', color: '#D9785F',
       canAdd: ['mood', 'note'],
       description: '记录自己的心情和感受' },
-    parent: { label: '家长', name: '妈妈', avatar: '👨\u200d👩\u200d👧', color: '#52C41A',
+    parent: { label: '家长', name: '妈妈', avatar: '👨\u200d👩\u200d👧', color: '#6FA789',
       canAdd: ['care', 'communication', 'emotion', 'strategy', 'note'],
       description: '记录日常照护和家庭情况' },
-    teacher: { label: '老师', name: '李老师', avatar: '📚', color: '#FAAD14',
+    teacher: { label: '老师', name: '李老师', avatar: '📚', color: '#E7B95E',
       canAdd: ['activity', 'communication', 'emotion', 'strategy', 'note'],
       description: '记录教学和活动情况' },
-    caregiver: { label: '影子老师', name: '张阿姨', avatar: '🤝', color: '#722ED1',
+    caregiver: { label: '影子老师', name: '张阿姨', avatar: '🤝', color: '#E8A87C',
       canAdd: ['care', 'communication', 'emotion', 'strategy', 'note'],
       description: '记录日常照护和陪伴情况' },
-    government: { label: '政府', name: '政府管理员', avatar: '🏛️', color: '#EB2F96',
+    government: { label: '政府', name: '政府管理员', avatar: '🏛️', color: '#D99A4E',
       canAdd: [],
       description: '查看宏观数据看板' },
     admin: { label: '管理员', name: '系统管理员', avatar: '🛡️', color: '#13C2C2',
@@ -229,23 +229,23 @@
 
   /** 记录类型配置 */
   var RECORD_TYPES = {
-    mood: { label: '心情记录', icon: '💭', color: '#4A90D9',
+    mood: { label: '心情记录', icon: '💭', color: '#D9785F',
       fields: ['mood', 'content'], description: '记录今天的心情' },
-    care: { label: '照护记录', icon: '🏥', color: '#52C41A',
+    care: { label: '照护记录', icon: '🏥', color: '#6FA789',
       fields: ['title', 'content'], description: '记录饮食、睡眠、健康等照护情况' },
-    activity: { label: '活动记录', icon: '🎯', color: '#FAAD14',
+    activity: { label: '活动记录', icon: '🎯', color: '#E7B95E',
       fields: ['title', 'content'], description: '记录参加的课程、活动、训练' },
-    communication: { label: '沟通观察', icon: '💬', color: '#722ED1',
+    communication: { label: '沟通观察', icon: '💬', color: '#E8A87C',
       fields: ['content'], description: '记录沟通中的观察发现' },
-    emotion: { label: '情绪事件', icon: '😊', color: '#F5222D',
+    emotion: { label: '情绪事件', icon: '😊', color: '#C96E68',
       fields: ['emotion_type', 'content'], description: '记录情绪波动的触发和应对' },
-    note: { label: '一般备注', icon: '📝', color: '#999999',
+    note: { label: '一般备注', icon: '📝', color: '#9A8F88',
       fields: ['title', 'content'], description: '添加其他需要记录的备注' },
-    strategy: { label: '策略记录', icon: '🧩', color: '#EB2F96',
+    strategy: { label: '策略记录', icon: '🧩', color: '#D99A4E',
       fields: ['emotion_type', 'title', 'content', 'effectiveness'], description: '记录情绪行为策略使用及效果' },
-    life: { label: '生活记录', icon: '❤️', color: '#4A90D9',
+    life: { label: '生活记录', icon: '❤️', color: '#D9785F',
       fields: ['title', 'content'], description: '记录兴趣、活动、日常生活偏好' },
-    social: { label: '社交记录', icon: '👥', color: '#EB2F96',
+    social: { label: '社交记录', icon: '👥', color: '#D99A4E',
       fields: ['title', 'content'], description: '记录社交互动、人际关系变化' }
   };
 
@@ -683,9 +683,9 @@
 
   /** 信息来源类型 */
   var SOURCE_TYPES = {
-    selfReported: { key: 'self', label: '心青年自己说的', icon: '💬', color: '#4A90D9', desc: '本人通过对话或表达直接传递的信息' },
-    observerReported: { key: 'observer', label: '支持者观察到的', icon: '👁️', color: '#722ED1', desc: '家长、老师等照护者基于观察记录的信息' },
-    coConfirmed: { key: 'confirmed', label: '大家共同确认的', icon: '✅', color: '#52C41A', desc: '多方交叉验证后共同认可的信息' }
+    selfReported: { key: 'self', label: '心青年自己说的', icon: '💬', color: '#D9785F', desc: '本人通过对话或表达直接传递的信息' },
+    observerReported: { key: 'observer', label: '支持者观察到的', icon: '👁️', color: '#E8A87C', desc: '家长、老师等照护者基于观察记录的信息' },
+    coConfirmed: { key: 'confirmed', label: '大家共同确认的', icon: '✅', color: '#6FA789', desc: '多方交叉验证后共同认可的信息' }
   };
 
   /* ==========================================================
@@ -715,10 +715,10 @@
    * ========================================================== */
 
   var EFFECTIVENESS_LEVELS = [
-    { value: 'effective', label: '有效', icon: '✅', color: '#52C41A', desc: '这个方法明显帮助了心青年' },
-    { value: 'partial', label: '部分有效', icon: '🔶', color: '#FAAD14', desc: '有一定帮助，但效果不完全' },
+    { value: 'effective', label: '有效', icon: '✅', color: '#6FA789', desc: '这个方法明显帮助了心青年' },
+    { value: 'partial', label: '部分有效', icon: '🔶', color: '#E7B95E', desc: '有一定帮助，但效果不完全' },
     { value: 'none', label: '无明显效果', icon: '⚪', color: '#999', desc: '没有观察到明显变化' },
-    { value: 'worse', label: '可能加重压力', icon: '⚠️', color: '#F5222D', desc: '这个方法可能让情况更糟' }
+    { value: 'worse', label: '可能加重压力', icon: '⚠️', color: '#C96E68', desc: '这个方法可能让情况更糟' }
   ];
 
   /** 已验证的有效支持经验（P7 AI发现示例） */
@@ -924,12 +924,12 @@
     title: 'AI懂我 · 工作演示链',
     description: '以下演示AI如何帮助沉淀有效支持经验，防止宝贵的支持知识随着人员更换而丢失',
     steps: [
-      { step: 1, actor: '心青年·小雨', action: '在对话端表达："明天不想去新的工作地点。"', icon: '💬', color: '#4A90D9' },
-      { step: 2, actor: 'AI懂我', action: '通过简短追问理解原因：是因为之前没去过、不知道路怎么走、还是担心那里的人不认识？', icon: '🤖', color: '#722ED1' },
-      { step: 3, actor: '妈妈·家长', action: '补充记录：小雨对新环境和临时变化比较敏感，上次换工位时焦虑了20分钟。', icon: '👩', color: '#52C41A' },
-      { step: 4, actor: '李老师', action: '记录有效方法：提前给小雨看了新地点的照片和公交路线图，用日程卡展示了当天流程，焦虑明显降低。', icon: '👩\u200d🏫', color: '#FAAD14' },
-      { step: 5, actor: 'AI懂我', action: 'AI 分析发现：近4次涉及"新环境"的记录中，有3次使用了"提前展示照片+路线图"，焦虑持续时间平均缩短70%。建议将此方法沉淀为小雨的"新环境适应策略"。', icon: '🤖', color: '#722ED1' },
-      { step: 6, actor: '系统', action: '自动更新工作场景支持卡，新任就业辅导员用5分钟即可了解小雨并知道如何正确提供支持。', icon: '📋', color: '#EB2F96' },
+      { step: 1, actor: '心青年·小雨', action: '在对话端表达："明天不想去新的工作地点。"', icon: '💬', color: '#D9785F' },
+      { step: 2, actor: 'AI懂我', action: '通过简短追问理解原因：是因为之前没去过、不知道路怎么走、还是担心那里的人不认识？', icon: '🤖', color: '#E8A87C' },
+      { step: 3, actor: '妈妈·家长', action: '补充记录：小雨对新环境和临时变化比较敏感，上次换工位时焦虑了20分钟。', icon: '👩', color: '#6FA789' },
+      { step: 4, actor: '李老师', action: '记录有效方法：提前给小雨看了新地点的照片和公交路线图，用日程卡展示了当天流程，焦虑明显降低。', icon: '👩\u200d🏫', color: '#E7B95E' },
+      { step: 5, actor: 'AI懂我', action: 'AI 分析发现：近4次涉及"新环境"的记录中，有3次使用了"提前展示照片+路线图"，焦虑持续时间平均缩短70%。建议将此方法沉淀为小雨的"新环境适应策略"。', icon: '🤖', color: '#E8A87C' },
+      { step: 6, actor: '系统', action: '自动更新工作场景支持卡，新任就业辅导员用5分钟即可了解小雨并知道如何正确提供支持。', icon: '📋', color: '#D99A4E' },
       { step: 7, actor: '价值', action: '即使支持人员更换，小雨的有效支持经验不会丢失。这就是"AI懂我"的核心价值。', icon: '💡', color: '#13C2C2' }
     ]
   };
