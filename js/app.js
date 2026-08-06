@@ -467,6 +467,13 @@
 
     // 应用当前角色的隐私设置
     window.Permissions.applyPrivacy(currentRole);
+
+    // FAB 可见性：主题详情页 + 档案主题列表页隐藏
+    var fabHidePages = ['life', 'communication', 'emotion', 'care', 'work', 'relations', 'archive-topics'];
+    var fab = document.getElementById('fab-container');
+    if (fab) {
+      fab.style.display = fabHidePages.indexOf(basePage) !== -1 ? 'none' : '';
+    }
   }
 
   /**
@@ -1126,7 +1133,7 @@
    * L2 最近变化 — 按时间范围对比，给出人话总结
    */
   function renderL2Content(contentArea, records, rangeIdx) {
-    var container = contentArea.querySelector('#topic-l2-content');
+    var container = contentArea.querySelector('.topic-l2-content');
     if (!container) return;
 
     var ranges = [
@@ -1295,7 +1302,7 @@
    * L4 全部记录 — 按今天/本周/本月/更早分组，可展开
    */
   function renderL4Content(contentArea, records) {
-    var container = contentArea.querySelector('#topic-l4-content');
+    var container = contentArea.querySelector('.topic-l4-content');
     if (!container) return;
 
     var now = new Date();
@@ -1502,7 +1509,7 @@
       html += '    <button class="comm-time-tab' + (i === 0 ? ' active' : '') + '" data-range="' + i + '">' + label + '</button>';
     });
     html += '  </div>';
-    html += '  <div id="topic-l2-content"></div>';
+    html += '  <div class="topic-l2-content"></div>';
     html += '</div>';
 
     // L3: 关键事件
@@ -1534,7 +1541,7 @@
     // L4: 全部记录
     html += '<div class="comm-layer comm-layer-l4">';
     html += '  <div class="comm-layer-title">📋 全部记录</div>';
-    html += '  <div id="topic-l4-content"></div>';
+    html += '  <div class="topic-l4-content"></div>';
     html += '</div>';
 
     html += '</div>';
@@ -1582,7 +1589,7 @@
 
   function renderGenericL2Content(contentArea, containerId, records, rangeIdx) {
     rangeIdx = rangeIdx || 0;
-    var container = contentArea.querySelector('#' + containerId);
+    var container = contentArea.querySelector('.' + containerId);
     if (!container) return;
     var ranges = [{ days: 7, label: '近7天' }, { days: 30, label: '近30天' }, { days: 90, label: '近3个月' }, { days: 180, label: '近半年' }];
     var range = ranges[rangeIdx] || ranges[0];
@@ -1601,7 +1608,7 @@
   }
 
   function renderGenericL4Content(contentArea, containerId, records) {
-    var container = contentArea.querySelector('#' + containerId);
+    var container = contentArea.querySelector('.' + containerId);
     if (!container) return;
     var today = dateDaysAgo(0), weekCutoff = dateDaysAgo(7), monthCutoff = dateDaysAgo(30);
     var groups = [
@@ -3150,6 +3157,13 @@
 
     // 应用当前角色的隐私设置
     window.Permissions.applyPrivacy(currentRole);
+
+    // FAB 可见性：主题详情页 + 档案主题列表页隐藏
+    var fabHidePages = ['life', 'communication', 'emotion', 'care', 'work', 'relations', 'archive-topics'];
+    var fab = document.getElementById('fab-container');
+    if (fab) {
+      fab.style.display = fabHidePages.indexOf(basePage) !== -1 ? 'none' : '';
+    }
   }
 
   /* ==========================================================
