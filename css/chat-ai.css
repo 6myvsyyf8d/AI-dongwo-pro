@@ -48,7 +48,7 @@
 }
 
 .chat-bubble-ai a {
-  color: var(--chat-purple, #E8A87C);
+  color: var(--chat-purple, #F5E6D3);
   text-decoration: underline;
 }
 
@@ -77,7 +77,7 @@
 .chat-typing-cursor::after {
   content: '|';
   animation: blink 1s step-end infinite;
-  color: var(--chat-purple, #E8A87C);
+  color: var(--chat-purple, #F5E6D3);
 }
 
 @keyframes blink {
@@ -97,7 +97,7 @@
 
 .chat-progress-bar-fill {
   height: 100%;
-  background: linear-gradient(90deg, #D9785F, #E8A87C);
+  background: linear-gradient(90deg, #D97757, #F5E6D3);
   border-radius: 1px;
   transition: width 0.4s ease;
 }
@@ -108,7 +108,7 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--chat-purple, #E8A87C);
+  background: var(--chat-purple, #F5E6D3);
   margin-left: 4px;
   animation: savingPulse 1s ease-in-out infinite;
 }

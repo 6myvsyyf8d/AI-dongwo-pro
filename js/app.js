@@ -486,6 +486,14 @@
     // 高亮底部导航
     highlightBottomNav(basePage);
 
+    // 子页面隐藏底部导航
+    var hideNavList = C.HIDE_BOTTOM_NAV || [];
+    var hideNav = hideNavList.indexOf(basePage) !== -1;
+    var bottomNav = document.getElementById('bottom-nav');
+    if (bottomNav) {
+      bottomNav.style.display = hideNav ? 'none' : '';
+    }
+
     // 更新顶栏标题
     updateTopbar(basePage);
 
@@ -667,9 +675,9 @@
     // 渲染今日工作台
     renderTodayWorkbench(role);
 
-    // 渲染导航卡片 —— 根据角色定制
+    // 渲染导航卡片 —— 快捷入口（仅保留核心 4 个）
     if (cardGridEl) {
-      var cards = getRoleCards(role);
+      var cards = getRoleCards(role).slice(0, 4);
       var gridHTML = '';
       cards.forEach(function (card) {
         gridHTML += '<div class="nav-card" data-navigate="' + card.hash + '" data-action="' + (card.action || '') + '">';
@@ -680,7 +688,6 @@
       });
       cardGridEl.innerHTML = gridHTML;
 
-      // 绑定卡片点击事件
       cardGridEl.querySelectorAll('.nav-card').forEach(function (card) {
         card.addEventListener('click', function () {
           var target = this.getAttribute('data-navigate');
@@ -696,14 +703,8 @@
       });
     }
 
-    // 渲染待确认记录入口（仅家长/老师/影子老师可见）
+    // 渲染待确认草稿入口（精简到今日工作台内）
     renderPendingDraftBanner(role);
-
-    // 渲染欢迎语（根据当前角色）
-    renderWelcomeBanner(user);
-
-    // 渲染最新动态区域
-    renderLatestActivity(user);
   }
 
   /**
@@ -757,9 +758,6 @@
     // 隐藏待确认记录入口
     var draftBanner = document.getElementById('pending-draft-banner');
     if (draftBanner) draftBanner.style.display = 'none';
-
-    // 渲染欢迎横幅
-    renderWelcomeBanner(DataStore.getCurrentUser() || appState.currentUser);
 
     // 渲染宏观统计卡片
     renderGovernmentStats();
@@ -1121,7 +1119,7 @@
       '<div style="flex:1;color:#666;">' +
       '  <span style="font-weight:600;color:#333;">' + welcomeText + '</span> ' + subText +
       '</div>' +
-      '<a href="#profile" style="color:#D9785F;text-decoration:none;white-space:nowrap;font-size:0.8rem;">个人中心 →</a>';
+      '<a href="#profile" style="color:#D97757;text-decoration:none;white-space:nowrap;font-size:0.8rem;">个人中心 →</a>';
 
     heroSection.parentNode.insertBefore(banner, heroSection.nextSibling);
   }
@@ -1166,7 +1164,7 @@
     var html = '';
     html += '<h2 style="font-size:1rem;color:#333;margin:12px 0 10px;display:flex;align-items:center;gap:8px;">';
     html += '  <span>🔔</span>待关注';
-    html += '  <a href="#timeline" style="margin-left:auto;font-size:0.82rem;color:#D9785F;text-decoration:none;">查看全部 →</a>';
+    html += '  <a href="#timeline" style="margin-left:auto;font-size:0.82rem;color:#D97757;text-decoration:none;">查看全部 →</a>';
     html += '</h2>';
     html += '<div style="display:flex;flex-direction:column;gap:10px;">';
     latestActionable.forEach(function (record) {
@@ -1377,7 +1375,7 @@
       var fab = document.createElement('button');
       fab.id = 'fab-add-record';
       fab.textContent = '+';
-      fab.style.cssText = 'width:56px;height:56px;border-radius:50%;background:#D9785F;color:#fff;font-size:28px;border:none;box-shadow:0 4px 12px rgba(217,120,95,0.4);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.3s;';
+      fab.style.cssText = 'width:56px;height:56px;border-radius:50%;background:#D97757;color:#fff;font-size:28px;border:none;box-shadow:0 4px 12px rgba(217,119,87,0.4);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.3s;';
 
       // 构建快捷菜单项
       role.canAdd.forEach(function (typeKey) {
@@ -2807,15 +2805,15 @@
     var html = '';
 
     // 档案概览说明
-    html += '<div style="background:linear-gradient(135deg,#D9785F,#5B9BD5);border-radius:16px;padding:20px;margin-bottom:20px;color:#fff;">';
+    html += '<div style="background:linear-gradient(135deg,#D97757,#5B9BD5);border-radius:16px;padding:20px;margin-bottom:20px;color:#fff;">';
     html += '  <div style="font-size:1.2rem;font-weight:600;margin-bottom:6px;">📋 小雨的完整档案</div>';
     html += '  <div style="font-size:0.88rem;opacity:0.9;">六大主题分类，全面了解小雨的 support profile</div>';
     html += '</div>';
 
     // 六大主题档案卡片（含完整度摘要）
     var archiveThemes = [
-      { hash: 'life', icon: '❤️', title: '喜好档案', desc: '喜欢和不喜欢的事物、活动偏好', color: '#D9785F', module: 'life' },
-      { hash: 'communication', icon: '💬', title: '沟通档案', desc: '沟通指南、有效话术、禁忌用语', color: '#E8A87C', module: 'communication' },
+      { hash: 'life', icon: '❤️', title: '喜好档案', desc: '喜欢和不喜欢的事物、活动偏好', color: '#D97757', module: 'life' },
+      { hash: 'communication', icon: '💬', title: '沟通档案', desc: '沟通指南、有效话术、禁忌用语', color: '#F5E6D3', module: 'communication' },
       { hash: 'emotion', icon: '😰', title: '情绪档案', desc: '情绪触发因素、安抚策略、预警信号', color: '#C96E68', module: 'emotion' },
       { hash: 'care', icon: '🏥', title: '照护档案', desc: '过敏、用药、作息、医疗提醒', color: '#6FA789', module: 'care' },
       { hash: 'work', icon: '💼', title: '支持档案', desc: '工作能力、社交关系、支持网络', color: '#E7B95E', module: 'work' },
@@ -3019,7 +3017,7 @@
     } else {
       records.sort(function (a, b) { return (b.date + (b.time || '')).localeCompare(a.date + (a.time || '')); });
       records.forEach(function (r) {
-        var rt = RECORD_TYPES[r.type] || { label: r.type, color: '#D9785F', icon: '📝' };
+        var rt = RECORD_TYPES[r.type] || { label: r.type, color: '#D97757', icon: '📝' };
         html += '<div class="drilldown-item">';
         html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">';
         html += '<div style="display:flex;align-items:center;gap:8px;"><span style="font-size:1.1rem;">' + rt.icon + '</span>';
@@ -3065,6 +3063,19 @@
   }
 
   function renderAnalytics() {
+    var user = DataStore.getCurrentUser() || appState.currentUser;
+    // 政府角色：只展示聚合统计，不展示个人数据
+    if (user && user.role === 'government') {
+      var contentArea = Utils.dom.get('charts-content') || Utils.dom.get('analytics-content');
+      if (contentArea) {
+        contentArea.innerHTML = '<div class="gov-stats-section" style="padding:0 16px;">' +
+          '<h3 style="font-size:1.1rem;font-weight:600;margin-bottom:12px;color:var(--text-primary);">📊 区域服务概况</h3>' +
+          '<p style="color:var(--text-secondary);font-size:0.9rem;margin-bottom:16px;">以下为脱敏后的区域聚合数据，不包含个人身份信息。</p>' +
+          '</div>';
+        renderGovernmentStats();
+      }
+      return;
+    }
     var isCharts = window.location.hash.replace('#', '').split('?')[0] === 'charts';
     var containerId = isCharts ? 'charts-content' : 'analytics-content';
     var contentArea = Utils.dom.get(containerId);
@@ -3100,10 +3111,10 @@
     html += '<div class="a-section"><div class="a-section-head"><h2 class="a-section-title">😰 情绪分布（近30天）</h2>' + renderSourceBadge('data') + '</div>';
     var emotions = [
       { key: 'happy', label: '开心', emoji: '😄', color: '#6FA789' },
-      { key: 'calm', label: '平静', emoji: '😌', color: '#D9785F' },
+      { key: 'calm', label: '平静', emoji: '😌', color: '#D97757' },
       { key: 'anxious', label: '焦虑', emoji: '😰', color: '#E7B95E' },
       { key: 'angry', label: '生气', emoji: '😠', color: '#C96E68' },
-      { key: 'sad', label: '难过', emoji: '😢', color: '#E8A87C' },
+      { key: 'sad', label: '难过', emoji: '😢', color: '#F5E6D3' },
       { key: 'excited', label: '兴奋', emoji: '🤩', color: '#D99A4E' }
     ];
     var totalE = emotions.reduce(function (s, e) { return s + (stats.emotionStats[e.key] || 0); }, 0);
@@ -3147,8 +3158,8 @@
       html += '<div class="a-chart-bars">';
       dates.forEach(function (d) {
         var vals = buckets[d], avg = Math.round(vals.reduce(function (a, b) { return a + b; }, 0) / vals.length);
-        var colors = ['', '#C96E68', '#E7B95E', '#D9785F', '#6FA789', '#6FA789'];
-        html += '<div class="a-bar-col"><div class="a-bar" style="height:' + (avg / 5 * 100) + '%;background:' + (colors[avg] || '#D9785F') + ';"></div>';
+        var colors = ['', '#C96E68', '#E7B95E', '#D97757', '#6FA789', '#6FA789'];
+        html += '<div class="a-bar-col"><div class="a-bar" style="height:' + (avg / 5 * 100) + '%;background:' + (colors[avg] || '#D97757') + ';"></div>';
         html += '<div class="a-bar-label">' + d.slice(5) + '</div></div>';
       });
       html += '</div><div class="a-chart-hint">柱高表示当日心情均值（1-5）</div>';
@@ -3160,7 +3171,7 @@
       var maxC = typeKeys.reduce(function (m, k) { return Math.max(m, stats.typeStats[k]); }, 0);
       html += '<div class="a-chart-bars">';
       typeKeys.forEach(function (k) {
-        var info = RECORD_TYPES[k] || { label: k, color: '#D9785F' };
+        var info = RECORD_TYPES[k] || { label: k, color: '#D97757' };
         html += '<div class="a-bar-col"><div class="a-bar" style="height:' + (maxC > 0 ? (stats.typeStats[k] / maxC * 100) : 0) + '%;background:' + info.color + ';"></div>';
         html += '<div class="a-bar-label">' + info.label + '</div><div class="a-bar-count">' + stats.typeStats[k] + '</div></div>';
       });
@@ -3332,8 +3343,8 @@
       h += '<div class="a-section"><div class="a-section-head"><h2 class="a-section-title">情绪趋势</h2>' + renderSourceBadge('data') + '</div>';
       h += '<div class="a-chart-bars">';
       r.emotionTrend.forEach(function (et) {
-        var colors = ['', '#C96E68', '#E7B95E', '#D9785F', '#6FA789', '#6FA789'];
-        h += '<div class="a-bar-col"><div class="a-bar" style="height:' + (et.score ? et.score / 5 * 100 : 0) + '%;background:' + (et.score ? (colors[Math.round(et.score)] || '#D9785F') : '#ccc') + ';"></div>';
+        var colors = ['', '#C96E68', '#E7B95E', '#D97757', '#6FA789', '#6FA789'];
+        h += '<div class="a-bar-col"><div class="a-bar" style="height:' + (et.score ? et.score / 5 * 100 : 0) + '%;background:' + (et.score ? (colors[Math.round(et.score)] || '#D97757') : '#ccc') + ';"></div>';
         h += '<div class="a-bar-label">' + (et.displayDate || '').slice(5) + '</div><div class="a-bar-count">' + (et.score || '-') + '</div></div>';
       });
       h += '</div></div>';
@@ -3507,7 +3518,7 @@
       html += '<div style="display:flex;align-items:center;justify-content:center;gap:8px;">';
       html += '<span style="font-size:1.5rem;">' + (currentUser.avatar || roleInfo.avatar) + '</span>';
       html += '<span style="font-size:1rem;font-weight:500;">' + (currentUser.name || '用户') + '</span>';
-      html += '<span style="padding:2px 10px;border-radius:10px;font-size:0.78rem;background:rgba(217,120,95,0.1);color:#D9785F;">' + roleInfo.label + '</span>';
+      html += '<span style="padding:2px 10px;border-radius:10px;font-size:0.78rem;background:rgba(217,119,87,0.1);color:#D97757;">' + roleInfo.label + '</span>';
       html += '</div></div>';
 
       if (currentUser.role === 'parent') {
@@ -3540,7 +3551,7 @@
         html += '</button>';
       });
       html += '</div>';
-      html += '<p style="font-size:0.78rem;color:#aaa;">已有账号？<a href="#login" style="color:#D9785F;">去登录</a></p>';
+      html += '<p style="font-size:0.78rem;color:#aaa;">已有账号？<a href="#login" style="color:#D97757;">去登录</a></p>';
     }
 
     html += '</div>';
@@ -3737,7 +3748,7 @@
     }
 
     var html = '';
-    html += '<div style="margin-bottom:12px;padding:10px 14px;background:#f0f7ff;border-radius:8px;font-size:0.85rem;color:#D9785F;">';
+    html += '<div style="margin-bottom:12px;padding:10px 14px;background:#f0f7ff;border-radius:8px;font-size:0.85rem;color:#D97757;">';
     html += '  💡 ' + recommendation.message;
     html += '</div>';
 
@@ -3764,7 +3775,7 @@
       html += '    <span style="color:#E7B95E;">⚠️ ' + s.caution + '</span>';
       html += '    <span style="color:#6FA789;">✅ ' + s.expected + '</span>';
       html += '  </div>';
-      html += '  <button class="btn-use-strategy" data-strategy="' + s.name + '" data-emotion="' + recommendation.emotionLabel + '" style="margin-top:10px;padding:6px 16px;background:#D9785F;color:#fff;border:none;border-radius:6px;font-size:0.8rem;cursor:pointer;">记录使用此策略</button>';
+      html += '  <button class="btn-use-strategy" data-strategy="' + s.name + '" data-emotion="' + recommendation.emotionLabel + '" style="margin-top:10px;padding:6px 16px;background:#D97757;color:#fff;border:none;border-radius:6px;font-size:0.8rem;cursor:pointer;">记录使用此策略</button>';
       html += '</div>';
     });
 
@@ -4086,9 +4097,9 @@
   var TASK_CATEGORY_CONFIG = {
     medication: { label: '医疗', color: '#C96E68', bg: 'rgba(245,34,45,0.08)' },
     meal:       { label: '饮食', color: '#FA8C16', bg: 'rgba(250,140,22,0.08)' },
-    hygiene:    { label: '卫生', color: '#D9785F', bg: 'rgba(24,144,255,0.08)' },
+    hygiene:    { label: '卫生', color: '#D97757', bg: 'rgba(24,144,255,0.08)' },
     activity:   { label: '活动', color: '#6FA789', bg: 'rgba(82,196,26,0.08)' },
-    learning:   { label: '学习', color: '#E8A87C', bg: 'rgba(114,46,209,0.08)' },
+    learning:   { label: '学习', color: '#F5E6D3', bg: 'rgba(114,46,209,0.08)' },
     other:      { label: '其他', color: '#8C8C8C', bg: 'rgba(140,140,140,0.08)' }
   };
 
@@ -4301,7 +4312,7 @@
       html += '  <div class="ot-week-label">周' + dayLabel + '</div>';
       html += '  <div class="ot-week-ring" style="--ratio:' + ratio + '">';
       html += '    <svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="16" fill="none" stroke="#E5E7EB" stroke-width="3"/>';
-      html += '    <circle cx="20" cy="20" r="16" fill="none" stroke="' + (ratio > 0.5 ? '#6FA789' : '#D9785F') + '" stroke-width="3" ' +
+      html += '    <circle cx="20" cy="20" r="16" fill="none" stroke="' + (ratio > 0.5 ? '#6FA789' : '#D97757') + '" stroke-width="3" ' +
               'stroke-dasharray="' + (ratio * 100.5).toFixed(1) + ' 100.5" stroke-linecap="round" transform="rotate(-90 20 20)"/>';
       html += '    </svg>';
       html += '    <span class="ot-week-num">' + (ratio > 0 ? dayDone : '') + '</span>';
@@ -4604,7 +4615,7 @@
       html += '<div style="margin-bottom:20px;">';
       html += '<h3 style="font-size:0.95rem;margin-bottom:8px;">🔔 即将到来</h3>';
       upcoming.forEach(function(e) {
-        html += '<div class="cal-upcoming-item" style="border-left:4px solid ' + (e.color||'#D9785F') + ';background:#fff;border-radius:0 8px 8px 0;padding:10px 14px;margin-bottom:8px;box-shadow:0 1px 4px rgba(0,0,0,0.04);">';
+        html += '<div class="cal-upcoming-item" style="border-left:4px solid ' + (e.color||'#D97757') + ';background:#fff;border-radius:0 8px 8px 0;padding:10px 14px;margin-bottom:8px;box-shadow:0 1px 4px rgba(0,0,0,0.04);">';
         html += '<div style="display:flex;justify-content:space-between;align-items:center;">';
         html += '<span style="font-weight:600;">' + e.icon + ' ' + e.title + '</span>';
         html += '<span style="font-size:0.8rem;color:#999;">' + e.date + (e.time ? ' ' + e.time : '') + '</span>';
@@ -4647,7 +4658,7 @@
       if (dayEvents.length > 0) {
         html += '<div class="cal-dots">';
         dayEvents.slice(0, 3).forEach(function(e) {
-          html += '<span class="cal-dot" style="background:' + (e.color || '#D9785F') + ';"></span>';
+          html += '<span class="cal-dot" style="background:' + (e.color || '#D97757') + ';"></span>';
         });
         if (dayEvents.length > 3) html += '<span style="font-size:0.6rem;color:#999;">+' + (dayEvents.length-3) + '</span>';
         html += '</div>';
@@ -4668,7 +4679,7 @@
     } else {
       selEvents.sort(function(a,b) { return (a.time||'').localeCompare(b.time||''); });
       selEvents.forEach(function(evt) {
-        html += '<div class="cal-event-item" style="border-left:4px solid ' + (evt.color||'#D9785F') + ';background:#fff;border-radius:0 8px 8px 0;padding:12px 16px;margin-bottom:8px;box-shadow:0 1px 4px rgba(0,0,0,0.04);">';
+        html += '<div class="cal-event-item" style="border-left:4px solid ' + (evt.color||'#D97757') + ';background:#fff;border-radius:0 8px 8px 0;padding:12px 16px;margin-bottom:8px;box-shadow:0 1px 4px rgba(0,0,0,0.04);">';
         html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">';
         html += '<span style="font-weight:600;">' + evt.icon + ' ' + evt.title + '</span>';
         if (evt.time) html += '<span style="font-size:0.82rem;color:#999;">' + evt.time + (evt.endTime ? ' - ' + evt.endTime : '') + '</span>';
@@ -4744,12 +4755,12 @@
     var desc = document.getElementById('new-event-desc').value.trim();
     var type = document.getElementById('new-event-type').value;
     var icons = { medical: '🏥', activity: '🎨', meeting: '📋', reminder: '💊', custom: '📌' };
-    var colors = { medical: '#C96E68', activity: '#E7B95E', meeting: '#D9785F', reminder: '#E8A87C', custom: '#D99A4E' };
+    var colors = { medical: '#C96E68', activity: '#E7B95E', meeting: '#D97757', reminder: '#F5E6D3', custom: '#D99A4E' };
     var user = appState.currentUser;
     DataStore.addEvent({
       title: title, type: type, icon: icons[type] || '📌',
       date: date, time: time, description: desc,
-      recurring: 'none', priority: 'medium', color: colors[type] || '#D9785F',
+      recurring: 'none', priority: 'medium', color: colors[type] || '#D97757',
       author: user ? user.name : '未知', authorRole: user ? user.role : 'parent'
     });
     document.getElementById('add-event-modal').remove();
@@ -4788,18 +4799,18 @@
       container.style.cssText = 'position:absolute;left:-9999px;top:0;width:800px;background:#fff;padding:32px;font-family:"Microsoft YaHei",sans-serif;color:#333;';
       var html = '';
       html += '<div style="text-align:center;margin-bottom:24px;">';
-      html += '<h1 style="font-size:1.5rem;color:#D9785F;margin:0;">AI懂我 - 心智障碍者动态支持档案</h1>';
+      html += '<h1 style="font-size:1.5rem;color:#D97757;margin:0;">AI懂我 - 心智障碍者动态支持档案</h1>';
       html += '<p style="color:#999;font-size:0.85rem;">记录导出 · ' + getTodayString() + '</p>';
       html += '</div>';
       records.sort(function(a,b) { return (b.date+b.time).localeCompare(a.date+a.time); });
       var lastDate = '';
       records.forEach(function(r) {
         if (r.date !== lastDate) {
-          html += '<h2 style="font-size:1rem;color:#D9785F;border-bottom:1px solid #eee;padding-bottom:4px;margin:16px 0 8px;">' + r.date + '</h2>';
+          html += '<h2 style="font-size:1rem;color:#D97757;border-bottom:1px solid #eee;padding-bottom:4px;margin:16px 0 8px;">' + r.date + '</h2>';
           lastDate = r.date;
         }
         var typeLabel = RECORD_TYPES[r.type] ? RECORD_TYPES[r.type].label : r.type;
-        html += '<div style="background:#f9fafb;border-radius:8px;padding:12px 16px;margin-bottom:8px;border-left:3px solid #D9785F;">';
+        html += '<div style="background:#f9fafb;border-radius:8px;padding:12px 16px;margin-bottom:8px;border-left:3px solid #D97757;">';
         html += '<div style="display:flex;justify-content:space-between;font-size:0.8rem;color:#999;margin-bottom:4px;">';
         html += '<span>' + (r.author||'') + ' · ' + typeLabel + '</span>';
         html += '<span>' + (r.time||'') + '</span>';

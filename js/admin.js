@@ -85,7 +85,7 @@
     html += buildStatCard('👥', activeGrants.length, '已授权', '#6FA789');
     html += buildStatCard('📋', pendingRequests.length, '待审批', pendingRequests.length > 0 ? '#E7B95E' : '#9A8F88');
     html += buildStatCard('⏰', expiringGrants.length, '即将到期', expiringGrants.length > 0 ? '#C96E68' : '#9A8F88');
-    html += buildStatCard('📝', auditLog.length, '操作记录', '#D9785F');
+    html += buildStatCard('📝', auditLog.length, '操作记录', '#D97757');
     html += '</div>';
 
     // ====== 风险提示 ======
@@ -217,7 +217,7 @@
 
     // ====== 系统概览 ======
     html += '<div class="admin-stats-row">';
-    html += buildStatCard('👤', allUsers.length, '总用户', '#D9785F');
+    html += buildStatCard('👤', allUsers.length, '总用户', '#D97757');
     html += buildStatCard('🔗', allGrants.filter(function (g) { return g.status === 'active'; }).length, '活跃授权', '#6FA789');
     html += buildStatCard('📋', joinRequests.filter(function (r) { return r.status === 'pending'; }).length, '待审批', '#E7B95E');
     html += buildStatCard('📝', auditLog.length, '操作日志', '#9A8F88');
@@ -320,7 +320,7 @@
     ct.innerHTML = '<div style="padding:48px 24px;text-align:center;">' +
       '<div style="font-size:3rem;">🏛️</div>' +
       '<p style="color:#888;margin-top:12px;">政府角色可查看宏观数据看板</p>' +
-      '<button onclick="location.hash=\'home\'" style="margin-top:16px;padding:10px 24px;background:#D9785F;color:#fff;border:none;border-radius:10px;font-size:0.9rem;cursor:pointer;">前往政府看板</button>' +
+      '<button onclick="location.hash=\'home\'" style="margin-top:16px;padding:10px 24px;background:#D97757;color:#fff;border:none;border-radius:10px;font-size:0.9rem;cursor:pointer;">前往政府看板</button>' +
       '</div>';
   }
 
@@ -353,7 +353,7 @@
       html += '<div style="text-align:center;padding:32px 16px;color:#bbb;">';
       html += '<div style="font-size:2rem;">📭</div>';
       html += '<p>尚未加入任何家庭支持网络</p>';
-      html += '<button onclick="location.hash=\'join\'" style="margin-top:12px;padding:10px 24px;background:#D9785F;color:#fff;border:none;border-radius:10px;font-size:0.9rem;cursor:pointer;">加入家庭</button>';
+      html += '<button onclick="location.hash=\'join\'" style="margin-top:12px;padding:10px 24px;background:#D97757;color:#fff;border:none;border-radius:10px;font-size:0.9rem;cursor:pointer;">加入家庭</button>';
       html += '</div>';
     } else {
       grants.forEach(function (g) {
@@ -687,9 +687,9 @@
       resultArea.innerHTML =
         '<div style="background:#f0f7ff;border-radius:12px;padding:20px;text-align:center;">' +
         '  <div style="font-size:0.85rem;color:#888;margin-bottom:8px;">邀请码已生成</div>' +
-        '  <div style="font-size:2rem;font-weight:700;color:#D9785F;letter-spacing:4px;margin-bottom:8px;user-select:all;">' + invitation.code + '</div>' +
+        '  <div style="font-size:2rem;font-weight:700;color:#D97757;letter-spacing:4px;margin-bottom:8px;user-select:all;">' + invitation.code + '</div>' +
         '  <div style="font-size:0.78rem;color:#aaa;">有效期至 ' + invitation.expiresAt + '</div>' +
-        '  <button id="btn-copy-invite" style="margin-top:12px;padding:8px 20px;background:#D9785F;color:#fff;border:none;border-radius:8px;cursor:pointer;">📋 复制邀请码</button>' +
+        '  <button id="btn-copy-invite" style="margin-top:12px;padding:8px 20px;background:#D97757;color:#fff;border:none;border-radius:8px;cursor:pointer;">📋 复制邀请码</button>' +
         '</div>';
       document.getElementById('btn-copy-invite').addEventListener('click', function () {
         navigator.clipboard.writeText(invitation.code).then(function () {
@@ -1145,7 +1145,7 @@
     html += '<div class="profile-scroll">';
 
     html += '<div class="admin-stats-row">';
-    html += buildStatCard('👤', allUsers.length, '总用户', '#D9785F');
+    html += buildStatCard('👤', allUsers.length, '总用户', '#D97757');
     html += buildStatCard('📝', allRecords.length, '总记录', '#6FA789');
     html += buildStatCard('🔗', activeGrants.length, '活跃授权', '#E7B95E');
     html += buildStatCard('📅', recent30d.length, '近30天活跃', '#D99A4E');
@@ -1159,7 +1159,7 @@
     fourteenDays.forEach(function (ds) {
       var v = dailyActive[ds] || 0;
       var pct = (v / maxDaily) * 100;
-      html += '<div class="a-bar-col"><div class="a-bar" style="height:' + pct + '%;background:#D9785F;"></div>';
+      html += '<div class="a-bar-col"><div class="a-bar" style="height:' + pct + '%;background:#D97757;"></div>';
       html += '<div class="a-bar-label">' + ds.slice(5) + '</div><div class="a-bar-count">' + v + '</div></div>';
     });
     html += '</div>';
@@ -1176,7 +1176,7 @@
         var pct = Math.round(moduleDist[m] / totalMod * 100);
         html += '<div style="margin-bottom:8px;display:flex;align-items:center;gap:8px;">';
         html += '<span style="width:50px;font-size:0.8rem;">' + (modLabels[m] || m) + '</span>';
-        html += '<div style="flex:1;background:#f0f0f0;border-radius:4px;height:16px;"><div style="height:100%;width:' + pct + '%;background:#D9785F;border-radius:4px;"></div></div>';
+        html += '<div style="flex:1;background:#f0f0f0;border-radius:4px;height:16px;"><div style="height:100%;width:' + pct + '%;background:#D97757;border-radius:4px;"></div></div>';
         html += '<span style="font-size:0.75rem;color:#888;width:40px;">' + moduleDist[m] + '</span>';
         html += '</div>';
       });

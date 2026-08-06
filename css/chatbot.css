@@ -5,14 +5,14 @@
 
 /* --- Chat CSS Variables --- */
 :root {
-  --chat-purple: #E8A87C;
+  --chat-purple: #F5E6D3;
   --chat-purple-light: #EEEDFB;
-  --chat-purple-gradient: linear-gradient(135deg, #D9785F, #E8A87C 50%, #F0C9A0);
+  --chat-purple-gradient: linear-gradient(135deg, #D97757, #F5E6D3 50%, #F0C9A0);
   --chat-orange: #E8A547;
   --chat-orange-light: #FDF5E6;
   --chat-green: #5B9B6F;
   --chat-green-light: #F0F7F2;
-  --chat-bg: #FFF9F5;
+  --chat-bg: #FDFBF7;
   --chat-card: #FFFFFF;
   --chat-border: rgba(119, 98, 168, 0.08);
   --chat-text: #3D3327;
@@ -20,7 +20,7 @@
   --chat-text-muted: #A39588;
   --chat-white: #FFFFFF;
   --chat-bubble-ai: #FFFFFF;
-  --chat-bubble-user: #E8A87C;
+  --chat-bubble-user: #F5E6D3;
   --chat-radius-sm: 8px;
   --chat-radius-md: 12px;
   --chat-radius-lg: 16px;
@@ -46,7 +46,7 @@
   width: 52px;
   height: 52px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #D9785F, #F0C9A0);
+  background: linear-gradient(135deg, #D97757, #F0C9A0);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -85,7 +85,7 @@
   padding: 16px 0;
   border: none;
   border-radius: var(--chat-radius-lg);
-  background: linear-gradient(135deg, #D9785F, #E8A87C);
+  background: linear-gradient(135deg, #D97757, #F5E6D3);
   color: #fff;
   font-size: 17px;
   font-weight: 600;
@@ -285,7 +285,7 @@
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #D9785F, #E8A87C);
+  background: linear-gradient(135deg, #D97757, #F5E6D3);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1056,7 +1056,7 @@
   padding: 14px 0;
   border: none;
   border-radius: var(--chat-radius-lg);
-  background: linear-gradient(135deg, #D9785F, #E8A87C);
+  background: linear-gradient(135deg, #D97757, #F5E6D3);
   color: #fff;
   font-size: 16px;
   font-weight: 600;
@@ -1429,7 +1429,7 @@
   background: rgba(94, 106, 210, 0.08);
   border-radius: 10px;
   font-size: 13px;
-  color: #E8A87C;
+  color: #F5E6D3;
   text-align: center;
   border: 1px solid rgba(94, 106, 210, 0.15);
 }
@@ -1518,7 +1518,7 @@
   background-position: right 12px center;
 }
 .chat-review-module-select:focus {
-  border-color: #E8A87C;
+  border-color: #F5E6D3;
 }
 
 /* -- 只读字段值 -- */
@@ -1536,7 +1536,7 @@
   padding: 10px 12px;
   border: none;
   border-radius: 10px;
-  background: #E8A87C;
+  background: #F5E6D3;
   color: #fff;
   font-size: 0.85rem;
   font-weight: 600;
@@ -1563,7 +1563,7 @@
   border: none;
   border-radius: 10px;
   background: rgba(94, 106, 210, 0.1);
-  color: #E8A87C;
+  color: #F5E6D3;
   font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;

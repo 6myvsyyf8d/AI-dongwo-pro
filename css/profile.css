@@ -40,7 +40,7 @@
   position: relative;
   overflow: hidden;
   border-radius: 24px;
-  background: linear-gradient(135deg, #B95F4B 0%, #D9785F 30%, #E8A87C 65%, #F0C9A0 100%);
+  background: linear-gradient(135deg, #B55D3D 0%, #D97757 30%, #F5E6D3 65%, #F0C9A0 100%);
   padding: 16px 18px 6px;
   color: #fff;
 }
@@ -232,7 +232,7 @@
 
 .about-item-check {
   flex-shrink: 0;
-  color: #D9785F;
+  color: #D97757;
   font-weight: 700;
 }
 
@@ -259,7 +259,7 @@
   padding: 4px 16px;
   border: none;
   background: #f0ecf7;
-  color: #D9785F;
+  color: #D97757;
   border-radius: 12px;
   font-size: 11px;
   font-weight: 600;
@@ -376,7 +376,7 @@
 
 .recent-rec-label {
   font-weight: 600;
-  color: #D9785F;
+  color: #D97757;
   flex-shrink: 0;
 }
 
@@ -522,7 +522,7 @@
 .completeness-pct {
   font-size: 13px;
   font-weight: 700;
-  color: #D9785F;
+  color: #D97757;
 }
 
 .completeness-track {
@@ -536,7 +536,7 @@
 .completeness-fill {
   height: 100%;
   border-radius: 3px;
-  background: linear-gradient(90deg, #E8A87C, #D9785F);
+  background: linear-gradient(90deg, #F5E6D3, #D97757);
   transition: width .6s ease;
 }
 
@@ -585,7 +585,7 @@
   font-weight: 500;
 }
 
-.source-badge.self      { background: #e6f0ff; color: #D9785F; }
+.source-badge.self      { background: #e6f0ff; color: #D97757; }
 .source-badge.observer  { background: #f0e6ff; color: #722ED1; }
 .source-badge.confirmed { background: #e6ffe6; color: #6FA789; }
 
@@ -597,7 +597,7 @@
   position: relative;
   overflow: hidden;
   border-radius: 24px;
-  background: linear-gradient(135deg, #D9785F, #E8A87C 56%, #F0C9A0);
+  background: linear-gradient(135deg, #D97757, #F5E6D3 56%, #F0C9A0);
   padding: 22px 18px;
   display: flex;
   align-items: center;
@@ -737,7 +737,7 @@
   font-weight: 700;
 }
 
-.stress-category.signal   { background: #e6f0ff; color: #D9785F; }
+.stress-category.signal   { background: #e6f0ff; color: #D97757; }
 .stress-category.attention { background: #fff8e6; color: #B08A3A; }
 .stress-category.safety    { background: #ffe6e6; color: #D4654A; }
 
@@ -761,7 +761,7 @@
 
 .chain-label {
   font-weight: 600;
-  color: #D9785F;
+  color: #D97757;
   flex-shrink: 0;
   min-width: 60px;
 }
@@ -856,7 +856,7 @@
 .vs-step {
   padding: 4px 10px;
   background: #e6f0ff;
-  color: #D9785F;
+  color: #D97757;
   border-radius: 6px;
   font-size: 11.5px;
 }
@@ -871,7 +871,7 @@
 
 /* 认识我 — 生活页（保留） */
 .know-me-first-person {
-  background: linear-gradient(135deg, #D9785F, #E8A87C);
+  background: linear-gradient(135deg, #D97757, #F5E6D3);
   color: #fff;
   border-radius: 16px;
   padding: 18px 16px;
@@ -899,7 +899,7 @@
 .know-me-mini-title {
   font-size: 13px;
   font-weight: 700;
-  color: #D9785F;
+  color: #D97757;
   margin-bottom: 10px;
 }
 
@@ -945,7 +945,7 @@
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: #D9785F;
+  background: #D97757;
 }
 
 .know-me-aspiration {

@@ -487,7 +487,7 @@
       events.push({
         id: 'evt_sleep_' + i, title: '睡前准备', type: 'reminder', icon: '🌙',
         date: dateStr(-dayOffset + i), time: '21:30', description: '晚间照护确认入睡',
-        recurring: 'daily', priority: 'medium', color: '#D9785F',
+        recurring: 'daily', priority: 'medium', color: '#D97757',
         author: '妈妈', authorRole: 'parent', createdAt: today
       });
     }
@@ -511,27 +511,27 @@
       { offset: -dayOffset + 1, title: '机构晨检', type: 'medical', icon: '🏥', time: '08:00', endTime: '08:30', desc: '月初健康检查，量体温、称体重', priority: 'medium', color: '#C96E68' },
       { offset: -dayOffset + 2, title: '烘焙课', type: 'activity', icon: '🍪', time: '10:00', endTime: '11:30', desc: '学习制作曲奇饼干', priority: 'low', color: '#E7B95E' },
       { offset: -dayOffset + 3, title: '电子琴课', type: 'activity', icon: '🎹', time: '14:00', endTime: '15:00', desc: '练习《小星星》完整弹奏', priority: 'low', color: '#13C2C2' },
-      { offset: -dayOffset + 4, title: '社区适应训练', type: 'activity', icon: '🚶', time: '09:30', endTime: '11:00', desc: '去超市购物练习，学习认价格标签', priority: 'medium', color: '#D9785F' },
+      { offset: -dayOffset + 4, title: '社区适应训练', type: 'activity', icon: '🚶', time: '09:30', endTime: '11:00', desc: '去超市购物练习，学习认价格标签', priority: 'medium', color: '#D97757' },
       { offset: -dayOffset + 5, title: '绘画课', type: 'activity', icon: '🎨', time: '10:00', endTime: '11:30', desc: '画公交车主题的水彩画', priority: 'low', color: '#E7B95E' },
-      { offset: -dayOffset + 6, title: 'IEP季度评估', type: 'meeting', icon: '📋', time: '10:00', endTime: '11:30', desc: 'Individualized Education Program 季度评估会议', priority: 'high', color: '#D9785F' },
-      { offset: -dayOffset + 7, title: '家长交流会', type: 'meeting', icon: '👩\u200d👩\u200d👦', time: '14:00', endTime: '15:30', desc: '机构家长交流会，分享照护经验', priority: 'medium', color: '#D9785F' },
+      { offset: -dayOffset + 6, title: 'IEP季度评估', type: 'meeting', icon: '📋', time: '10:00', endTime: '11:30', desc: 'Individualized Education Program 季度评估会议', priority: 'high', color: '#D97757' },
+      { offset: -dayOffset + 7, title: '家长交流会', type: 'meeting', icon: '👩\u200d👩\u200d👦', time: '14:00', endTime: '15:30', desc: '机构家长交流会，分享照护经验', priority: 'medium', color: '#D97757' },
       { offset: -dayOffset + 8, title: '感统训练', type: 'activity', icon: '🧘', time: '10:00', endTime: '11:00', desc: '感觉统合训练，平衡木和触觉练习', priority: 'medium', color: '#6FA789' },
       { offset: -dayOffset + 9, title: '烘焙课', type: 'activity', icon: '🍪', time: '10:00', endTime: '11:30', desc: '学习制作小蛋糕', priority: 'low', color: '#E7B95E' },
       { offset: -dayOffset + 10, title: '户外安全演练', type: 'activity', icon: '⚠️', time: '14:00', endTime: '15:00', desc: '学习过马路、识别红绿灯', priority: 'high', color: '#C96E68' },
-      { offset: -dayOffset + 11, title: '音乐课', type: 'activity', icon: '🎵', time: '10:00', endTime: '11:00', desc: '学习节奏拍打和简单合唱', priority: 'low', color: '#E8A87C' },
+      { offset: -dayOffset + 11, title: '音乐课', type: 'activity', icon: '🎵', time: '10:00', endTime: '11:00', desc: '学习节奏拍打和简单合唱', priority: 'low', color: '#F5E6D3' },
       { offset: -dayOffset + 12, title: '体育活动', type: 'activity', icon: '⚽', time: '15:00', endTime: '16:00', desc: '机构运动会，参加接力跑和投球', priority: 'medium', color: '#6FA789' },
       { offset: -dayOffset + 14, title: '口腔检查', type: 'medical', icon: '🦷', time: '09:00', endTime: '10:00', desc: '社区医院口腔检查', priority: 'medium', color: '#C96E68' },
       { offset: -dayOffset + 15, title: '感统训练', type: 'activity', icon: '🧘', time: '10:00', endTime: '11:00', desc: '触觉脱敏训练，接触不同材质', priority: 'medium', color: '#6FA789' },
-      { offset: -dayOffset + 16, title: '社交技能课', type: 'activity', icon: '🗣️', time: '14:00', endTime: '15:00', desc: '学习打招呼和自我介绍', priority: 'medium', color: '#D9785F' },
+      { offset: -dayOffset + 16, title: '社交技能课', type: 'activity', icon: '🗣️', time: '14:00', endTime: '15:00', desc: '学习打招呼和自我介绍', priority: 'medium', color: '#D97757' },
       { offset: -dayOffset + 17, title: '烘焙课', type: 'activity', icon: '🍪', time: '10:00', endTime: '11:30', desc: '学习制作面包', priority: 'low', color: '#E7B95E' },
       { offset: -dayOffset + 18, title: '电子琴课', type: 'activity', icon: '🎹', time: '14:00', endTime: '15:00', desc: '学习《小星星》变奏', priority: 'low', color: '#13C2C2' },
-      { offset: -dayOffset + 19, title: '心理咨询', type: 'medical', icon: '🧠', time: '10:00', endTime: '11:00', desc: '月度心理咨询评估', priority: 'high', color: '#E8A87C' },
+      { offset: -dayOffset + 19, title: '心理咨询', type: 'medical', icon: '🧠', time: '10:00', endTime: '11:00', desc: '月度心理咨询评估', priority: 'high', color: '#F5E6D3' },
       { offset: -dayOffset + 20, title: '社区散步', type: 'activity', icon: '🚶', time: '15:00', endTime: '16:30', desc: '去公园散步，观察流浪猫', priority: 'low', color: '#13C2C2' },
       { offset: -dayOffset + 21, title: '烘焙课结业展示', type: 'activity', icon: '🏆', time: '14:00', endTime: '16:00', desc: '机构烘焙课程结业展示，家长可以参加', priority: 'high', color: '#E7B95E' },
-      { offset: -dayOffset + 22, title: '家长面谈', type: 'meeting', icon: '👩', time: '10:00', endTime: '11:00', desc: '与李老师一对一面谈，了解本月进展', priority: 'medium', color: '#D9785F' },
+      { offset: -dayOffset + 22, title: '家长面谈', type: 'meeting', icon: '👩', time: '10:00', endTime: '11:00', desc: '与李老师一对一面谈，了解本月进展', priority: 'medium', color: '#D97757' },
       { offset: -dayOffset + 23, title: '感统训练', type: 'activity', icon: '🧘', time: '10:00', endTime: '11:00', desc: '大运动协调训练', priority: 'medium', color: '#6FA789' },
-      { offset: -dayOffset + 25, title: '机构开放日', type: 'activity', icon: '🏫', time: '09:00', endTime: '12:00', desc: '机构开放日，展示学员作品', priority: 'medium', color: '#D9785F' },
-      { offset: -dayOffset + 27, title: '支持性就业评估', type: 'meeting', icon: '💼', time: '10:00', endTime: '11:30', desc: '评估支持性就业进展和能力', priority: 'high', color: '#D9785F' }
+      { offset: -dayOffset + 25, title: '机构开放日', type: 'activity', icon: '🏫', time: '09:00', endTime: '12:00', desc: '机构开放日，展示学员作品', priority: 'medium', color: '#D97757' },
+      { offset: -dayOffset + 27, title: '支持性就业评估', type: 'meeting', icon: '💼', time: '10:00', endTime: '11:30', desc: '评估支持性就业进展和能力', priority: 'high', color: '#D97757' }
     ];
 
     monthEvents.forEach(function(e, idx) {
@@ -551,7 +551,7 @@
 
     // 重要的未来事件
     events.push({ id: 'evt_checkup', title: '年度体检', type: 'medical', icon: '🏥', date: dateStr(5), time: '09:00', endTime: '11:00', description: '市残联年度体检，需带身份证和医保卡', recurring: 'yearly', priority: 'high', color: '#C96E68', author: '妈妈', authorRole: 'parent', createdAt: today });
-    events.push({ id: 'evt_iep', title: 'IEP会议', type: 'meeting', icon: '📋', date: dateStr(3), time: '10:00', endTime: '11:30', description: 'Individualized Education Program 季度评估会议', recurring: 'none', priority: 'high', color: '#D9785F', author: '李老师', authorRole: 'teacher', createdAt: today });
+    events.push({ id: 'evt_iep', title: 'IEP会议', type: 'meeting', icon: '📋', date: dateStr(3), time: '10:00', endTime: '11:30', description: 'Individualized Education Program 季度评估会议', recurring: 'none', priority: 'high', color: '#D97757', author: '李老师', authorRole: 'teacher', createdAt: today });
 
     return events;
   }
