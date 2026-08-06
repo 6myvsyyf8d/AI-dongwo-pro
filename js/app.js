@@ -392,9 +392,11 @@
       });
     }
 
-    // 如果页面不存在则回到首页
+    // 如果页面不存在则清理标记并降级到主题档案
     if (!routeMap[basePage]) {
-      basePage = 'home';
+      try { sessionStorage.removeItem('dr_scroll_to_l4'); } catch (e) {}
+      window.location.hash = '#archive-topics';
+      return;
     }
 
     // 权限拦截：临时支持者只能访问 supporter-card 和 quick-start
