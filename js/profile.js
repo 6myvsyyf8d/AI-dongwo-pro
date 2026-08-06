@@ -402,31 +402,7 @@
       html += '</div>';
     }
 
-    // ============================================
-    // 6. 入口 —— 主题档案、时间轴、速读卡、档案状态
-    // ============================================
-    html += '<div class="archive-recent-section" style="margin-bottom:8px;">';
-    html += '  <div class="archive-section-header">';
-    html += '    <span class="archive-section-title">📂 深入查看</span>';
-    html += '  </div>';
-    html += '  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">';
 
-    var entryItems = [
-      { hash: 'archive-topics', icon: '📋', label: '主题档案', desc: '6个主题分类' },
-      { hash: 'timeline',       icon: '📅', label: '时间轴',   desc: '按时间查看' },
-      { hash: 'quickcard',      icon: '⚡', label: '速读卡',   desc: '关键信息一览' },
-      { hash: 'archive-status', icon: '🔍', label: '档案状态', desc: '资料完整度' }
-    ];
-    entryItems.forEach(function (entry) {
-      html += '<div class="archive-entry-card" data-navigate="' + entry.hash + '" style="background:#fff;border-radius:14px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,0.04);cursor:pointer;text-align:center;">';
-      html += '  <div style="font-size:1.6rem;margin-bottom:6px;">' + entry.icon + '</div>';
-      html += '  <div style="font-weight:600;font-size:0.9rem;color:var(--text-primary);">' + entry.label + '</div>';
-      html += '  <div style="font-size:0.78rem;color:var(--text-muted);">' + entry.desc + '</div>';
-      html += '</div>';
-    });
-
-    html += '  </div>';
-    html += '</div>';
 
     // ============================================
     // 7. 信息来源图例
