@@ -1060,13 +1060,7 @@
       l1Title: '📌 当前摘要',
       l1Sub: '当前怎样和他沟通最有效',
       emptyText: '暂无摘要数据',
-      showEvidence: true,
-      l2Render: function(contentArea, records, rangeIdx) {
-        renderL2Content(contentArea, records, rangeIdx);
-      },
-      l4Render: function(contentArea, records) {
-        renderL4Content(contentArea, records);
-      }
+      showEvidence: true
     });
   }
 
@@ -1613,8 +1607,12 @@
     if (recent.length > 0) {
       html += '<div class="comm-l2-items">';
       recent.slice(0, 6).forEach(function(r) {
+        var rt = C.RECORD_TYPES[r.type];
+        var icon = rt ? rt.icon : '📝';
         var text = (r.title || r.content || '').substring(0, 50);
-        html += '<div class="comm-l2-item"><span>📝</span><span class="comm-l2-item-text">' + text + '</span><span class="comm-l2-item-date">' + formatDateDisplay(r.date) + '</span></div>';
+        html += '<div class="comm-l2-item"><span>' + icon + '</span><span class="comm-l2-item-text">' + text + '</span><span class="comm-l2-item-date">' + formatDateDisplay(r.date) + '</span>';
+        if (r.effectiveness) html += '<span class="comm-l2-eff">效果 ' + r.effectiveness + '/5</span>';
+        html += '</div>';
       });
       html += '</div>';
     }
@@ -1643,10 +1641,13 @@
       Object.keys(dg).sort().reverse().forEach(function(date) {
         html += '<div class="comm-l4-day"><div class="comm-l4-day-header">' + formatDateDisplay(date) + ' · ' + dg[date].length + '条</div>';
         dg[date].forEach(function(r) {
-          html += '<div class="comm-l4-record"><span class="comm-l4-type">📝</span><div class="comm-l4-record-body">';
+          var rt = C.RECORD_TYPES[r.type];
+          var typeIcon = rt ? rt.icon : '📝';
+          var authorInfo = (r.author || '') + '（' + (ROLE_LABELS[r.authorRole] || r.authorRole || '') + '）';
+          html += '<div class="comm-l4-record"><span class="comm-l4-type">' + typeIcon + '</span><div class="comm-l4-record-body">';
           if (r.title) html += '<div class="comm-l4-record-title">' + r.title + '</div>';
           html += '<div class="comm-l4-record-text">' + (r.content || '') + '</div>';
-          html += '<div class="comm-l4-record-meta">' + (r.author || '') + ' · ' + (r.time || '') + '</div>';
+          html += '<div class="comm-l4-record-meta">' + authorInfo + ' · ' + (r.time || '') + '</div>';
           html += '</div></div>';
         });
         html += '</div>';
