@@ -1365,7 +1365,58 @@
         };
       }
       return null;
-    }
+    },
+
+    // ========== 档案统一数据源（P1-1-3） ==========
+
+    /**
+     * 获取完整档案数据（优先 localStorage，fallback Constants）
+     * 返回：{ basicInfo, communicationGuide, emotionSupport, careInfo,
+     *         workInfo, relationsInfo, likesList, dislikesList, dailyRoutine,
+     *         aboutMe, verifiedStrategies, stressSignals, scenarioCards }
+     */
+    getProfile: function() {
+      var C = window.Constants;
+      var data = this.load() || {};
+      if (!data._profile) data._profile = {};
+      var p = data._profile;
+
+      // 每个字段优先读 localStorage._profile，缺失则深拷贝 Constants 做 fallback
+      function _get(key, constKey) {
+        if (p[key] !== undefined) return p[key];
+        if (C && C[constKey]) return JSON.parse(JSON.stringify(C[constKey]));
+        return null;
+      }
+
+      return {
+        basicInfo:          _get('basicInfo', 'basicInfo'),
+        communicationGuide: _get('communicationGuide', 'communicationGuide'),
+        emotionSupport:     _get('emotionSupport', 'emotionSupport'),
+        careInfo:           this.getCareInfo(),  // careInfo 已有独立持久化
+        workInfo:           _get('workInfo', 'workInfo'),
+        relationsInfo:      _get('relationsInfo', 'relationsInfo'),
+        likesList:          _get('likesList', 'likesList'),
+        dislikesList:       _get('dislikesList', 'dislikesList'),
+        dailyRoutine:       _get('dailyRoutine', 'dailyRoutine'),
+        aboutMe:            _get('aboutMe', 'aboutMe'),
+        verifiedStrategies: _get('verifiedStrategies', 'verifiedStrategies'),
+        stressSignals:      _get('stressSignals', 'stressSignals'),
+        scenarioCards:      _get('scenarioCards', 'scenarioCards')
+      };
+    },
+
+    /**
+     * 更新档案字段（写入 localStorage._profile）
+     */
+    updateProfile: function(section, value) {
+      var data = this.load() || {};
+      if (!data._profile) data._profile = {};
+      data._profile[section] = value;
+      this.save(data);
+      return true;
+    },
+
+    // ===== 档案统一数据源 end =====
 
   };
 

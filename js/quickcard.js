@@ -9,11 +9,11 @@
 
   var C = window.Constants;
   var DataStore = window.DataStore;
-  var basicInfo = C.basicInfo;
-  var aboutMe = C.aboutMe;
-  var scenarioCards = C.scenarioCards;
-  var verifiedStrategies = C.verifiedStrategies;
-  var stressSignals = C.stressSignals;
+
+  /** 统一数据源（P1-1-3） */
+  function _getProfile() {
+    return DataStore.getProfile ? DataStore.getProfile() : C;
+  }
 
   /** 当前选中的场景 */
   var currentScenario = 'standard';
@@ -53,7 +53,7 @@
     html += '  <button class="qc-btn qc-btn-pdf" id="qc-btn-pdf">📄 导出 PDF</button>';
     html += '</div>';
 
-    html += '<div class="qc-footer-note">AI懂我 · ' + basicInfo.name + '的速读卡 · ' + new Date().toLocaleDateString('zh-CN') + '</div>';
+    html += '<div class="qc-footer-note">AI懂我 · ' + _getProfile().basicInfo.name + '的速读卡 · ' + new Date().toLocaleDateString('zh-CN') + '</div>';
 
     bodyEl.innerHTML = html;
 
@@ -68,11 +68,11 @@
    * 渲染指定场景的卡片
    */
   function renderScenarioCard(scenarioId) {
+    var P = _getProfile();
     if (scenarioId === 'standard') {
       return renderStandardCard();
     }
-
-    var sc = scenarioCards[scenarioId];
+    var sc = P.scenarioCards[scenarioId];
     if (!sc) return '<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">暂无此场景卡片</div></div>';
 
     var html = '';
@@ -82,8 +82,8 @@
     html += '<div class="qc-identity">';
     html += '  <div class="qc-identity-avatar">🌻</div>';
     html += '  <div class="qc-identity-info">';
-    html += '    <div class="qc-identity-name">' + basicInfo.name + '</div>';
-    html += '    <div class="qc-identity-meta">' + basicInfo.age + '岁 · ' + basicInfo.gender + '</div>';
+    html += '    <div class="qc-identity-name">' + P.basicInfo.name + '</div>';
+    html += '    <div class="qc-identity-meta">' + P.basicInfo.age + '岁 · ' + P.basicInfo.gender + '</div>';
     html += '    <div class="qc-identity-intro">' + sc.target + '用</div>';
     html += '  </div>';
     html += '</div>';
@@ -113,17 +113,20 @@
 
   /**
    * 渲染标准版速读卡 — "5分钟认识我"
+   * 演示版：390px 一屏看完关键信息
    */
   function renderStandardCard() {
-    var am = aboutMe;
+    var P = _getProfile();
+    var am = P.aboutMe;
+    var bi = P.basicInfo;
     var html = '';
     html += '<div class="qc-container">';
 
-    // ===== 1. Hero 身份 =====
+    // ===== 1. Hero 身份（完整保留） =====
     html += '<div class="new-qc-hero">';
     html += '  <span class="qc-hero-emoji">🌻</span>';
-    html += '  <div class="qc-hero-name">' + basicInfo.name + '</div>';
-    html += '  <div class="qc-hero-tagline">' + basicInfo.age + '岁 · ' + basicInfo.gender + ' · ' + (am ? am.firstPerson : basicInfo.intro) + '</div>';
+    html += '  <div class="qc-hero-name">' + bi.name + '</div>';
+    html += '  <div class="qc-hero-tagline">' + bi.age + '岁 · ' + bi.gender + ' · ' + (am ? am.firstPerson : bi.intro) + '</div>';
     html += '</div>';
 
     // ===== 2. 提示横幅 =====
@@ -132,103 +135,72 @@
     html += '  <span>5分钟认识我，并知道怎样支持我</span>';
     html += '</div>';
 
-    // ===== 3. 我如何表达 =====
-    html += '<div class="new-qc-section">';
-    html += '  <div class="nqc-title">💬 我如何表达</div>';
-    html += '  <div class="nqc-icon-row">';
-    html += '    <div class="nqc-icon-item"><span class="nqc-emoji">👍</span> "是/好" — 点头或者说"好"</div>';
-    html += '    <div class="nqc-icon-item"><span class="nqc-emoji">👎</span> "不是/不要" — 摇头或者说"不要"</div>';
-    html += '    <div class="nqc-icon-item"><span class="nqc-emoji">😣</span> "不舒服" — 捂耳朵、来回走、找借口离开</div>';
-    html += '    <div class="nqc-icon-item"><span class="nqc-emoji">🆘</span> "需要帮助" — 站在原地不动、重复说"不会"</div>';
-    html += '  </div>';
-    html += '</div>';
-
-    // ===== 4. 如何与我交流 =====
+    // ===== 3. 怎样与我交流 — 摘要3条 + 跳转 =====
     html += '<div class="new-qc-section">';
     html += '  <div class="nqc-title">🗣️ 怎样与我交流</div>';
     html += '  <ul class="nqc-list">';
     html += '    <li>用短句、慢一点，一次只说一件事</li>';
     html += '    <li>给我 ' + (am ? '几秒钟' : '5-10秒') + ' 反应时间，不要催促</li>';
     html += '    <li>用"先...然后..."解释新任务</li>';
-    html += '    <li>用我熟悉的事物举例（公交车、烘焙）</li>';
-    html += '    <li>第一次见我时，先用我喜欢的话题开场，不要一上来就问很多问题</li>';
     html += '  </ul>';
+    html += '  <a href="#communication" class="qc-more-link">查看完整沟通指南 →</a>';
     html += '</div>';
 
-    // ===== 5. 我可以独立完成的事情 =====
+    // ===== 4. 我可以独立完成 — 摘要3条 + 跳转 =====
     html += '<div class="new-qc-section">';
     html += '  <div class="nqc-title">✅ 我可以独立完成</div>';
-    html += '  <div class="nqc-icon-row">';
-    if (am && am.independence[0]) {
-      am.independence[0].items.forEach(function (item) {
-        html += '    <div class="nqc-icon-item">' + item + '</div>';
-      });
+    html += '  <ul class="nqc-list">';
+    if (am && am.independence && am.independence[0] && am.independence[0].items) {
+      var indItems = am.independence[0].items;
+      for (var i = 0; i < Math.min(3, indItems.length); i++) {
+        html += '    <li>' + indItems[i] + '</li>';
+      }
     }
-    html += '  </div>';
+    html += '  </ul>';
+    html += '  <a href="#work" class="qc-more-link">查看完整能力档案 →</a>';
     html += '</div>';
 
-    // ===== 6. 什么能让我平静 =====
+    // ===== 5. 压力信号 — 摘要3条 + 跳转 =====
+    html += '<div class="new-qc-section">';
+    html += '  <div class="nqc-title">🔴 压力信号</div>';
+    html += '  <ul class="nqc-list">';
+    var ssList = P.stressSignals || C.stressSignals || [];
+    for (var j = 0; j < Math.min(3, ssList.length); j++) {
+      var ss = ssList[j];
+      var ssLabel = ss.category || '压力信号';
+      html += '    <li><b>' + ssLabel + '：</b>' + (ss.triggerFactors || ss.earlySignals || '') + '</li>';
+    }
+    html += '  </ul>';
+    html += '  <a href="#emotion" class="qc-more-link">查看完整情绪档案 →</a>';
+    html += '</div>';
+
+    // ===== 6. 什么让我平静 — 精简3条全文（安全底线） =====
     html += '<div class="new-qc-section">';
     html += '  <div class="nqc-title">🧘 什么让我平静</div>';
     html += '  <ul class="nqc-list">';
     html += '    <li>带到安静的地方，给5分钟独处</li>';
     html += '    <li>用简单的选择帮我恢复控制感（"你想喝水还是坐着？"）</li>';
     html += '    <li>提前告知活动安排变化</li>';
-    html += '    <li>不要追问"你怎么了"，不要围住我</li>';
     html += '  </ul>';
     html += '</div>';
 
-    // ===== 7. 我不喜欢的 =====
+    // ===== 7. 请避免 — 精简3条全文（安全底线） =====
     html += '<div class="new-qc-avoid">';
     html += '  <div class="nqc-avoid-title">⚠️ 请避免</div>';
     html += '  <ul class="nqc-list">';
     html += '    <li>不打招呼触碰我的身体</li>';
     html += '    <li>催促我"快点"</li>';
     html += '    <li>一次说很多件事</li>';
-    html += '    <li>反问句、讽刺或开玩笑</li>';
-    html += '    <li>嘈杂环境、突然改变计划</li>';
-    html += '    <li>给我吃海鲜（虾、蟹、贝类）</li>';
     html += '  </ul>';
     html += '</div>';
 
-    // ===== 8. 如果我拒绝 =====
-    html += '<div class="new-qc-section">';
-    html += '  <div class="nqc-title">🤔 如果我拒绝</div>';
-    html += '  <ul class="nqc-list">';
-    html += '    <li>先暂停，不要强迫</li>';
-    html += '    <li>用另一种方式提出（"我们先做第一步好吗？"）</li>';
-    html += '    <li>检查是不是环境或身体不舒服</li>';
-    html += '    <li>给我一点时间和空间，过一会再试试</li>';
-    html += '  </ul>';
-    html += '</div>';
-
-    // ===== 9. 已验证的有效支持经验 =====
-    if (verifiedStrategies && verifiedStrategies.length > 0) {
-      html += '<div class="new-qc-section">';
-      html += '  <div class="nqc-title">🧩 经过验证的支持方法</div>';
-      verifiedStrategies.forEach(function (vs) {
-        html += '  <div class="verified-strategy-card">';
-        html += '    <div class="vs-name">✅ ' + vs.name + '</div>';
-        html += '    <div class="vs-steps">';
-        vs.steps.forEach(function (step) {
-          html += '      <div class="vs-step">' + step + '</div>';
-        });
-        html += '    </div>';
-        html += '    <div class="vs-footer">';
-        html += '      <span>适用：' + (vs.applicableScenarios || []).join('、') + '</span>';
-        html += '      <span>验证时间：' + (vs.verifiedAt || '近期') + '</span>';
-        html += '    </div>';
-        html += '  </div>';
-      });
-      html += '</div>';
-    }
-
-    // ===== 10. 紧急联系人 =====
+    // ===== 8. 紧急联系人（完整保留） =====
     html += '<div class="qc-contacts">';
     html += '  <div class="qc-contacts-title">📞 紧急联系人</div>';
     html += '  <div class="qc-contact-list">';
-    if (C.relationsInfo && C.relationsInfo.core) {
-      C.relationsInfo.core.forEach(function (contact) {
+    var ri = P.relationsInfo;
+    if (ri && ri.core) {
+      ri.core.forEach(function (contact) {
         html += '    <div class="qc-contact-item">';
         html += '      <div class="qc-contact-avatar">' + contact.emoji + '</div>';
         html += '      <div class="qc-contact-info">';
@@ -313,7 +285,7 @@
 
     var opt = {
       margin: [8, 8, 8, 8],
-      filename: basicInfo.name + '_' + (scenarioLabels[currentScenario] || '速读卡') + '_' + new Date().toLocaleDateString('zh-CN').replace(/\//g, '-') + '.pdf',
+      filename: _getProfile().basicInfo.name + '_' + (scenarioLabels[currentScenario] || '速读卡') + '_' + new Date().toLocaleDateString('zh-CN').replace(/\//g, '-') + '.pdf',
       image: { type: 'jpeg', quality: 0.95 },
       html2canvas: {
         scale: 2,

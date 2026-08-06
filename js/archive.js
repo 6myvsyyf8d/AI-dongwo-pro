@@ -103,7 +103,7 @@
 
   /**
    * 渲染「档案状态」页面 — #archive-status
-   * 当前基于演示档案常量检查字段（P1-1-3 将迁移至 DataStore 统一数据源）
+   * 数据源：DataStore.getProfile()（统一入口，优先 localStorage，fallback Constants）
    */
   function renderArchiveStatus() {
     var contentArea = document.getElementById('archive-status-content');
@@ -121,41 +121,45 @@
       return;
     }
 
+    // 统一数据源
+    var PROFILE = DataStore.getProfile ? DataStore.getProfile() : null;
+    var P = PROFILE || {};
+
     var statusItems = [];
 
-    // ========== 关键字段定义 ==========
+    // ========== 关键字段定义（数据源：DataStore.getProfile()）==========
     var KEY_FIELDS = [
       { module: 'communication', label: '沟通说明书', hash: 'communication',
         checks: [
-          { name: '有效沟通方式', src: function() { var g = C.communicationGuide; return g && g.best && g.best.length > 0; } },
-          { name: '需要避免的表达', src: function() { var g = C.communicationGuide; return g && g.avoid && g.avoid.length > 0; } }
+          { name: '有效沟通方式', src: function() { var g = P.communicationGuide; return g && g.best && g.best.length > 0; } },
+          { name: '需要避免的表达', src: function() { var g = P.communicationGuide; return g && g.avoid && g.avoid.length > 0; } }
         ], severity: 1, reviewDays: REVIEW_PERIODS.communication },
       { module: 'emotion', label: '情绪与行为支持', hash: 'emotion',
         checks: [
-          { name: '压力信号', src: function() { var e = C.emotionSupport; return e && e.warnings && e.warnings.length > 0; } },
-          { name: '触发因素', src: function() { var e = C.emotionSupport; return e && e.triggers && e.triggers.length > 0; } },
-          { name: '有效安抚方式', src: function() { var e = C.emotionSupport; return e && e.soothing && e.soothing.length > 0; } }
+          { name: '压力信号', src: function() { var e = P.emotionSupport; return e && e.warnings && e.warnings.length > 0; } },
+          { name: '触发因素', src: function() { var e = P.emotionSupport; return e && e.triggers && e.triggers.length > 0; } },
+          { name: '有效安抚方式', src: function() { var e = P.emotionSupport; return e && e.soothing && e.soothing.length > 0; } }
         ], severity: 1, reviewDays: REVIEW_PERIODS.emotion },
       { module: 'care', label: '照护与医疗', hash: 'care',
         checks: [
-          { name: '过敏信息', src: function() { var c = C.careInfo; return c && !_allergyIsEmpty(c.allergy); } },
-          { name: '用药状态', src: function() { var c = C.careInfo; return c && !_medIsEmpty(c.medicine); } },
-          { name: '紧急处理方式', src: function() { var c = C.careInfo; return c && c.special && c.special.length > 0; } }
+          { name: '过敏信息', src: function() { var c = P.careInfo; return c && !_allergyIsEmpty(c.allergy); } },
+          { name: '用药状态', src: function() { var c = P.careInfo; return c && !_medIsEmpty(c.medicine); } },
+          { name: '紧急处理方式', src: function() { var c = P.careInfo; return c && c.special && c.special.length > 0; } }
         ], severity: 0, reviewDays: REVIEW_PERIODS.care },
       { module: 'work', label: '工作支持', hash: 'work',
         checks: [
-          { name: '可独立完成事项', src: function() { var w = C.workInfo; return w && w.canDo && w.canDo.length > 0; } },
-          { name: '需要协助事项', src: function() { var w = C.workInfo; return w && w.needSupport && w.needSupport.length > 0; } }
+          { name: '可独立完成事项', src: function() { var w = P.workInfo; return w && w.canDo && w.canDo.length > 0; } },
+          { name: '需要协助事项', src: function() { var w = P.workInfo; return w && w.needSupport && w.needSupport.length > 0; } }
         ], severity: 2, reviewDays: REVIEW_PERIODS.work },
       { module: 'relations', label: '关系与社交', hash: 'relations',
         checks: [
-          { name: '紧急联系人', src: function() { var r = C.relationsInfo; return r && r.core && r.core.length > 0; } },
-          { name: '核心支持者', src: function() { var r = C.relationsInfo; return r && r.core && r.core.length > 0; } }
+          { name: '紧急联系人', src: function() { var r = P.relationsInfo; return r && r.core && r.core.length > 0; } },
+          { name: '核心支持者', src: function() { var r = P.relationsInfo; return r && r.core && r.core.length > 0; } }
         ], severity: 0, reviewDays: REVIEW_PERIODS.relations },
       { module: 'life', label: '我喜欢的生活', hash: 'life',
         checks: [
-          { name: '主要偏好', src: function() { var l = C.likesList; return l && l.length > 0; } },
-          { name: '作息或重要生活习惯', src: function() { var d = C.dailyRoutine; return d && d.length > 0; } }
+          { name: '主要偏好', src: function() { var l = P.likesList; return l && l.length > 0; } },
+          { name: '作息或重要生活习惯', src: function() { var d = P.dailyRoutine; return d && d.length > 0; } }
         ], severity: 2, reviewDays: REVIEW_PERIODS.life }
     ];
 
@@ -319,7 +323,7 @@
       });
     }
 
-    html += '<div class="as-footer">基于演示档案字段检查 · 最后检查时间：' + (new Date().toLocaleString('zh-CN')) + '</div>';
+    html += '<div class="as-footer">数据来源：档案数据源 · 最后检查时间：' + (new Date().toLocaleString('zh-CN')) + '</div>';
 
     contentArea.innerHTML = html;
   }
