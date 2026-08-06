@@ -145,11 +145,6 @@
 
       container.innerHTML = ''
         + '<div class="chat-page-container chat-conv-ready">'
-        + '  <div class="chat-conv-topbar">'
-        + '    <button class="chat-conv-btn-back" id="btn-chat-back">‹</button>'
-        + '    <div class="chat-conv-title">' + youthName + ' · 本次记录</div>'
-        + '    <button class="chat-conv-btn-end" id="btn-chat-end">结束</button>'
-        + '  </div>'
         + '  <div class="chat-conv-status-bar" id="status-bar-drafts">'
         + '    <div class="chat-conv-status-avatar">✨</div>'
         + '    <div class="chat-conv-status-info">'
@@ -207,10 +202,6 @@
 
       var html = ''
         + '<div class="chat-page-container chat-review-ready">'
-        + '  <div class="chat-review-topbar">'
-        + '    <button class="chat-review-btn-back" id="btn-review-back">‹</button>'
-        + '    <div class="chat-review-title">本次整理</div>'
-        + '  </div>'
         + '  <div class="chat-review-info-bar">'
         + '    <span class="chat-review-info-count">共 ' + totalCount + ' 条记录</span>'
         + '    <span class="chat-review-info-legend">'
@@ -636,12 +627,8 @@
     if (plusBtn) { plusBtn.addEventListener('click', function () { if (editor) editor.focus(); }); }
     if (backBtn) { backBtn.addEventListener('click', function () { window.location.hash = 'chat'; }); }
     if (endBtn) {
-      endBtn.addEventListener('click', function () {
-        if (confirm('确定要结束当前对话吗？已生成的草稿可以在整理页面查看。')) {
-          if (_activeSession) _activeSession.endSession();
-          window.location.hash = 'chat-review';
-        }
-      });
+      // 结束按钮已移除，改为全局返回按钮处理
+      endBtn.style.display = 'none';
     }
     if (statusBar) { statusBar.addEventListener('click', function () { window.location.hash = 'chat-review'; }); }
     if (toggleBtn) {

@@ -316,22 +316,22 @@
       'archive-topics': '主题档案',
       'archive-status': '档案状态',
       life: '我喜欢的生活',
-      communication: '沟通说明书',
-      emotion: '情绪与行为支持',
-      care: '照护与医疗',
+      communication: '沟通指南',
+      emotion: '情绪支持',
+      care: '照护医疗',
       work: '工作支持',
       relations: '关系地图',
-      timeline: '记录时间轴',
+      timeline: '时间轴',
       records: '记录列表',
       profile: '我的账号',
       charts: '趋势分析',
-      tasks: '数据范围',
+      tasks: '任务范围',
       calendar: '日程日历',
       analytics: '分析总览',
       quickcard: '速读卡',
       grants: '授权管理',
-      join: '家庭与成员',
-      approvals: '加入申请审批',
+      join: '家庭成员',
+      approvals: '加入审批',
       'archive-code': '档案码',
       welcome: '欢迎',
       'youth-chat': 'AI聊聊',
@@ -342,8 +342,8 @@
       'draft-review': '待确认记录'
     };
 
-    // 对话页面自带顶栏，隐藏全局顶栏
-    var isChatPage = (pageName === 'chat' || pageName === 'chat-conversation' || pageName === 'chat-review');
+    // 心青年页面自带顶栏，隐藏全局顶栏
+    var isYouthChat = (pageName === 'youth-chat');
 
     // 标题：所有页面始终显示
     if (titleEl) {
@@ -355,7 +355,7 @@
     if (backEl) {
       var parent = PAGE_PARENT[pageName];
       var isTopLevel = (!parent || parent === pageName);
-      var shouldShowBack = !isTopLevel && !isChatPage;
+      var shouldShowBack = !isTopLevel && !isYouthChat;
       backEl.style.display = shouldShowBack ? 'block' : 'none';
       if (shouldShowBack) {
         backEl.textContent = '← 返回';
@@ -372,7 +372,7 @@
     }
     var topbar = document.getElementById('app-topbar');
     if (topbar) {
-      topbar.style.display = isChatPage ? 'none' : '';
+      topbar.style.display = isYouthChat ? 'none' : '';
     }
   }
 
@@ -456,10 +456,10 @@
       }
     }
 
-    // 离开对话页面时恢复全局顶栏
-    var isLeavingChat = (currentPage === 'chat' || currentPage === 'chat-conversation' || currentPage === 'chat-review');
-    var isEnteringChat = (basePage === 'chat' || basePage === 'chat-conversation' || basePage === 'chat-review');
-    if (isLeavingChat && !isEnteringChat) {
+    // 离开 youth-chat 时恢复全局顶栏
+    var isLeavingYouth = (currentPage === 'youth-chat');
+    var isEnteringYouth = (basePage === 'youth-chat');
+    if (isLeavingYouth && !isEnteringYouth) {
       var topbar = document.getElementById('app-topbar');
       if (topbar) topbar.style.display = '';
     }
@@ -2807,7 +2807,7 @@
    * ========================================================== */
 
   /**
-   * 渲染完整档案页面 —— 六大主题分类入口
+   * 渲染完整档案页面 —— 五大主题分类入口，点击展开子分类
    */
   function renderArchive() {
     var contentArea = document.getElementById('archive-content');
@@ -2815,59 +2815,137 @@
 
     var user = DataStore.getCurrentUser() || appState.currentUser;
     var role = user ? user.role : 'parent';
-
     var html = '';
 
     // 档案概览说明
     html += '<div style="background:linear-gradient(135deg,#D97757,#F5A88B);border-radius:14px;padding:18px;margin-bottom:16px;color:#fff;">';
     html += '  <div style="font-size:1.1rem;font-weight:600;margin-bottom:4px;">📋 小雨的完整档案</div>';
-    html += '  <div style="font-size:0.8rem;opacity:0.9;">六大主题分类，全面了解小雨的 support profile</div>';
+    html += '  <div style="font-size:0.8rem;opacity:0.9;">五大主题分类，全面了解小雨的 support profile</div>';
     html += '</div>';
 
-    // 六大主题档案 2×3 宫格
-    var archiveThemes = [
-      { hash: 'life', icon: '❤️', title: '喜好档案', desc: '喜欢与不喜欢的事物', color: '#D97757', module: 'life' },
-      { hash: 'communication', icon: '💬', title: '沟通档案', desc: '沟通指南与有效话术', color: '#D9A56A', module: 'communication' },
-      { hash: 'emotion', icon: '😰', title: '情绪档案', desc: '触发因素与安抚策略', color: '#C96E68', module: 'emotion' },
-      { hash: 'care', icon: '🏥', title: '照护档案', desc: '过敏用药与医疗提醒', color: '#6FA789', module: 'care' },
-      { hash: 'work', icon: '💼', title: '支持档案', desc: '工作能力与支持网络', color: '#E7B95E', module: 'work' },
-      { hash: 'relations', icon: '👥', title: '关系档案', desc: '支持圈与社交关系', color: '#D99A4E', module: 'relations' }
+    // 五大分类定义 + 原六类→新五类映射
+    var archiveCategories = [
+      {
+        id: 'basic', icon: '📋', title: '基本信息',
+        desc: '诊断情况、年龄、基础资料',
+        subThemes: []  // 展开显示个人基础信息摘要
+      },
+      {
+        id: 'comm-support', icon: '💬', title: '沟通与支持',
+        desc: '沟通方式、工作支持、关系网络',
+        subThemes: [
+          { hash: 'communication', icon: '💬', title: '沟通指南', module: 'communication' },
+          { hash: 'work', icon: '💼', title: '工作支持', module: 'work' },
+          { hash: 'relations', icon: '👥', title: '关系地图', module: 'relations' }
+        ]
+      },
+      {
+        id: 'health-safety', icon: '🏥', title: '健康与安全',
+        desc: '照护医疗、情绪行为支持',
+        subThemes: [
+          { hash: 'care', icon: '🏥', title: '照护医疗', module: 'care' },
+          { hash: 'emotion', icon: '😰', title: '情绪支持', module: 'emotion' }
+        ]
+      },
+      {
+        id: 'life-growth', icon: '🌱', title: '生活与成长',
+        desc: '喜好、日常活动、成长目标',
+        subThemes: [
+          { hash: 'life', icon: '❤️', title: '我喜欢的生活', module: 'life' }
+        ]
+      },
+      {
+        id: 'more', icon: '📁', title: '更多主题',
+        desc: '其他档案分类与扩展',
+        subThemes: []
+      }
     ];
 
-    html += '<div class="archive-topic-grid">';
-    archiveThemes.forEach(function (theme) {
-      var recs = DataStore.getRecordsByModule(theme.module);
-      var count = recs.length;
+    html += '<div class="archive-main-list">';
+    archiveCategories.forEach(function (cat) {
+      var totalRecs = 0;
+      if (cat.subThemes && cat.subThemes.length > 0) {
+        cat.subThemes.forEach(function (st) {
+          totalRecs += DataStore.getRecordsByModule(st.module).length;
+        });
+      }
 
-      html += '<div class="archive-topic-card" data-navigate="' + theme.hash + '">';
-      html += '  <span class="topic-icon">' + theme.icon + '</span>';
-      html += '  <div class="topic-title">' + theme.title + '</div>';
-      html += '  <div class="topic-desc">' + theme.desc + '</div>';
-      html += '  <div class="topic-meta">' + count + ' 条记录</div>';
+      html += '<div class="archive-main-card" data-cat="' + cat.id + '">';
+      html += '  <span class="main-icon">' + cat.icon + '</span>';
+      html += '  <div class="main-body">';
+      html += '    <div class="main-title">' + cat.title + '</div>';
+      html += '    <div class="main-desc">' + cat.desc + '</div>';
+      html += '  </div>';
+      html += '  <span class="main-arrow">›</span>';
+      html += '</div>';
+
+      // 展开子区域
+      html += '<div class="archive-sub-section" id="sub-' + cat.id + '">';
+      if (cat.id === 'basic') {
+        html += '  <div style="font-size:0.78rem;color:#8A8580;padding:8px 4px;">基本信息包含诊断、年龄、紧急联系等基础资料，可在「我的账号」中编辑。</div>';
+      } else if (cat.id === 'more') {
+        html += '  <div style="font-size:0.78rem;color:#8A8580;padding:8px 4px;">更多主题即将上线，包括目标追踪、成长里程碑等。</div>';
+      } else if (cat.subThemes && cat.subThemes.length > 0) {
+        cat.subThemes.forEach(function (st) {
+          var recs = DataStore.getRecordsByModule(st.module);
+          var count = recs.length;
+          html += '<div class="archive-sub-card" data-navigate="' + st.hash + '">';
+          html += '  <span class="sub-icon">' + st.icon + '</span>';
+          html += '  <div class="sub-title">' + st.title + '</div>';
+          html += '  <div class="sub-count">' + count + ' 条记录</div>';
+          html += '</div>';
+        });
+      }
       html += '</div>';
     });
     html += '</div>';
 
-    // 快捷操作区
-    html += '<div style="margin-top:20px;">';
-    html += '  <h2 style="font-size:0.95rem;color:#333;margin-bottom:10px;">🔗 快捷操作</h2>';
-    html += '  <div style="display:flex;gap:10px;flex-wrap:wrap;">';
-    html += '    <button class="btn btn-outline" onclick="location.hash=\'timeline\'">📅 动态时间轴</button>';
-    html += '    <button class="btn btn-outline" id="btn-archive-quickcard">📋 速读卡</button>';
-    html += '  </div>';
+    // 辅助入口：时间轴 + 全部记录（不占宫格）
+    html += '<div class="archive-aux-row">';
+    html += '  <button class="btn btn-outline" onclick="location.hash=\'timeline\'">📅 时间轴</button>';
+    html += '  <button class="btn btn-outline" onclick="location.hash=\'records\'">📋 全部记录</button>';
+    html += '</div>';
+    html += '<div style="margin-top:8px;text-align:center;">';
+    html += '  <button class="btn btn-text" id="btn-archive-quickcard">📋 速读卡</button>';
     html += '</div>';
 
     contentArea.innerHTML = html;
 
-    // 绑定档案卡片点击事件
-    contentArea.querySelectorAll('.archive-topic-card').forEach(function (card) {
+    // 绑定五大分类：点击展开/收起子区域
+    contentArea.querySelectorAll('.archive-main-card').forEach(function (card) {
       card.addEventListener('click', function () {
+        var catId = this.getAttribute('data-cat');
+        var subEl = document.getElementById('sub-' + catId);
+        var isOpen = subEl && subEl.classList.contains('open');
+
+        // 先关闭所有
+        contentArea.querySelectorAll('.archive-sub-section.open').forEach(function (s) {
+          s.classList.remove('open');
+        });
+        contentArea.querySelectorAll('.archive-main-card.expanded').forEach(function (c) {
+          c.classList.remove('expanded');
+        });
+
+        // 如果之前未打开，则打开
+        if (!isOpen && subEl) {
+          subEl.classList.add('open');
+          this.classList.add('expanded');
+          // 滚动到可见
+          subEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      });
+    });
+
+    // 绑定子分类卡片→导航到具体主题页
+    contentArea.querySelectorAll('.archive-sub-card').forEach(function (card) {
+      card.addEventListener('click', function (e) {
+        e.stopPropagation();
         var target = this.getAttribute('data-navigate');
         if (target) window.location.hash = target;
       });
     });
 
-    // 绑定速读卡按钮
+    // 绑定速读卡
     var quickCardBtn = document.getElementById('btn-archive-quickcard');
     if (quickCardBtn) {
       quickCardBtn.addEventListener('click', function () {
