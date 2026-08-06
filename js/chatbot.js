@@ -214,7 +214,9 @@
           privacy: draft.privacy || 'B',
           source: 'ai_chat',
           sessionId: self.id,
-          _draftId: draft.id
+          _draftId: draft.id,
+          originalText: draft.originalText || '',
+          aiDraftContent: draft.aiDraftContent || ''
         };
 
         try {

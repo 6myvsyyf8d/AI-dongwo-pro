@@ -193,6 +193,12 @@
       if (!container) return;
       if (container.querySelector('.chat-review-ready')) return;
 
+      // SPA hash 导航时恢复活跃会话
+      if (!_activeSession) {
+        var savedId = localStorage.getItem(LAST_SESSION_KEY);
+        if (savedId) { _activeSession = ChatBot.loadSession(savedId); }
+      }
+
       var session = _activeSession;
       var _drafts = session ? session.drafts.filter(function (d) { return d.status !== 'discarded'; }) : [];
       if (!session || _drafts.length === 0) {
@@ -567,7 +573,8 @@
   /** 跳转到对应主题 L4（带兜底） */
   function _navigateToTopicL4(topicKey) {
     if (!topicKey || VALID_TOPIC_KEYS.indexOf(topicKey) === -1) {
-      // 无效 topicKey → 兜底到主题档案列表
+      // 无效 topicKey → 清理残留标记，兜底到主题档案列表
+      try { sessionStorage.removeItem('dr_scroll_to_l4'); } catch (e) {}
       window.location.hash = 'archive-topics';
       return;
     }
@@ -965,6 +972,11 @@
       }
     }
 
+    // 保存 AI 原始草稿内容（用户编辑前）
+    if (!draft.aiDraftContent) { draft.aiDraftContent = draft.content; }
+    // 保存原始表达（用户对话原文）
+    draft.originalText = _getSourceText(draft.module);
+
     if (Object.keys(updates).length > 0) { _activeSession.editDraft(draftId, updates); }
     _activeSession.confirmDraft(draftId);
     // 精确入档
@@ -987,6 +999,10 @@
     // 收集所有待确认草稿的模块（供成功弹窗跳转用）
     var modules = [];
     pendingDrafts.forEach(function (d) {
+      // 保存 AI 原始草稿内容（用户编辑前）
+      if (!d.aiDraftContent) { d.aiDraftContent = d.content; }
+      // 保存原始表达（用户对话原文）
+      d.originalText = _getSourceText(d.module);
       _activeSession.confirmDraft(d.id);
       if (d.module && modules.indexOf(d.module) === -1) modules.push(d.module);
     });
