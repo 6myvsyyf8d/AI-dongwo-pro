@@ -14,6 +14,38 @@
    * 内部辅助
    * ========================================================== */
 
+  /**
+   * 获取指定日期范围的任务完成统计
+   */
+  function getTaskStats(startDate, endDate) {
+    var tasks = DS.getTasks ? DS.getTasks(true) : [];
+    if (tasks.length === 0) return { total: 0, done: 0, rate: 0, empty: true };
+
+    // 收集日期范围内每天的任务实例
+    var totalDone = 0;
+    var totalTasks = 0;
+    var dates = getDateRange(startDate, new Date(endDate).getTime() - new Date(startDate).getTime() > 0
+      ? Math.round((new Date(endDate) - new Date(startDate)) / 86400000) + 1 : 1);
+
+    dates.forEach(function (ds) {
+      var instances = DS.getTaskInstances ? DS.getTaskInstances(ds) : [];
+      if (instances.length > 0) {
+        totalTasks += instances.length;
+        totalDone += instances.filter(function (i) { return i.status === 'done'; }).length;
+      }
+    });
+
+    // 如果当天没有实例，用 active tasks 数量估算
+    if (totalTasks === 0) totalTasks = tasks.length;
+
+    return {
+      total: totalTasks,
+      done: totalDone,
+      rate: totalTasks > 0 ? Math.round(totalDone / totalTasks * 100) : 0,
+      empty: totalTasks === 0 && totalDone === 0
+    };
+  }
+
   /** 获取所有记录 */
   function getRecords() {
     return DS.getRecords();
@@ -263,8 +295,11 @@
       }
     });
 
+    // 任务完成情况
+    var taskStats = getTaskStats(dateStr, dateStr);
+
     // 生成 AI 小结
-    var summary = generateDailySummary(dateStr, records, totalRecords, positiveCount, needsAttentionCount, expressionCount, medInfo, moduleDistribution, allTags);
+    var summary = generateDailySummary(dateStr, records, totalRecords, positiveCount, needsAttentionCount, expressionCount, medInfo, moduleDistribution, allTags, taskStats);
 
     return {
       date: dateStr,
@@ -292,11 +327,13 @@
       // AI 小结文本
       summary: summary,
       // 记录列表
-      records: records
+      records: records,
+      // 任务统计
+      taskStats: taskStats
     };
   }
 
-  function generateDailySummary(dateStr, records, total, positive, negative, expression, medInfo, moduleDist, allTags) {
+  function generateDailySummary(dateStr, records, total, positive, negative, expression, medInfo, moduleDist, allTags, taskStats) {
     var lines = [];
     var dateLabel = U.date.display(dateStr);
 
@@ -338,6 +375,11 @@
     if (activityRecords.length > 0) {
       var activities = activityRecords.map(function (r) { return r.title; }).join('、');
       lines.push('今日活动：' + activities + '。');
+    }
+
+    // 任务完成情况
+    if (taskStats && !taskStats.empty && taskStats.total > 0) {
+      lines.push('今日任务：共 ' + taskStats.total + ' 项，已完成 ' + taskStats.done + ' 项（' + taskStats.rate + '%）。');
     }
 
     // 高频标签提示

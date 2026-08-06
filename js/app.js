@@ -464,6 +464,12 @@
     // 滚动到页面顶部
     window.scrollTo(0, 0);
 
+    // QR码路由：扫码后展示欢迎页
+    if (basePage === 'archive' && queryParams.yid) {
+      handleArchiveQRScan(queryParams.yid, queryParams.token);
+      return;
+    }
+
     // 根据页面类型调用对应渲染函数（传入查询参数）
     renderPage(basePage, queryParams);
 
@@ -2849,6 +2855,17 @@
     html += '<div class="a-metric"><div class="a-metric-value" style="color:#F5222D;">' + (s.needsAttentionCount || 0) + '</div><div class="a-metric-label">需要关注</div></div>';
     html += '</div>';
 
+    // 任务完成度
+    var ts = report.taskStats;
+    if (ts && !ts.empty) {
+      html += '<div class="a-section"><div class="a-section-head"><h2 class="a-section-title">✅ 任务完成度</h2>' + renderSourceBadge('data') + '</div>';
+      html += '<div style="display:flex;align-items:center;gap:12px;">';
+      html += '<div style="flex:1;"><div style="font-size:0.82rem;color:#888;margin-bottom:4px;">已完成 ' + ts.done + '/' + ts.total + ' 项</div>';
+      html += '<div class="progress-bar-container" style="height:10px;"><div class="progress-bar" style="width:' + ts.rate + '%;background:' + (ts.rate >= 80 ? '#52C41A' : ts.rate >= 40 ? '#FAAD14' : '#F5222D') + ';"></div></div></div>';
+      html += '<div style="font-size:1.5rem;font-weight:700;color:' + (ts.rate >= 80 ? '#52C41A' : ts.rate >= 40 ? '#FAAD14' : '#F5222D') + ';">' + ts.rate + '%</div>';
+      html += '</div></div>';
+    }
+
     if (report.topTags && report.topTags.length > 0) {
       html += '<div class="a-section"><div class="a-section-head"><h2 class="a-section-title">高频标签</h2>' + renderSourceBadge('data') + '</div>';
       html += '<div class="a-tag-cloud">' + renderTagCloudHTML(report.topTags, 8) + '</div></div>';
@@ -3085,6 +3102,112 @@
       if (trendPanel) trendPanel.style.display = 'none';
       renderDrillDown(DataStore.getRecords().filter(function (rec) { return rec.date && rec.date.slice(0, 7) === r.yearMonth; }), r.yearMonth + ' 记录');
     });
+  }
+
+  /* ==========================================================
+   * 十点五、扫码分流 — #archive?yid=xxx 路由处理
+   * ========================================================== */
+
+  function handleArchiveQRScan(youthId, token) {
+    var contentArea = Utils.dom.get('analytics-content');
+    // 尝试写入 archive-content 容器
+    var archiveArea = Utils.dom.get('archive-content');
+    var targetArea = archiveArea || contentArea;
+    if (!targetArea) return;
+
+    // 存储 yid 到 sessionStorage
+    try { sessionStorage.setItem('qr_youth_id', youthId); } catch (e) {}
+
+    var youthUser = DataStore.findUserById(youthId);
+    var youthName = youthUser ? youthUser.name : '心青年';
+    var currentUser = DataStore.getCurrentUser() || appState.currentUser;
+
+    var html = '';
+    html += '<div style="padding:32px 20px;text-align:center;">';
+    html += '<div style="font-size:3rem;margin-bottom:12px;">🌻</div>';
+    html += '<h2 style="font-size:1.2rem;color:#333;margin-bottom:8px;">您正在查看 <strong>' + youthName + '</strong> 的档案码</h2>';
+    html += '<p style="color:#888;font-size:0.88rem;margin-bottom:24px;">扫码后将根据您的角色展示对应的档案内容</p>';
+
+    if (currentUser) {
+      // 已登录用户：显示当前角色信息
+      var roleInfo = ROLES[currentUser.role] || { label: currentUser.role, avatar: '👤' };
+      html += '<div style="background:#f0f7ff;border-radius:12px;padding:16px;margin-bottom:20px;">';
+      html += '<div style="font-weight:600;margin-bottom:8px;">当前身份</div>';
+      html += '<div style="display:flex;align-items:center;justify-content:center;gap:8px;">';
+      html += '<span style="font-size:1.5rem;">' + (currentUser.avatar || roleInfo.avatar) + '</span>';
+      html += '<span style="font-size:1rem;font-weight:500;">' + (currentUser.name || '用户') + '</span>';
+      html += '<span style="padding:2px 10px;border-radius:10px;font-size:0.78rem;background:rgba(74,144,217,0.1);color:#4A90D9;">' + roleInfo.label + '</span>';
+      html += '</div></div>';
+
+      if (currentUser.role === 'parent') {
+        // 家长直接查看档案
+        html += '<button id="qr-goto-archive" class="btn btn-primary" style="width:100%;padding:12px;border-radius:10px;font-size:0.95rem;">📋 查看 ' + youthName + ' 的档案</button>';
+      } else {
+        // 非家长：检查是否已有授权
+        var grants = DataStore.getGrants().filter(function (g) { return g.userId === currentUser.id && g.youthId === youthId && g.status === 'active'; });
+        if (grants.length > 0) {
+          html += '<button id="qr-goto-archive" class="btn btn-primary" style="width:100%;padding:12px;border-radius:10px;font-size:0.95rem;">📋 查看 ' + youthName + ' 的档案</button>';
+        } else {
+          html += '<p style="color:#888;font-size:0.82rem;margin-bottom:12px;">您尚未获得 ' + youthName + ' 的档案授权</p>';
+          html += '<button id="qr-request-join" class="btn btn-primary" style="width:100%;padding:12px;border-radius:10px;font-size:0.95rem;">📨 申请加入 ' + youthName + ' 的支持网络</button>';
+        }
+      }
+    } else {
+      // 未登录：引导登录
+      html += '<div style="background:#f9fafb;border-radius:12px;padding:16px;margin-bottom:20px;">';
+      html += '<div style="font-weight:600;margin-bottom:8px;">请先选择您的身份</div>';
+      html += '<div style="font-size:0.82rem;color:#888;margin-bottom:12px;">扫码后需要登录才能查看档案内容</div>';
+
+      // 角色选择
+      var roles = ['parent', 'teacher', 'caregiver'];
+      roles.forEach(function (r) {
+        var info = ROLES[r] || {};
+        html += '<button class="qr-role-btn" data-role="' + r + '" style="display:block;width:100%;padding:10px;margin-bottom:8px;border:1.5px solid #e5e5e5;border-radius:10px;background:#fff;text-align:left;cursor:pointer;">';
+        html += '<span style="font-size:1.2rem;">' + (info.avatar || '👤') + '</span> ';
+        html += '<span style="font-weight:500;">' + (info.label || r) + '</span>';
+        html += '<span style="color:#888;font-size:0.78rem;float:right;">' + (info.description || '') + '</span>';
+        html += '</button>';
+      });
+      html += '</div>';
+      html += '<p style="font-size:0.78rem;color:#aaa;">已有账号？<a href="#login" style="color:#4A90D9;">去登录</a></p>';
+    }
+
+    html += '</div>';
+
+    // 更新顶栏标题
+    var titleEl = document.getElementById('page-title');
+    if (titleEl) titleEl.textContent = '档案码 · ' + youthName;
+
+    Utils.dom.html(targetArea, html);
+
+    // 绑定事件
+    setTimeout(function () {
+      var gotoBtn = document.getElementById('qr-goto-archive');
+      if (gotoBtn) {
+        gotoBtn.addEventListener('click', function () {
+          // 清除 yid，正常导航到 archive
+          try { sessionStorage.removeItem('qr_youth_id'); } catch (e) {}
+          window.location.hash = 'archive';
+        });
+      }
+
+      var joinBtn = document.getElementById('qr-request-join');
+      if (joinBtn) {
+        joinBtn.addEventListener('click', function () {
+          window.location.hash = 'join';
+        });
+      }
+
+      // 未登录角色选择
+      var roleBtns = document.querySelectorAll('.qr-role-btn');
+      roleBtns.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var role = this.dataset.role;
+          try { sessionStorage.setItem('qr_intended_role', role); } catch (e) {}
+          window.location.hash = 'login';
+        });
+      });
+    }, 100);
   }
 
   /* ==========================================================
