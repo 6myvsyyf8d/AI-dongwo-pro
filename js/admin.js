@@ -942,10 +942,271 @@
   }
 
   /* ==========================================================
+   * 管理员 — 用户管理页 (#admin-users)
+   * ========================================================== */
+  function renderAdminUsers() {
+    var ct = document.getElementById('admin-users-content');
+    if (!ct) return;
+    var user = DataStore.getCurrentUser() || window.AppState.currentUser;
+    if (!user || user.role !== 'admin') {
+      ct.innerHTML = '<div style="padding:48px 24px;text-align:center;color:#999;">仅系统管理员可访问</div>';
+      return;
+    }
+
+    var allUsers = DataStore.getAllUsers();
+    var allGrants = DataStore.getGrants();
+    var aliveGrants = allGrants.filter(function (g) { return g.status === 'active'; });
+
+    var html = '';
+    html += '<div class="profile-scroll">';
+    html += '<div class="admin-section">';
+    html += '<div class="admin-section-header">';
+    html += '  <span class="admin-section-title">👥 用户管理</span>';
+    html += '  <span class="admin-section-badge">' + allUsers.length + '人</span>';
+    html += '</div>';
+
+    // 角色 Tab 筛选
+    var roleOrder = ['youth', 'parent', 'teacher', 'caregiver', 'government', 'admin', 'temp_supporter'];
+    html += '<div class="admin-filter-tabs" id="auser-filter-tabs">';
+    html += '  <button class="admin-filter-tab active" data-filter="all">全部</button>';
+    roleOrder.forEach(function (r) {
+      var info = ROLES[r] || { label: r, avatar: '👤' };
+      html += '  <button class="admin-filter-tab" data-filter="' + r + '">' + info.label + '</button>';
+    });
+    html += '</div>';
+
+    html += '<div class="admin-user-list" id="auser-list">';
+    allUsers.forEach(function (u) {
+      var roleInfo = ROLES[u.role] || { label: u.role, color: '#999' };
+      var userGrants = aliveGrants.filter(function (g) { return g.userId === u.id; });
+      var grantCount = userGrants.length;
+      // 查找关联的心青年
+      var linkedYouths = [];
+      userGrants.forEach(function (g) {
+        var yu = DataStore.findUserById(g.youthId);
+        if (yu) linkedYouths.push(yu.name);
+      });
+      var youthLabel = linkedYouths.length > 0 ? linkedYouths.join('、') : '-';
+
+      html += '<div class="admin-user-card" data-role="' + u.role + '">';
+      html += '  <div class="admin-user-avatar">' + (u.avatar || '👤') + '</div>';
+      html += '  <div class="admin-user-info">';
+      html += '    <div class="admin-user-name">' + u.name;
+      html += '      <span class="admin-role-tag" style="background:' + roleInfo.color + ';">' + roleInfo.label + '</span>';
+      html += '    </div>';
+      html += '    <div class="admin-user-meta">';
+      html += '      <span>关联：' + youthLabel + '</span>';
+      html += '      <span>授权：' + grantCount + '个</span>';
+      html += '      <span>注册：' + (u.createdAt || '-') + '</span>';
+      html += '    </div>';
+      html += '  </div>';
+      if (u.role !== 'admin') {
+        html += '  <button class="admin-user-action" data-uid="' + u.id + '" data-uname="' + u.name + '" data-urole="' + u.role + '">⚙️</button>';
+      }
+      html += '</div>';
+    });
+    html += '</div>';
+    html += '</div>';
+    html += '</div>';
+
+    ct.innerHTML = html;
+
+    // 角色筛选
+    ct.querySelector('#auser-filter-tabs').addEventListener('click', function (e) {
+      var tab = e.target.closest('.admin-filter-tab');
+      if (!tab) return;
+      ct.querySelectorAll('#auser-filter-tabs .admin-filter-tab').forEach(function (t) { t.classList.remove('active'); });
+      tab.classList.add('active');
+      var filter = tab.dataset.filter;
+      ct.querySelectorAll('#auser-list .admin-user-card').forEach(function (card) {
+        card.style.display = (filter === 'all' || card.dataset.role === filter) ? '' : 'none';
+      });
+    });
+
+    // 用户操作（角色变更、删除）
+    ct.addEventListener('click', function (e) {
+      var btn = e.target.closest('.admin-user-action');
+      if (!btn) return;
+      var uid = btn.dataset.uid;
+      var uname = btn.dataset.uname;
+      var urole = btn.dataset.urole;
+      showAdminUserActions(uid, uname, urole);
+    });
+  }
+
+  function showAdminUserActions(uid, uname, currentRole) {
+    var overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.style.display = 'flex';
+
+    var roleOpts = Object.keys(ROLES).map(function (r) {
+      var info = ROLES[r];
+      var sel = r === currentRole ? ' selected' : '';
+      return '<option value="' + r + '"' + sel + '>' + info.label + '</option>';
+    }).join('');
+
+    overlay.innerHTML =
+      '<div class="modal-content" style="max-width:360px;margin:auto;">' +
+      '  <div class="modal-header">' +
+      '    <span class="modal-title">' + uname + ' · 操作</span>' +
+      '    <button class="modal-close" id="auser-modal-close">&times;</button>' +
+      '  </div>' +
+      '  <div class="modal-body">' +
+      '    <label class="form-label">调整角色</label>' +
+      '    <select id="auser-new-role" style="width:100%;padding:10px;border:1.5px solid #ddd;border-radius:8px;">' + roleOpts + '</select>' +
+      '    <button class="btn btn-primary" id="auser-btn-role" style="width:100%;margin-top:12px;padding:10px;border-radius:8px;">确认调整</button>' +
+      '    <div style="border-top:1px solid #eee;margin:16px 0;padding-top:12px;">' +
+      '      <button class="btn btn-danger" id="auser-btn-delete" style="width:100%;padding:10px;border-radius:8px;background:#fff;color:#F5222D;border:1px solid #F5222D;">删除用户</button>' +
+      '      <p style="font-size:0.75rem;color:#999;margin-top:6px;">⚠️ 删除后数据不可恢复</p>' +
+      '    </div>' +
+      '  </div></div>';
+    document.body.appendChild(overlay);
+    document.body.style.overflow = 'hidden';
+
+    var close = function () { overlay.remove(); document.body.style.overflow = ''; };
+    overlay.addEventListener('click', function (e) { if (e.target === overlay) close(); });
+    overlay.querySelector('#auser-modal-close').addEventListener('click', close);
+
+    overlay.querySelector('#auser-btn-role').addEventListener('click', function () {
+      var newRole = overlay.querySelector('#auser-new-role').value;
+      if (newRole === currentRole) { showToast('角色未变更'); return; }
+      if (!confirm('确定将「' + uname + '」的角色从 ' + (ROLES[currentRole]||{}).label + ' 调整为 ' + (ROLES[newRole]||{}).label + ' 吗？')) return;
+      DataStore.updateUserRole(uid, newRole);
+      DataStore.addAuditEntry({
+        action: 'role_change', actorId: window.AppState.currentUser.id, actorName: window.AppState.currentUser.name,
+        targetId: uid, targetName: uname,
+        detail: '将「' + uname + '」的角色从 ' + (ROLES[currentRole]||{}).label + ' 调整为 ' + (ROLES[newRole]||{}).label
+      });
+      showToast('角色已调整');
+      close();
+      renderAdminUsers();
+    });
+
+    overlay.querySelector('#auser-btn-delete').addEventListener('click', function () {
+      if (!confirm('⚠️ 确定删除用户「' + uname + '」吗？此操作不可恢复。')) return;
+      if (!confirm('再次确认：永久删除「' + uname + '」？')) return;
+      DataStore.removeUser(uid);
+      DataStore.addAuditEntry({
+        action: 'delete_user', actorId: window.AppState.currentUser.id, actorName: window.AppState.currentUser.name,
+        targetId: uid, targetName: uname, detail: '删除了用户「' + uname + '」'
+      });
+      showToast('用户已删除');
+      close();
+      renderAdminUsers();
+    });
+  }
+
+  /* ==========================================================
+   * 管理员 — 系统数据页 (#admin-data)
+   * ========================================================== */
+  function renderAdminData() {
+    var ct = document.getElementById('admin-data-content');
+    if (!ct) return;
+    var user = DataStore.getCurrentUser() || window.AppState.currentUser;
+    if (!user || user.role !== 'admin') {
+      ct.innerHTML = '<div style="padding:48px 24px;text-align:center;color:#999;">仅系统管理员可访问</div>';
+      return;
+    }
+
+    var allUsers = DataStore.getAllUsers();
+    var allRecords = DataStore.getRecords();
+    var allGrants = DataStore.getGrants();
+    var activeGrants = allGrants.filter(function (g) { return g.status === 'active'; });
+    var auditLog = DataStore.getAuditLog();
+
+    // 最近30天活跃
+    var thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    var recent30d = allRecords.filter(function (r) { return r.date >= thirtyDaysAgo.toISOString().slice(0, 10); });
+
+    // 记录模块分布
+    var moduleDist = {};
+    allRecords.forEach(function (r) {
+      if (r.module) moduleDist[r.module] = (moduleDist[r.module] || 0) + 1;
+    });
+
+    // 日活跃趋势（最近14天）
+    var dailyActive = {};
+    var fourteenDays = [];
+    for (var i = 13; i >= 0; i--) {
+      var d = new Date(Date.now() - i * 86400000);
+      var ds = d.toISOString().slice(0, 10);
+      fourteenDays.push(ds);
+      dailyActive[ds] = 0;
+    }
+    allRecords.forEach(function (r) {
+      if (dailyActive[r.date] !== undefined) dailyActive[r.date]++;
+    });
+
+    // localStorage 用量估算
+    var storageUsed = JSON.stringify(localStorage).length;
+    var storageKB = Math.round(storageUsed / 1024);
+
+    var html = '';
+    html += '<div class="profile-scroll">';
+
+    html += '<div class="admin-stats-row">';
+    html += buildStatCard('👤', allUsers.length, '总用户', '#4A90D9');
+    html += buildStatCard('📝', allRecords.length, '总记录', '#52C41A');
+    html += buildStatCard('🔗', activeGrants.length, '活跃授权', '#FAAD14');
+    html += buildStatCard('📅', recent30d.length, '近30天活跃', '#EB2F96');
+    html += '</div>';
+
+    // 记录趋势图
+    html += '<div class="admin-section">';
+    html += '<div class="admin-section-header"><span class="admin-section-title">📈 日记录趋势（近14天）</span></div>';
+    var maxDaily = Math.max.apply(null, Object.values(dailyActive).concat([1]));
+    html += '<div class="a-chart-bars" style="height:80px;">';
+    fourteenDays.forEach(function (ds) {
+      var v = dailyActive[ds] || 0;
+      var pct = (v / maxDaily) * 100;
+      html += '<div class="a-bar-col"><div class="a-bar" style="height:' + pct + '%;background:#4A90D9;"></div>';
+      html += '<div class="a-bar-label">' + ds.slice(5) + '</div><div class="a-bar-count">' + v + '</div></div>';
+    });
+    html += '</div>';
+    html += '</div>';
+
+    // 模块分布
+    html += '<div class="admin-section">';
+    html += '<div class="admin-section-header"><span class="admin-section-title">📊 模块分布</span></div>';
+    var modules = Object.keys(moduleDist);
+    var modLabels = { emotion: '情绪', communication: '沟通', care: '照护', work: '工作' };
+    if (modules.length > 0) {
+      var totalMod = modules.reduce(function (s, m) { return s + moduleDist[m]; }, 0);
+      modules.forEach(function (m) {
+        var pct = Math.round(moduleDist[m] / totalMod * 100);
+        html += '<div style="margin-bottom:8px;display:flex;align-items:center;gap:8px;">';
+        html += '<span style="width:50px;font-size:0.8rem;">' + (modLabels[m] || m) + '</span>';
+        html += '<div style="flex:1;background:#f0f0f0;border-radius:4px;height:16px;"><div style="height:100%;width:' + pct + '%;background:#4A90D9;border-radius:4px;"></div></div>';
+        html += '<span style="font-size:0.75rem;color:#888;width:40px;">' + moduleDist[m] + '</span>';
+        html += '</div>';
+      });
+    } else {
+      html += '<div class="a-empty">暂无记录数据</div>';
+    }
+    html += '</div>';
+
+    // 系统信息
+    html += '<div class="admin-section">';
+    html += '<div class="admin-section-header"><span class="admin-section-title">💾 系统信息</span></div>';
+    html += '<div class="admin-info-grid">';
+    html += '<div class="admin-info-item"><span>存储用量</span><span>' + storageKB + ' KB</span></div>';
+    html += '<div class="admin-info-item"><span>操作日志</span><span>' + auditLog.length + ' 条</span></div>';
+    html += '<div class="admin-info-item"><span>数据版本</span><span>v3.0</span></div>';
+    html += '<div class="admin-info-item"><span>今日记录</span><span>' + (dailyActive[fourteenDays[13]] || 0) + ' 条</span></div>';
+    html += '</div>';
+    html += '</div>';
+
+    html += '</div>';
+    ct.innerHTML = html;
+  }
+
+  /* ==========================================================
    * 导出
    * ========================================================== */
   window.AdminPage = {
-    render: render
+    render: render,
+    renderAdminUsers: renderAdminUsers,
+    renderAdminData: renderAdminData
   };
 
 })();

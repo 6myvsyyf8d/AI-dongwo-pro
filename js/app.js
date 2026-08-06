@@ -555,10 +555,10 @@
         if (window.BatchImport) window.BatchImport.render('batch-import-content');
         break;
       case 'admin-users':
-        // 管理员用户管理页 — 第二期填充内容
+        if (window.AdminPage && window.AdminPage.renderAdminUsers) window.AdminPage.renderAdminUsers();
         break;
       case 'admin-data':
-        // 管理员系统数据页 — 第二期填充内容
+        if (window.AdminPage && window.AdminPage.renderAdminData) window.AdminPage.renderAdminData();
         break;
       case 'quick-start':
         if (window.QuickStartPage) window.QuickStartPage.render();

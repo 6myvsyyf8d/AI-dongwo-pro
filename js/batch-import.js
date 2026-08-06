@@ -45,6 +45,13 @@
     var container = document.getElementById(containerId);
     if (!container) return;
 
+    // 权限检查：仅管理员可批量导入
+    var user = DataStore.getCurrentUser() || window.AppState.currentUser;
+    if (!user || user.role !== 'admin') {
+      container.innerHTML = '<div style="padding:48px 24px;text-align:center;color:#999;">仅系统管理员可访问批量导入功能</div>';
+      return;
+    }
+
     parsedRows = [];
 
     container.innerHTML =

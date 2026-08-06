@@ -5943,3 +5943,56 @@ a:hover { text-decoration: underline; }
 .access-denied-icon { font-size: 3rem; margin-bottom: 16px; }
 .access-denied-title { font-size: 1.1rem; font-weight: 700; color: #333; margin-bottom: 8px; }
 .access-denied-text { font-size: 0.88rem; color: #999; margin-bottom: 20px; }
+
+/* ==========================================
+   管理模块 — 三级差异化样式
+   ========================================== */
+
+.admin-user-action {
+  padding: 6px 10px;
+  border: 1px solid #e5e5e5;
+  background: #fff;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: #666;
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+.admin-user-action:hover {
+  background: #f5f5f5;
+  border-color: #d0d0d0;
+}
+
+.admin-info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+.admin-info-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  background: #f9fafb;
+  border-radius: 8px;
+  font-size: 0.82rem;
+}
+.admin-info-item span:first-child { color: #888; }
+.admin-info-item span:last-child { font-weight: 600; color: #333; }
+
+.admin-limitation-note {
+  background: #fffbe6;
+  border-left: 3px solid #FAAD14;
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 14px;
+  font-size: 0.82rem;
+  color: #ad6800;
+  line-height: 1.6;
+}
+
+@media (max-width: 400px) {
+  .admin-stats-row { grid-template-columns: repeat(2, 1fr); }
+  .admin-info-grid { grid-template-columns: 1fr; }
+}

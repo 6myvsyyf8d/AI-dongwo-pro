@@ -733,6 +733,32 @@
       return data.users.find(function (u) { return u.id === id; }) || null;
     },
 
+    updateUserRole: function (userId, newRole) {
+      var data = this.load();
+      if (!data || !data.users) return false;
+      var user = data.users.find(function (u) { return u.id === userId; });
+      if (!user) return false;
+      user.role = newRole;
+      var roleConfig = ROLES[newRole];
+      if (roleConfig) user.avatar = roleConfig.avatar;
+      this.save(data);
+      return true;
+    },
+
+    removeUser: function (userId) {
+      var data = this.load();
+      if (!data || !data.users) return false;
+      var idx = data.users.findIndex(function (u) { return u.id === userId; });
+      if (idx === -1) return false;
+      data.users.splice(idx, 1);
+      // 同时清理该用户的相关授权
+      if (data.grants) {
+        data.grants = data.grants.filter(function (g) { return g.userId !== userId; });
+      }
+      this.save(data);
+      return true;
+    },
+
     // ========== 辅助：按任意 key 读写 localStorage ==========
 
     _loadByKey: function(key) {
