@@ -1473,3 +1473,170 @@
     transform: scale(1.08);
   }
 }
+
+/* ==========================================
+   三段式确认页 — chat-review 新样式
+   ========================================== */
+
+/* -- AI 提示横幅 -- */
+.chat-review-hint-banner {
+  margin: 0 16px 8px;
+  padding: 10px 14px;
+  background: rgba(94, 106, 210, 0.08);
+  border-radius: 10px;
+  font-size: 13px;
+  color: #5E6AD2;
+  text-align: center;
+  border: 1px solid rgba(94, 106, 210, 0.15);
+}
+
+/* -- 空状态 -- */
+.chat-review-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  text-align: center;
+}
+.chat-review-empty-icon {
+  font-size: 40px;
+  margin-bottom: 12px;
+  opacity: 0.5;
+}
+.chat-review-empty p {
+  font-size: 14px;
+  color: #8A8F98;
+  margin: 0;
+}
+
+/* -- 三步步骤标签 -- */
+.chat-review-step-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 6px;
+}
+
+/* -- 三步步骤内容区 -- */
+.chat-review-step-content {
+  background: #f8f9fb;
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 4px;
+}
+.chat-review-step-content.read-only {
+  background: #f0f1f3;
+  font-size: 13px;
+  color: #555;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 160px;
+  overflow-y: auto;
+}
+
+/* -- 三步提示文字 -- */
+.chat-review-step-hint {
+  font-size: 12px;
+  color: #999;
+  margin-top: 4px;
+  line-height: 1.4;
+}
+.chat-review-step-hint.confirm-warn {
+  color: #D4877B;
+  font-weight: 500;
+}
+
+/* -- 空提示 -- */
+.chat-review-empty-hint {
+  color: #bbb;
+  font-style: italic;
+  font-size: 13px;
+}
+
+/* -- 模块选择下拉 -- */
+.chat-review-module-select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-family: var(--font-body, system-ui, sans-serif);
+  background: #fff;
+  color: #333;
+  outline: none;
+  box-sizing: border-box;
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M6 8L1 3h10z' fill='%23999'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+}
+.chat-review-module-select:focus {
+  border-color: #5E6AD2;
+}
+
+/* -- 只读字段值 -- */
+.chat-review-draft-field-value {
+  font-size: 13px;
+  color: #333;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* -- 查看已入档记录按钮 -- */
+.chat-review-btn-view-topic {
+  flex: 1;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 10px;
+  background: #5E6AD2;
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: var(--font-body, system-ui, sans-serif);
+  transition: all 0.2s;
+  text-align: center;
+}
+.chat-review-btn-view-topic:active {
+  opacity: 0.85;
+  transform: scale(0.98);
+}
+
+/* -- 成功弹窗跳转按钮区 -- */
+.chat-success-jumps {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 12px 0;
+}
+.chat-success-jump-btn {
+  width: 100%;
+  padding: 10px;
+  border: none;
+  border-radius: 10px;
+  background: rgba(94, 106, 210, 0.1);
+  color: #5E6AD2;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: var(--font-body, system-ui, sans-serif);
+  transition: all 0.2s;
+  text-align: center;
+}
+.chat-success-jump-btn:active {
+  background: rgba(94, 106, 210, 0.2);
+  transform: scale(0.98);
+}
+
+/* -- 草稿卡片操作区适配 -- */
+.chat-review-draft-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
