@@ -58,6 +58,7 @@
   var currentRole = window.AppState.currentRole;
   var currentQuickCardVersion = window.AppState.currentQuickCardVersion;
   var addRecordState = window.AppState.addRecordState;
+  var navHistory = []; // 导航栈，用于返回按钮回溯来源页
   var timelineFilters = window.AppState.timelineFilters;
   var chatState = window.AppState.chatState;
   var calendarState = window.AppState.calendarState;
@@ -341,30 +342,33 @@
       'draft-review': '待确认记录'
     };
 
-    // 有 module sub-nav 的页面，sub-nav 标签已高亮当前页
-    // 但总览和主题详情页（life/communication 等）仍需显示标题
-    var parent = PAGE_PARENT[pageName];
-    var hasSubNav = parent ? !!MODULE_SUB_NAV[parent] : false;
-    // 主题档案/时间轴/速读卡不显示标题（sub-nav 标签已表明位置），总览例外
-    var isSubNavItem = hasSubNav && pageName !== 'archive' &&
-      MODULE_SUB_NAV[parent].some(function(item) { return item.hash === pageName; });
-
-    if (titleEl) {
-      titleEl.textContent = isSubNavItem ? '' : (pageTitles[pageName] || 'AI懂我');
-    }
     // 对话页面自带顶栏，隐藏全局顶栏
     var isChatPage = (pageName === 'chat' || pageName === 'chat-conversation' || pageName === 'chat-review');
+
+    // 标题：所有页面始终显示
+    if (titleEl) {
+      titleEl.textContent = pageTitles[pageName] || 'AI懂我';
+    }
+
+    // 返回按钮：所有二级页面（有父级且非一级）统一显示「← 返回」
+    // 一级页面（home/archive/analytics/profile/tasks/charts）不显示返回
     if (backEl) {
-      var backParent = PAGE_BACK_PARENT[pageName] || parent;
+      var parent = PAGE_PARENT[pageName];
       var isTopLevel = (!parent || parent === pageName);
-      backEl.style.display = (pageName === 'home' || isTopLevel || isChatPage || isSubNavItem) ? 'none' : 'block';
-      // 返回按钮写描述性文案，如"← 返回 主题档案"
-      if (backParent && backParent !== pageName && !isChatPage) {
-        backEl.textContent = '← ' + (pageTitles[backParent] || backParent);
+      var shouldShowBack = !isTopLevel && !isChatPage;
+      backEl.style.display = shouldShowBack ? 'block' : 'none';
+      if (shouldShowBack) {
+        backEl.textContent = '← 返回';
       }
     }
+
     if (quickEl) {
       quickEl.style.display = (pageName === 'home') ? 'block' : 'none';
+    }
+    // 退出按钮仅「我的」页面显示
+    var logoutEl = document.getElementById('btn-nav-logout');
+    if (logoutEl) {
+      logoutEl.style.display = (pageName === 'profile') ? 'block' : 'none';
     }
     var topbar = document.getElementById('app-topbar');
     if (topbar) {
@@ -380,12 +384,13 @@
     var quickEl = Utils.dom.get('topbar-quick');
     if (backEl) {
       Utils.dom.on(backEl, 'click', function () {
-        var backParent = PAGE_BACK_PARENT[currentPage] || PAGE_PARENT[currentPage];
-        // 如果当前页有直接父级（无论是否一级页面），回父级；否则回首页
-        if (backParent && backParent !== currentPage) {
-          window.location.hash = backParent;
+        // 导航栈回溯，回用户实际来源页；栈空时回 PAGE_BACK_PARENT → PAGE_PARENT → archive
+        var prevPage = navHistory.pop();
+        if (prevPage) {
+          window.location.hash = prevPage;
         } else {
-          window.location.hash = 'home';
+          var fallback = PAGE_BACK_PARENT[currentPage] || PAGE_PARENT[currentPage] || 'archive';
+          window.location.hash = fallback;
         }
       });
     }
@@ -480,6 +485,15 @@
       targetSection.classList.add('active');
     }
 
+    // 记录导航历史：浏览器后退时目标已在栈顶则弹出，否则推入来源
+    if (currentPage && currentPage !== basePage) {
+      if (navHistory.length > 0 && navHistory[navHistory.length - 1] === basePage) {
+        navHistory.pop();
+      } else {
+        navHistory.push(currentPage);
+      }
+      if (navHistory.length > 20) navHistory.shift();
+    }
     currentPage = basePage;
     appState.currentPage = basePage;
 
@@ -2805,57 +2819,48 @@
     var html = '';
 
     // 档案概览说明
-    html += '<div style="background:linear-gradient(135deg,#D97757,#5B9BD5);border-radius:16px;padding:20px;margin-bottom:20px;color:#fff;">';
-    html += '  <div style="font-size:1.2rem;font-weight:600;margin-bottom:6px;">📋 小雨的完整档案</div>';
-    html += '  <div style="font-size:0.88rem;opacity:0.9;">六大主题分类，全面了解小雨的 support profile</div>';
+    html += '<div style="background:linear-gradient(135deg,#D97757,#F5A88B);border-radius:14px;padding:18px;margin-bottom:16px;color:#fff;">';
+    html += '  <div style="font-size:1.1rem;font-weight:600;margin-bottom:4px;">📋 小雨的完整档案</div>';
+    html += '  <div style="font-size:0.8rem;opacity:0.9;">六大主题分类，全面了解小雨的 support profile</div>';
     html += '</div>';
 
-    // 六大主题档案卡片（含完整度摘要）
+    // 六大主题档案 2×3 宫格
     var archiveThemes = [
-      { hash: 'life', icon: '❤️', title: '喜好档案', desc: '喜欢和不喜欢的事物、活动偏好', color: '#D97757', module: 'life' },
-      { hash: 'communication', icon: '💬', title: '沟通档案', desc: '沟通指南、有效话术、禁忌用语', color: '#F5E6D3', module: 'communication' },
-      { hash: 'emotion', icon: '😰', title: '情绪档案', desc: '情绪触发因素、安抚策略、预警信号', color: '#C96E68', module: 'emotion' },
-      { hash: 'care', icon: '🏥', title: '照护档案', desc: '过敏、用药、作息、医疗提醒', color: '#6FA789', module: 'care' },
-      { hash: 'work', icon: '💼', title: '支持档案', desc: '工作能力、社交关系、支持网络', color: '#E7B95E', module: 'work' },
-      { hash: 'relations', icon: '👥', title: '关系档案', desc: '核心支持圈、日常接触、避免场景', color: '#D99A4E', module: 'relations' }
+      { hash: 'life', icon: '❤️', title: '喜好档案', desc: '喜欢与不喜欢的事物', color: '#D97757', module: 'life' },
+      { hash: 'communication', icon: '💬', title: '沟通档案', desc: '沟通指南与有效话术', color: '#D9A56A', module: 'communication' },
+      { hash: 'emotion', icon: '😰', title: '情绪档案', desc: '触发因素与安抚策略', color: '#C96E68', module: 'emotion' },
+      { hash: 'care', icon: '🏥', title: '照护档案', desc: '过敏用药与医疗提醒', color: '#6FA789', module: 'care' },
+      { hash: 'work', icon: '💼', title: '支持档案', desc: '工作能力与支持网络', color: '#E7B95E', module: 'work' },
+      { hash: 'relations', icon: '👥', title: '关系档案', desc: '支持圈与社交关系', color: '#D99A4E', module: 'relations' }
     ];
 
-    html += '<div class="card-grid">';
+    html += '<div class="archive-topic-grid">';
     archiveThemes.forEach(function (theme) {
       var recs = DataStore.getRecordsByModule(theme.module);
       var count = recs.length;
-      var completeness = count >= 5 ? Math.min(100, Math.round(count / 8 * 100)) : (count === 0 ? 0 : Math.round(count / 5 * 60));
 
-      html += '<div class="nav-card archive-card" data-navigate="' + theme.hash + '">';
-      html += '  <span class="card-icon" style="background:' + theme.color + '15;color:' + theme.color + ';">' + theme.icon + '</span>';
-      html += '  <div class="card-title">' + theme.title + '</div>';
-      html += '  <div class="card-desc">' + theme.desc + '</div>';
-      // 完整度条
-      html += '  <div style="display:flex;align-items:center;gap:6px;margin-top:8px;">';
-      html += '    <div style="flex:1;height:4px;background:#E8E8E8;border-radius:2px;overflow:hidden;">';
-      html += '      <div style="height:100%;width:' + completeness + '%;background:' + (completeness >= 60 ? '#6FA789' : completeness >= 30 ? '#E7B95E' : '#C96E68') + ';border-radius:2px;"></div>';
-      html += '    </div>';
-      html += '    <span style="font-size:0.7rem;color:#999;white-space:nowrap;">' + count + '条记录</span>';
-      html += '  </div>';
+      html += '<div class="archive-topic-card" data-navigate="' + theme.hash + '">';
+      html += '  <span class="topic-icon">' + theme.icon + '</span>';
+      html += '  <div class="topic-title">' + theme.title + '</div>';
+      html += '  <div class="topic-desc">' + theme.desc + '</div>';
+      html += '  <div class="topic-meta">' + count + ' 条记录</div>';
       html += '</div>';
     });
     html += '</div>';
 
     // 快捷操作区
-    html += '<div style="margin-top:24px;">';
-    html += '  <h2 style="font-size:1rem;color:#333;margin-bottom:12px;">🔗 快捷操作</h2>';
-    html += '  <div style="display:flex;gap:12px;flex-wrap:wrap;">';
-    html += '    <button class="btn btn-outline" onclick="location.hash=\'timeline\'">📅 查看动态时间轴</button>';
-    html += '    <button class="btn btn-outline" onclick="location.hash=\'charts\'">📊 数据可视化</button>';
-    html += '    <button class="btn btn-outline" id="btn-archive-quickcard">📋 打开速读卡</button>';
-    html += '    <button class="btn btn-outline" onclick="location.hash=\'archive-status\'">📋 档案状态</button>';
+    html += '<div style="margin-top:20px;">';
+    html += '  <h2 style="font-size:0.95rem;color:#333;margin-bottom:10px;">🔗 快捷操作</h2>';
+    html += '  <div style="display:flex;gap:10px;flex-wrap:wrap;">';
+    html += '    <button class="btn btn-outline" onclick="location.hash=\'timeline\'">📅 动态时间轴</button>';
+    html += '    <button class="btn btn-outline" id="btn-archive-quickcard">📋 速读卡</button>';
     html += '  </div>';
     html += '</div>';
 
     contentArea.innerHTML = html;
 
     // 绑定档案卡片点击事件
-    contentArea.querySelectorAll('.archive-card').forEach(function (card) {
+    contentArea.querySelectorAll('.archive-topic-card').forEach(function (card) {
       card.addEventListener('click', function () {
         var target = this.getAttribute('data-navigate');
         if (target) window.location.hash = target;

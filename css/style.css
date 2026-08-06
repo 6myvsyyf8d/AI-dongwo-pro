@@ -168,11 +168,13 @@ a:hover { text-decoration: underline; }
 }
 
 .topbar-back {
-  font-size: 30px;
+  font-size: 14px;
+  font-weight: 500;
   color: var(--color-primary);
   cursor: pointer;
-  font-family: var(--font-display);
-  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .topbar-title {
@@ -180,6 +182,10 @@ a:hover { text-decoration: underline; }
   font-weight: 700;
   font-size: 17px;
   color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0 8px;
 }
 
 .topbar-quick {
@@ -191,14 +197,19 @@ a:hover { text-decoration: underline; }
 }
 
 .topbar-logout {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
   background: none;
   border: none;
   color: var(--text-muted);
   font-size: 0.75rem;
   cursor: pointer;
-  padding: 2px 4px;
+  padding: 4px 8px;
   border-radius: 6px;
   transition: var(--transition);
+  display: none;
 }
 .topbar-logout:hover {
   color: var(--color-danger);
@@ -694,6 +705,58 @@ a:hover { text-decoration: underline; }
   gap: var(--space-sm);
   padding: 0 0 var(--space-sm);
   overflow-x: auto;
+}
+
+/* 档案页 2×3 宫格分类入口 */
+.archive-topic-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 0;
+}
+
+.archive-topic-card {
+  background: #FFFFFF;
+  border-radius: 12px;
+  padding: 14px;
+  cursor: pointer;
+  transition: var(--transition);
+  box-shadow: var(--shadow-card);
+  border: 1px solid #EFE1D9;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.archive-topic-card:active {
+  transform: scale(0.97);
+  background: #FFF5F0;
+  border-color: var(--color-primary);
+}
+
+.archive-topic-card .topic-icon {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.archive-topic-card .topic-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.archive-topic-card .topic-desc {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  line-height: 1.3;
+}
+
+.archive-topic-card .topic-meta {
+  font-size: 0.65rem;
+  color: var(--color-primary);
+  font-weight: 500;
 }
 
 .nav-card {
