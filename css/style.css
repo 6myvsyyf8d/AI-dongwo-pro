@@ -5170,6 +5170,8 @@ a:hover { text-decoration: underline; }
   resize: vertical; min-height: 72px; outline: none; box-sizing: border-box;
 }
 .dr-summary-edit:focus { border-color: var(--color-primary); }
+.dr-summary-edit:disabled { background: #f5f5f5; color: #666; }
+.dr-module-select:disabled { background: #f5f5f5; color: #666; opacity: 0.7; }
 .dr-module-select {
   width: 100%; padding: 10px 12px; border: 1.5px solid #e0e0e0;
   border-radius: 10px; font-size: 0.85rem; font-family: var(--font-body);
@@ -5221,6 +5223,54 @@ a:hover { text-decoration: underline; }
   font-size: 0.75rem; color: #aaa; padding: 8px 0; margin-top: 4px;
   line-height: 1.5; border-top: 1px dashed #f0f0f0;
 }
+
+/* 三段式步骤容器 */
+.dr-step-section {
+  position: relative;
+  padding-left: 36px;
+  margin-bottom: 16px;
+}
+.dr-step-section:last-child { margin-bottom: 0; }
+
+/* 步骤序号徽标 */
+.dr-step-badge {
+  position: absolute;
+  left: 0;
+  top: 2px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--color-primary, #5E6AD2);
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+/* 已确认状态下的步骤连接线 */
+.dr-card[data-status="confirmed"] .dr-step-section::before,
+.dr-card[data-status="discarded"] .dr-step-section::before {
+  content: '';
+  position: absolute;
+  left: 11px;
+  top: 28px;
+  width: 2px;
+  height: calc(100% - 26px);
+  background: #e0e0e0;
+  border-radius: 1px;
+}
+
+/* 查看已入档记录按钮（跳转闭环） */
+.dr-btn-view-topic {
+  flex: 1; padding: 12px; border: none; border-radius: 10px;
+  background: var(--color-primary, #5E6AD2); color: #fff;
+  font-size: 0.9rem; font-weight: 600; cursor: pointer;
+  font-family: var(--font-body); transition: all 0.2s; text-align: center;
+}
+.dr-btn-view-topic:active { opacity: 0.85; transform: scale(0.98); }
 
 /* P5 A5: 快速记录页提示 */
 .qr-textarea-hint {

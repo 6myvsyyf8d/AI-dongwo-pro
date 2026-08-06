@@ -1585,6 +1585,18 @@
       var rid = evidence.getAttribute('data-rid');
       if (rid) showRecordDetail(rid);
     });
+
+    // 跳转闭环：从 draft-review 确认后跳转至此，滚动到 L4 全部记录
+    try {
+      var scrollToL4 = sessionStorage.getItem('dr_scroll_to_l4');
+      if (scrollToL4 === moduleKey) {
+        sessionStorage.removeItem('dr_scroll_to_l4');
+        setTimeout(function() {
+          var l4Section = contentArea.querySelector('.comm-layer-l4');
+          if (l4Section) l4Section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 300);
+      }
+    } catch (e) {}
   }
 
   function renderGenericL2Content(contentArea, containerId, records, rangeIdx) {

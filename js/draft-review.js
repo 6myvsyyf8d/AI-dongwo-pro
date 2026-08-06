@@ -173,19 +173,27 @@
       + '<span class="dr-card-status ' + d.status + '">' + statusLabel(d.status) + '</span>'
       + '</div>'
 
-      // A2: 原始记录 — 只读
-      + '<div class="dr-section"><div class="dr-section-label">📝 原始记录（只读）</div>'
+      // 三段式 Step 1: 原始表达（只读）
+      + '<div class="dr-step-section">'
+      + '<div class="dr-step-badge">第一步</div>'
+      + '<div class="dr-section"><div class="dr-section-label">📝 原始表达</div>'
       + '<div class="dr-section-text">' + escapeHtml(d.originalText || '') + '</div></div>'
+      + '</div>'
 
-      // A2: 整理摘要 — 可编辑
-      + '<div class="dr-section"><div class="dr-section-label">🤖 演示整理摘要 · 不代表专业判断</div>'
+      // 三段式 Step 2: AI整理草稿（可编辑）
+      + '<div class="dr-step-section">'
+      + '<div class="dr-step-badge">第二步</div>'
+      + '<div class="dr-section"><div class="dr-section-label">🤖 AI整理草稿 · 演示整理，不代表专业判断</div>'
       + (isReadOnly
           ? '<div class="dr-section-text">' + escapeHtml(d.organizedSummary || '') + '</div>'
           : '<textarea class="dr-summary-edit" data-draft-id="' + d.id + '">' + escapeHtml(d.organizedSummary || '') + '</textarea>')
       + '</div>'
+      + '</div>'
 
-      // 归属主题
-      + '<div class="dr-section"><div class="dr-section-label">📂 归属主题</div>'
+      // 三段式 Step 3: 确认入档
+      + '<div class="dr-step-section">'
+      + '<div class="dr-step-badge">第三步</div>'
+      + '<div class="dr-section"><div class="dr-section-label">📂 归属主题 / 确认入档</div>'
       + (isReadOnly
           ? '<div class="dr-section-text">' + moduleLabel(d.selectedTheme || d.suggestedTheme) + '</div>'
           : '<select class="dr-module-select" data-draft-id="' + d.id + '">'
@@ -194,18 +202,21 @@
               }).join('')
             + '</select>')
       + '</div>'
-
-      // 审核提示
-      + (isReadOnly ? '' : '<div class="dr-review-hint">请对照原始记录核实整理内容，并确认归属主题。确认后仅写入L4原始记录，不自动形成L1摘要或L3关键事件。</div>')
+      + (isReadOnly ? '' : '<div class="dr-review-hint">确认后将写入L4原始记录。记录者与审核者信息同时保留。</div>')
 
       // 操作按钮
       + (!isReadOnly
           ? '<div class="dr-actions">'
-            + '<button class="dr-btn-confirm" data-draft-id="' + d.id + '">确认并写入L4</button>'
+            + '<button class="dr-btn-confirm" data-draft-id="' + d.id + '">确认并写入档案</button>'
             + '<button class="dr-btn-needs-info" data-draft-id="' + d.id + '">标记为需补充</button>'
             + '<button class="dr-btn-discard" data-draft-id="' + d.id + '">放弃这条草稿</button>'
             + '</div>'
-          : '<div class="dr-actions"></div>')
+          : d.status === 'confirmed'
+            ? '<div class="dr-actions">'
+              + '<button class="dr-btn-view-topic" data-topic="' + (d.selectedTheme || d.suggestedTheme) + '">📋 查看已入档记录</button>'
+              + '</div>'
+            : '<div class="dr-actions"></div>')
+      + '</div>'
       + '<div class="dr-source">可追溯来源：临时支持者记录</div>'
       + '</div>';
   }
@@ -326,22 +337,29 @@
           card.setAttribute('data-status', 'confirmed');
           card.querySelector('.dr-card-status').className = 'dr-card-status confirmed';
           card.querySelector('.dr-card-status').textContent = '✅ 已入档';
-          card.querySelector('.dr-actions').innerHTML = '<button class="dr-btn-view-record" data-draft-id="' + draftId + '">查看已入档记录</button>';
+          // 替换操作区为跳转按钮
+          card.querySelector('.dr-actions').innerHTML = '<button class="dr-btn-view-topic" data-topic="' + finalTheme + '">📋 查看已入档记录</button>';
+          // 禁用编辑控件
+          var summaryEl2 = card.querySelector('.dr-summary-edit');
+          if (summaryEl2) summaryEl2.disabled = true;
+          var moduleEl2 = card.querySelector('.dr-module-select');
+          if (moduleEl2) moduleEl2.disabled = true;
         }
 
-        window.showToast && window.showToast('已写入档案');
+        window.showToast && window.showToast('已写入档案，可查看已入档记录');
       });
     });
 
-    // 查看已入档记录
+    // 查看已入档记录（跳转闭环：→ 对应主题 L4 全部记录）
+    function navigateToTopicL4(topicKey) {
+      try { sessionStorage.setItem('dr_scroll_to_l4', topicKey); } catch (e) {}
+      window.location.hash = topicKey;
+    }
     container.addEventListener('click', function (e) {
-      var viewBtn = e.target.closest('.dr-btn-view-record');
+      var viewBtn = e.target.closest('.dr-btn-view-topic');
       if (viewBtn) {
-        var draftId = viewBtn.getAttribute('data-draft-id');
-        var draft = drafts.find(function (d) { return d.id === draftId; });
-        if (draft && draft.selectedTheme) {
-          window.location.hash = draft.selectedTheme;
-        }
+        var topicKey = viewBtn.getAttribute('data-topic');
+        if (topicKey) navigateToTopicL4(topicKey);
       }
     });
 
