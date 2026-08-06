@@ -315,19 +315,23 @@
       'draft-review': '待确认记录'
     };
 
-    // 有 module sub-nav 的页面，sub-nav 标签已高亮当前页，topbar 标题和回退按钮均冗余
+    // 有 module sub-nav 的页面，sub-nav 标签已高亮当前页
+    // 但总览和主题详情页（life/communication 等）仍需显示标题
     var parent = PAGE_PARENT[pageName];
     var hasSubNav = parent ? !!MODULE_SUB_NAV[parent] : false;
+    // 主题档案/时间轴/速读卡不显示标题（sub-nav 标签已表明位置），总览例外
+    var isSubNavItem = hasSubNav && pageName !== 'archive' &&
+      MODULE_SUB_NAV[parent].some(function(item) { return item.hash === pageName; });
 
     if (titleEl) {
-      titleEl.textContent = hasSubNav ? '' : (pageTitles[pageName] || 'AI懂我');
+      titleEl.textContent = isSubNavItem ? '' : (pageTitles[pageName] || 'AI懂我');
     }
     // 对话页面自带顶栏，隐藏全局顶栏
     var isChatPage = (pageName === 'chat' || pageName === 'chat-conversation' || pageName === 'chat-review');
     if (backEl) {
       var backParent = PAGE_BACK_PARENT[pageName] || parent;
       var isTopLevel = (!parent || parent === pageName);
-      backEl.style.display = (pageName === 'home' || isTopLevel || isChatPage || hasSubNav) ? 'none' : 'block';
+      backEl.style.display = (pageName === 'home' || isTopLevel || isChatPage || isSubNavItem) ? 'none' : 'block';
       // 返回按钮写描述性文案，如"← 返回 主题档案"
       if (backParent && backParent !== pageName && !isChatPage) {
         backEl.textContent = '← ' + (pageTitles[backParent] || backParent);
