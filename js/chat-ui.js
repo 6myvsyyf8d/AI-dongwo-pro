@@ -193,10 +193,10 @@
       if (!container) return;
       if (container.querySelector('.chat-review-ready')) return;
 
-      // SPA hash 导航时恢复活跃会话
-      if (!_activeSession) {
-        var savedId = localStorage.getItem(LAST_SESSION_KEY);
-        if (savedId) { _activeSession = ChatBot.loadSession(savedId); }
+      // SPA hash 导航时恢复活跃会话（始终取最新，避免旧 session 残留）
+      var savedId = localStorage.getItem(LAST_SESSION_KEY);
+      if (savedId && (!_activeSession || _activeSession.id !== savedId)) {
+        _activeSession = ChatBot.loadSession(savedId);
       }
 
       var session = _activeSession;
