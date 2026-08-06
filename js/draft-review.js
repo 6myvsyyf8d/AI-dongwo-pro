@@ -239,14 +239,20 @@
 
   /** 跳转到对应主题 L4（带兜底） */
   function navigateToTopicL4(topicKey) {
-    if (!topicKey || VALID_TOPIC_KEYS.indexOf(topicKey) === -1) {
-      // 无效 topicKey → 清理残留标记，兜底到主题档案列表
-      try { sessionStorage.removeItem('dr_scroll_to_l4'); } catch (e) {}
+    try {
+      if (!topicKey || VALID_TOPIC_KEYS.indexOf(topicKey) === -1) {
+        // 无效 topicKey → 清理残留标记，兜底到主题档案列表
+        try { sessionStorage.removeItem('dr_scroll_to_l4'); } catch (e) {}
+        window.location.hash = 'archive-topics';
+        return;
+      }
+      try { sessionStorage.setItem('dr_scroll_to_l4', topicKey); } catch (e) {}
+      window.location.hash = topicKey;
+    } catch (e) {
+      // 极端兜底：任何异常都清理标记并降级
+      try { sessionStorage.removeItem('dr_scroll_to_l4'); } catch (e2) {}
       window.location.hash = 'archive-topics';
-      return;
     }
-    try { sessionStorage.setItem('dr_scroll_to_l4', topicKey); } catch (e) {}
-    window.location.hash = topicKey;
   }
 
   function bindEvents(container, drafts) {
