@@ -165,6 +165,7 @@
   var TAB_CONFIG = {
     'chat': { route: 'chat', icon: '💬', label: 'AI聊聊' },
     'home': { route: 'home', icon: '✅', label: '任务' },
+    'tasks': { route: 'tasks', icon: '📋', label: '范围' },
     'archive': { route: 'archive', icon: '👤', label: '档案' },
     'charts': { route: 'charts', icon: '📊', label: '分析' },
     'profile': { route: 'profile', icon: '⚙️', label: '管理' },
@@ -263,12 +264,23 @@
   function highlightBottomNav(route) {
     var parent = PAGE_PARENT[route] || route;
     var tabs = document.querySelectorAll('.nav-tab');
+    var exactMatch = null;
     tabs.forEach(function (tab) {
       tab.classList.remove('active');
-      if (tab.getAttribute('data-route') === parent) {
-        tab.classList.add('active');
+      if (tab.getAttribute('data-route') === route) {
+        exactMatch = tab;
       }
     });
+    // 如果当前路由有直接对应的标签按钮，优先高亮它；否则高亮父级
+    if (exactMatch) {
+      exactMatch.classList.add('active');
+    } else {
+      tabs.forEach(function (tab) {
+        if (tab.getAttribute('data-route') === parent) {
+          tab.classList.add('active');
+        }
+      });
+    }
   }
 
   /**
@@ -297,7 +309,7 @@
       records: '记录列表',
       profile: '我的账号',
       charts: '趋势分析',
-      tasks: '任务清单',
+      tasks: '数据范围',
       calendar: '日程日历',
       analytics: '分析总览',
       quickcard: '速读卡',
@@ -523,7 +535,13 @@
         window.Auth.renderRoleSelect();
         break;
       case 'profile':
-        window.AdminPage.render();
+        var user = DataStore.getCurrentUser() || appState.currentUser;
+        var role = user ? user.role : '';
+        if (role === 'government') {
+          renderGovernmentProfile();
+        } else {
+          window.AdminPage.render();
+        }
         break;
       case 'records':
         window.RecordsPage.renderRecordsPage(queryParams.module || null);
@@ -593,9 +611,9 @@
     var user = DataStore.getCurrentUser() || appState.currentUser;
     var role = user ? user.role : 'parent';
 
-    // 政府角色无任务模块，重定向到分析总览
+    // 政府角色：显示宏观数据概览
     if (role === 'government') {
-      window.location.hash = 'analytics';
+      renderGovernmentHome();
       return;
     }
 
@@ -674,6 +692,210 @@
 
     // 渲染添加记录浮动按钮
     renderFAB();
+  }
+
+  /**
+   * 政府角色首页 — 宏观数据概览
+   */
+  function renderGovernmentHome() {
+    var heroNameEl = document.getElementById('hero-name');
+    var heroMetaEl = document.getElementById('hero-meta');
+    var heroIntroEl = document.getElementById('hero-intro');
+    var alertBannerEl = document.getElementById('alert-banner');
+    var cardGridEl = document.getElementById('card-grid');
+
+    // Hero 区：显示区域概况
+    if (heroNameEl) heroNameEl.textContent = '区域服务概况';
+    if (heroMetaEl) heroMetaEl.textContent = '数据更新至 ' + new Date().toLocaleDateString('zh-CN');
+    if (heroIntroEl) heroIntroEl.textContent = '覆盖心智障碍者服务数据，已脱敏处理';
+
+    // 提醒区：数据说明
+    if (alertBannerEl) {
+      alertBannerEl.innerHTML = '<div class="alert-item info">📊 数据已做脱敏处理，不包含个人身份信息</div>' +
+        '<div class="alert-item info">📅 数据范围为示例演示数据</div>';
+    }
+
+    // 隐藏今日工作台
+    var wbEl = document.getElementById('today-workbench');
+    if (wbEl) wbEl.innerHTML = '';
+
+    // 导航卡片：政府专用
+    if (cardGridEl) {
+      var cards = [
+        { hash: 'charts', icon: '📈', title: '数据分析', desc: '区域服务趋势与统计', module: 'charts' },
+        { hash: 'tasks', icon: '📋', title: '数据范围', desc: '覆盖人数、服务类型说明', module: 'home' },
+        { hash: 'profile', icon: '⚙️', title: '管理设置', desc: '隐私声明与数据导出', module: 'profile' }
+      ];
+      var gridHTML = '';
+      cards.forEach(function (card) {
+        gridHTML += '<div class="nav-card" data-navigate="' + card.hash + '">';
+        gridHTML += '  <span class="card-icon">' + card.icon + '</span>';
+        gridHTML += '  <div class="card-title">' + card.title + '</div>';
+        gridHTML += '  <div class="card-desc">' + card.desc + '</div>';
+        gridHTML += '</div>';
+      });
+      cardGridEl.innerHTML = gridHTML;
+      cardGridEl.querySelectorAll('.nav-card').forEach(function (card) {
+        card.addEventListener('click', function () {
+          window.location.hash = this.getAttribute('data-navigate');
+        });
+      });
+    }
+
+    // 隐藏待确认记录入口
+    var draftBanner = document.getElementById('pending-draft-banner');
+    if (draftBanner) draftBanner.style.display = 'none';
+
+    // 渲染欢迎横幅
+    renderWelcomeBanner(DataStore.getCurrentUser() || appState.currentUser);
+
+    // 渲染宏观统计卡片
+    renderGovernmentStats();
+
+    // 隐藏FAB
+    var fab = document.getElementById('fab-container');
+    if (fab) fab.style.display = 'none';
+  }
+
+  /**
+   * 政府角色宏观统计卡片
+   */
+  function renderGovernmentStats() {
+    // 查找或创建统计区域容器
+    var container = document.getElementById('latest-activity') || document.getElementById('card-grid');
+    if (!container) return;
+
+    var statsHTML = '<div class="gov-stats-section" style="margin-top:16px;padding:0 16px;">';
+    statsHTML += '<h3 style="font-size:1.1rem;font-weight:600;margin-bottom:12px;color:var(--text-primary);">📊 区域服务概况</h3>';
+    statsHTML += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">';
+
+    var stats = [
+      { label: '覆盖人数', value: '1,286', sub: '心智障碍者' },
+      { label: '累计服务时长', value: '8,520h', sub: '近12个月' },
+      { label: '活跃家庭', value: '346', sub: '本月' },
+      { label: '就业支持人数', value: '89', sub: '在职' }
+    ];
+    stats.forEach(function (s) {
+      statsHTML += '<div style="background:var(--card-bg);border-radius:12px;padding:14px;text-align:center;">';
+      statsHTML += '<div style="font-size:1.5rem;font-weight:700;color:var(--color-primary);">' + s.value + '</div>';
+      statsHTML += '<div style="font-size:0.8rem;color:var(--text-secondary);margin-top:2px;">' + s.label + '</div>';
+      statsHTML += '<div style="font-size:0.7rem;color:var(--text-muted);">' + s.sub + '</div>';
+      statsHTML += '</div>';
+    });
+    statsHTML += '</div>';
+
+    // 趋势占位图
+    statsHTML += '<div style="margin-top:12px;background:var(--card-bg);border-radius:12px;padding:16px;">';
+    statsHTML += '<h4 style="font-size:0.95rem;font-weight:600;margin-bottom:8px;color:var(--text-primary);">📈 近6个月服务趋势</h4>';
+    statsHTML += '<div style="height:120px;display:flex;align-items:flex-end;gap:8px;padding:4px 0;">';
+    var bars = [40, 55, 48, 62, 58, 72];
+    bars.forEach(function (h) {
+      statsHTML += '<div style="flex:1;background:linear-gradient(to top,var(--color-primary-light),var(--color-primary));border-radius:4px 4px 0 0;height:' + h + 'px;opacity:0.8;"></div>';
+    });
+    statsHTML += '</div>';
+    statsHTML += '<div style="display:flex;justify-content:space-between;font-size:0.7rem;color:var(--text-muted);margin-top:4px;">';
+    ['1月','2月','3月','4月','5月','6月'].forEach(function(m){statsHTML+='<span>'+m+'</span>';});
+    statsHTML += '</div></div>';
+
+    // 数据说明
+    statsHTML += '<div style="margin-top:8px;padding:10px;background:var(--card-bg);border-radius:8px;font-size:0.75rem;color:var(--text-muted);">';
+    statsHTML += '🔒 数据范围说明：以上数据为示例演示数据，已做脱敏处理。实际数据范围取决于机构授权和数据共享协议。';
+    statsHTML += '</div>';
+
+    statsHTML += '</div>';
+
+    // 插入到 latest-activity 前
+    var la = document.getElementById('latest-activity');
+    if (la) {
+      la.insertAdjacentHTML('beforebegin', statsHTML);
+    } else if (container) {
+      container.insertAdjacentHTML('afterend', statsHTML);
+    }
+  }
+
+  /**
+   * 政府角色任务页 — 数据范围说明
+   */
+  function renderGovernmentTasks(contentArea) {
+    var html = '<div style="padding:16px;">';
+    html += '<h3 style="font-size:1.1rem;font-weight:600;margin-bottom:12px;">📋 数据覆盖范围</h3>';
+
+    html += '<div style="background:var(--card-bg);border-radius:12px;padding:16px;margin-bottom:12px;">';
+    html += '<h4 style="font-size:0.9rem;font-weight:600;margin-bottom:8px;">👥 服务对象</h4>';
+    html += '<p style="font-size:0.85rem;color:var(--text-secondary);line-height:1.6;">覆盖心智障碍者群体，包括但不限于：孤独症谱系、智力障碍、唐氏综合征等。当前系统覆盖 1,286 名服务对象。</p>';
+    html += '</div>';
+
+    html += '<div style="background:var(--card-bg);border-radius:12px;padding:16px;margin-bottom:12px;">';
+    html += '<h4 style="font-size:0.9rem;font-weight:600;margin-bottom:8px;">🏢 服务类型</h4>';
+    html += '<ul style="font-size:0.85rem;color:var(--text-secondary);line-height:1.8;padding-left:16px;">';
+    html += '<li>日间照护服务：日常起居、生活技能训练</li>';
+    html += '<li>就业支持服务：职业培训、就业安置、在职支持</li>';
+    html += '<li>社区融合服务：社交活动、社区参与</li>';
+    html += '<li>家庭支持服务：家长培训、喘息服务</li>';
+    html += '</ul></div>';
+
+    html += '<div style="background:var(--card-bg);border-radius:12px;padding:16px;margin-bottom:12px;">';
+    html += '<h4 style="font-size:0.9rem;font-weight:600;margin-bottom:8px;">📅 数据时间范围</h4>';
+    html += '<p style="font-size:0.85rem;color:var(--text-secondary);line-height:1.6;">数据覆盖最近 12 个月，每季度更新一次。当前展示数据为示例演示数据。</p>';
+    html += '</div>';
+
+    html += '<div style="background:var(--card-bg);border-radius:12px;padding:16px;margin-bottom:12px;">';
+    html += '<h4 style="font-size:0.9rem;font-weight:600;margin-bottom:8px;">🔒 隐私声明</h4>';
+    html += '<p style="font-size:0.85rem;color:var(--text-secondary);line-height:1.6;">所有展示数据均已做脱敏处理，不包含个人姓名、联系方式、详细地址等可识别信息。数据仅用于宏观统计和政策分析。</p>';
+    html += '</div>';
+
+    html += '</div>';
+    contentArea.innerHTML = html;
+  }
+
+  /**
+   * 政府角色管理页 — 数据范围 + 隐私声明 + 导出管理
+   */
+  function renderGovernmentProfile() {
+    var contentArea = document.getElementById('profile-content');
+    if (!contentArea) {
+      // fallback: 直接写入 profile section
+      var section = document.getElementById('profile');
+      if (!section) return;
+      contentArea = section.querySelector('.content') || section;
+    }
+
+    var html = '<div style="padding:16px;">';
+    html += '<h3 style="font-size:1.1rem;font-weight:600;margin-bottom:16px;">⚙️ 管理设置</h3>';
+
+    // 账号信息
+    html += '<div style="background:var(--card-bg);border-radius:12px;padding:16px;margin-bottom:12px;">';
+    html += '<h4 style="font-size:0.9rem;font-weight:600;margin-bottom:8px;">🏛️ 账号信息</h4>';
+    html += '<p style="font-size:0.85rem;color:var(--text-secondary);">角色：政府管理员</p>';
+    html += '<p style="font-size:0.85rem;color:var(--text-secondary);">权限：宏观数据查看、数据导出</p>';
+    html += '</div>';
+
+    // 数据范围
+    html += '<div style="background:var(--card-bg);border-radius:12px;padding:16px;margin-bottom:12px;">';
+    html += '<h4 style="font-size:0.9rem;font-weight:600;margin-bottom:8px;">📊 数据范围</h4>';
+    html += '<p style="font-size:0.85rem;color:var(--text-secondary);line-height:1.6;">当前数据范围：区域内所有已登记心智障碍者服务数据。数据已做聚合和脱敏处理，不展示个人详细信息。详细数据维度和统计口径请参见数据范围说明文档。</p>';
+    html += '</div>';
+
+    // 隐私声明
+    html += '<div style="background:var(--card-bg);border-radius:12px;padding:16px;margin-bottom:12px;">';
+    html += '<h4 style="font-size:0.9rem;font-weight:600;margin-bottom:8px;">🔒 隐私声明</h4>';
+    html += '<p style="font-size:0.85rem;color:var(--text-secondary);line-height:1.6;">本系统严格遵守个人信息保护相关法律法规。所有展示数据均已做最小化脱敏处理：</p>';
+    html += '<ul style="font-size:0.85rem;color:var(--text-secondary);line-height:1.8;padding-left:16px;margin-top:4px;">';
+    html += '<li>不展示个人姓名、身份证号、联系方式</li>';
+    html += '<li>地址仅展示到区县级</li>';
+    html += '<li>统计数据最小聚合单元为 10 人以上</li>';
+    html += '<li>不提供个人档案级别的下钻功能</li>';
+    html += '</ul></div>';
+
+    // 导出管理
+    html += '<div style="background:var(--card-bg);border-radius:12px;padding:16px;margin-bottom:12px;">';
+    html += '<h4 style="font-size:0.9rem;font-weight:600;margin-bottom:8px;">📥 导出管理</h4>';
+    html += '<p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:8px;">可导出聚合统计数据，不含个人识别信息。</p>';
+    html += '<button class="btn btn-outline" style="font-size:0.85rem;" disabled>导出统计数据（即将上线）</button>';
+    html += '</div>';
+
+    html += '</div>';
+    contentArea.innerHTML = html;
   }
 
   /**
@@ -3780,6 +4002,15 @@
   function renderTasks() {
     var contentArea = document.getElementById('tasks-content');
     if (!contentArea) return;
+
+    var user = DataStore.getCurrentUser() || appState.currentUser;
+    var role = user ? user.role : 'parent';
+
+    // 政府角色：显示数据范围说明
+    if (role === 'government') {
+      renderGovernmentTasks(contentArea);
+      return;
+    }
 
     var today = getTodayString();
 

@@ -397,7 +397,7 @@
     'parent': ['chat', 'home', 'archive', 'charts', 'profile'],
     'teacher': ['chat', 'home', 'archive', 'charts', 'profile'],
     'caregiver': ['chat', 'home', 'archive', 'charts', 'profile'],
-    'government': ['charts', 'profile'],
+    'government': ['home', 'tasks', 'charts', 'profile'],
     'admin': ['profile', 'charts'],
     'temp_supporter': []
   };
@@ -410,7 +410,7 @@
     'parent': 'home',
     'teacher': 'home',
     'caregiver': 'archive',
-    'government': 'analytics',
+    'government': 'home',
     'admin': 'profile',
     'temp_supporter': 'supporter-card'
   };
