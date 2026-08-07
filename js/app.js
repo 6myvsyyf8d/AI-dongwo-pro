@@ -368,10 +368,13 @@
       // 速读卡入口：仅速读卡页面本身显示（返回参考）。档案内由子导航 Tab 提供，首页由导航卡片提供。
       quickEl.style.display = (pageName === 'quickcard') ? 'block' : 'none';
     }
-    // 退出按钮仅「我的」页面显示
+    // 退出按钮：「我的」页面显示；心青年无 profile 页，在首页/档案页显示
     var logoutEl = document.getElementById('btn-nav-logout');
     if (logoutEl) {
-      logoutEl.style.display = (pageName === 'profile') ? 'block' : 'none';
+      var user = DataStore.getCurrentUser() || appState.currentUser;
+      var isYouth = user && user.role === 'youth';
+      var showLogout = (pageName === 'profile') || (isYouth && (pageName === 'home' || pageName === 'archive'));
+      logoutEl.style.display = showLogout ? 'block' : 'none';
     }
     var topbar = document.getElementById('app-topbar');
     if (topbar) {
@@ -2841,9 +2844,10 @@
     var html = '';
 
     // 档案概览说明
+    var headerName = user ? user.name : '档案';
     html += '<div style="background:linear-gradient(135deg,#D97757,#F5A88B);border-radius:14px;padding:18px;margin-bottom:16px;color:#fff;">';
-    html += '  <div style="font-size:1.1rem;font-weight:600;margin-bottom:4px;">📋 小雨的完整档案</div>';
-    html += '  <div style="font-size:0.8rem;opacity:0.9;">五大主题分类，全面了解小雨的 support profile</div>';
+    html += '  <div style="font-size:1.1rem;font-weight:600;margin-bottom:4px;">📋 ' + headerName + '的完整档案</div>';
+    html += '  <div style="font-size:0.8rem;opacity:0.9;">五大主题分类，全面了解' + headerName + '的 support profile</div>';
     html += '</div>';
 
     // 五大分类定义 + 原六类→新五类映射
@@ -2923,14 +2927,7 @@
     });
     html += '</div>';
 
-    // 辅助入口：时间轴 + 全部记录（不占宫格）
-    html += '<div class="archive-aux-row">';
-    html += '  <button class="btn btn-outline" onclick="location.hash=\'timeline\'">📅 时间轴</button>';
-    html += '  <button class="btn btn-outline" onclick="location.hash=\'records\'">📋 全部记录</button>';
-    html += '</div>';
-    html += '<div style="margin-top:8px;text-align:center;">';
-    html += '  <button class="btn btn-text" id="btn-archive-quickcard">📋 速读卡</button>';
-    html += '</div>';
+    // 辅助入口已移至子导航 Tab（总览/时间轴/速读卡），避免重复入口
 
     contentArea.innerHTML = html;
 
@@ -2968,13 +2965,6 @@
       });
     });
 
-    // 绑定速读卡
-    var quickCardBtn = document.getElementById('btn-archive-quickcard');
-    if (quickCardBtn) {
-      quickCardBtn.addEventListener('click', function () {
-        window.location.hash = 'quickcard';
-      });
-    }
   }
 
   /* ==========================================================
