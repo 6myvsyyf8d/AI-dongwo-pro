@@ -615,25 +615,13 @@
       editor.addEventListener('keydown', function (e) {
         if (e.key === 'Enter' && !e.shiftKey) {
           e.preventDefault();
-          if (_sending) return;
-          var text = editor.innerText.trim();
-          if (!text) return; // 空消息校验
-          _sending = true;
-          sendBtn.disabled = true;
-          _handleSend(text);
-          editor.innerHTML = '';
+          _submitMessage(editor.innerText.trim());
         }
       });
     }
     if (sendBtn) {
       sendBtn.addEventListener('click', function () {
-        if (!editor || _sending) return;
-        var text = editor.innerText.trim();
-        if (!text) return; // 空消息校验
-        _sending = true;
-        sendBtn.disabled = true;
-        _handleSend(text);
-        editor.innerHTML = '';
+        _submitMessage(editor ? editor.innerText.trim() : '');
       });
     }
     if (plusBtn) { plusBtn.addEventListener('click', function () { if (editor) editor.focus(); }); }
@@ -665,11 +653,7 @@
         if (text === '另一件事') text = '还有另一件事想记录';
         else if (text === '补充刚才') text = '我想补充一下刚才说的';
         else if (text === '记录进步' || text === '记录一个进步') text = '想记录一个进步';
-        _handleSend(text);
-        var editor = document.getElementById('chat-editor');
-        if (editor) editor.innerHTML = '';
-        var sendBtn = document.getElementById('btn-chat-send');
-        if (sendBtn) sendBtn.disabled = true;
+        _submitMessage(text);
       });
     });
   }
@@ -730,6 +714,21 @@
   /* ==========================================================
    * 发送消息（流式渲染核心）
    * ========================================================== */
+
+  /**
+   * 统一发送入口 — 所有发送路径（回车/按钮/快捷回复/重试）都走此方法
+   * 集中处理空消息校验、_sending 锁、按钮状态、清空输入框
+   */
+  function _submitMessage(text) {
+    if (_sending) return;
+    if (!text) return;
+    _sending = true;
+    var editor = document.getElementById('chat-editor');
+    var sendBtn = document.getElementById('btn-chat-send');
+    if (sendBtn) sendBtn.disabled = true;
+    if (editor) editor.innerHTML = '';
+    _handleSend(text);
+  }
 
   function _handleSend(text) {
     var session = _activeSession;
@@ -818,7 +817,7 @@
       var retryText = retryBtn.getAttribute('data-retry-text');
       if (!retryText) return;
       if (bubble.parentNode) bubble.parentNode.removeChild(bubble);
-      _handleSend(retryText);
+      _submitMessage(retryText);
     });
     return bubble;
   }

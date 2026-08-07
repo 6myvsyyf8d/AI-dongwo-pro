@@ -159,14 +159,6 @@
       window.location.hash = 'login';
       return;
     }
-    // 权限拦截：临时支持者 — 防御层（navigateTo 内也有一层）
-    if (user && user.role === 'temp_supporter') {
-      var allowedPages = ['supporter-card', 'quick-start', 'login', 'quick-record'];
-      if (allowedPages.indexOf(hash) === -1) {
-        window.location.hash = 'supporter-card';
-        return;
-      }
-    }
     // 已登录且 hash 为空时，使用角色默认落地页
     if (user && !hash) {
       hash = ROLE_DEFAULT_PAGES[user.role] || 'home';
@@ -4197,12 +4189,7 @@
     // 应用当前角色的隐私设置（取最新角色值）
     window.Permissions.applyPrivacy(appState.currentRole);
 
-    // FAB 可见性：主题详情页 + 档案主题列表页隐藏
-    var fabHidePages = ['life', 'communication', 'emotion', 'care', 'work', 'relations'];
-    var fab = document.getElementById('fab-container');
-    if (fab) {
-      fab.style.display = fabHidePages.indexOf(basePage) !== -1 ? 'none' : '';
-    }
+    // FAB 可见性由 navigateTo() 统一控制，此处不再重复设置
   }
 
   /* ==========================================================
