@@ -772,29 +772,7 @@
     var wbEl = document.getElementById('today-workbench');
     if (wbEl) wbEl.innerHTML = '';
 
-    // 导航卡片：政府专用
-    if (cardGridEl) {
-      var cards = [
-        { hash: 'charts', icon: '📈', title: '数据分析', desc: '区域服务趋势与统计', module: 'charts' },
-        { hash: 'tasks', icon: '📋', title: '数据范围', desc: '覆盖人数、服务类型说明', module: 'home' },
-        { hash: 'profile', icon: '⚙️', title: '管理设置', desc: '隐私声明与数据导出', module: 'profile' }
-      ];
-      var gridHTML = '';
-      cards.forEach(function (card) {
-        gridHTML += '<div class="nav-card" data-navigate="' + card.hash + '">';
-        gridHTML += '  <span class="card-icon">' + card.icon + '</span>';
-        gridHTML += '  <div class="card-title">' + card.title + '</div>';
-        gridHTML += '  <div class="card-desc">' + card.desc + '</div>';
-        gridHTML += '</div>';
-      });
-      cardGridEl.innerHTML = gridHTML;
-      cardGridEl.querySelectorAll('.nav-card').forEach(function (card) {
-        card.addEventListener('click', function () {
-          window.location.hash = this.getAttribute('data-navigate');
-        });
-      });
-    }
-
+    // 导航卡片：政府专用 — 底部导航已覆盖全部入口，首页不重复展示卡片
     // 隐藏待确认记录入口
     var draftBanner = document.getElementById('pending-draft-banner');
     if (draftBanner) draftBanner.style.display = 'none';
