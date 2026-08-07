@@ -234,50 +234,52 @@
           + (moduleInfo ? '    <span class="chat-review-draft-module">' + moduleInfo.icon + ' ' + moduleInfo.label + '</span>' : '')
           + '  </div>'
 
-          // ── 第一步：原始表达（只读）──
+          // ── 第一步：原始表达（仅在有源内容时显示）──
+        if (sourceText) {
+          html += ''
           + '  <div class="dr-step-section">'
           + '    <div class="dr-step-badge">1</div>'
-          + '    <div class="chat-review-step-label">📝 原始表达</div>'
           + '    <div class="chat-review-step-content read-only">'
-          + (sourceText ? _escapeHtml(sourceText) : '<span class="chat-review-empty-hint">暂无对话内容</span>')
+          +       _escapeHtml(sourceText)
           + '    </div>'
-          + '  </div>'
+          + '  </div>';
+        }
 
-          // ── 第二步：AI整理草稿（待确认可编辑 / 已确认只读）──
+          // ── 第二步：草稿 ──
+        html += ''
           + '  <div class="dr-step-section">'
           + '    <div class="dr-step-badge">2</div>'
-          + '    <div class="chat-review-step-label">🤖 AI整理草稿</div>'
-          + '    <div class="chat-review-step-hint">AI 自动整理，不代表专业判断。请核实后修改。</div>';
+          + '    <div class="chat-review-step-label">AI草稿</div>';
 
         if (isConfirmed) {
           html += '    <div class="chat-review-step-content">'
-            + '      <div class="chat-review-draft-field"><div class="chat-review-draft-field-label">标题</div><div class="chat-review-draft-field-value">' + _escapeHtml(draft.title || '') + '</div></div>'
-            + '      <div class="chat-review-draft-field"><div class="chat-review-draft-field-label">内容</div><div class="chat-review-draft-field-value">' + _escapeHtml(draft.content || '') + '</div></div>'
+            + '      <div class="chat-review-draft-field-label">' + _escapeHtml(draft.title || '') + '</div>'
+            + '      <div class="chat-review-draft-field-value">' + _escapeHtml(draft.content || '') + '</div>'
             + '    </div>';
         } else {
           html += '    <div class="chat-review-step-content">'
-            + '      <div class="chat-review-draft-field"><div class="chat-review-draft-field-label">标题</div><input class="chat-review-draft-field-input" value="' + _escapeHtml(draft.title || '') + '" data-field="title" data-draft-id="' + draft.id + '"></div>'
-            + '      <div class="chat-review-draft-field"><div class="chat-review-draft-field-label">内容摘要</div><textarea class="chat-review-draft-field-input" rows="3" data-field="content" data-draft-id="' + draft.id + '">' + _escapeHtml(draft.content || '') + '</textarea></div>'
+            + '      <input class="chat-review-draft-field-input" value="' + _escapeHtml(draft.title || '') + '" placeholder="标题" data-field="title" data-draft-id="' + draft.id + '">'
+            + '      <textarea class="chat-review-draft-field-input" rows="2" placeholder="内容摘要" data-field="content" data-draft-id="' + draft.id + '">' + _escapeHtml(draft.content || '') + '</textarea>'
             + '    </div>';
         }
 
         html += '  </div>'
 
-          // ── 第三步：归属主题 / 确认入档 ──
+          // ── 第三步：归属 ──
+        html += ''
           + '  <div class="dr-step-section">'
           + '    <div class="dr-step-badge">3</div>'
-          + '    <div class="chat-review-step-label">📂 归属主题 / 确认入档</div>';
+          + '    <div class="chat-review-step-label">归属</div>';
 
         if (isConfirmed) {
           html += '    <div class="chat-review-step-content">'
-            + '      <div class="chat-review-draft-field"><div class="chat-review-draft-field-label">归属主题</div><div class="chat-review-draft-field-value">' + (moduleInfo ? moduleInfo.icon + ' ' + moduleInfo.label : (draft.module || '')) + '</div></div>'
+            + '      <div class="chat-review-draft-field-value">' + (moduleInfo ? moduleInfo.icon + ' ' + moduleInfo.label : (draft.module || '')) + '</div>'
             + '    </div>';
         } else {
           html += '    <div class="chat-review-step-content">'
-            + '      <div class="chat-review-draft-field"><div class="chat-review-draft-field-label">归属主题</div><select class="chat-review-module-select" data-draft-id="' + draft.id + '">'
+            + '      <select class="chat-review-module-select" data-draft-id="' + draft.id + '">'
             +         _buildModuleOptions(draft.module)
-            + '      </select></div>'
-            + '      <div class="chat-review-step-hint confirm-warn">⚠️ 点击确认后才会写入正式档案</div>'
+            + '      </select>'
             + '    </div>';
         }
 

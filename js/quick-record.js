@@ -100,6 +100,12 @@
     if (!container) return;
     var user = getCurrentUser();
 
+    // 防御：如果是从其他页面跳转过来的，先清空容器避免残留
+    if (container.innerHTML && container.querySelector('.qr-success-icon')) {
+      container.innerHTML = '';
+      try { sessionStorage.removeItem(SUBMITTED_KEY); } catch (e) {}
+    }
+
     // A5: 刷新后保持提交成功状态
     var lastSubmittedId = '';
     try { lastSubmittedId = sessionStorage.getItem(SUBMITTED_KEY) || ''; } catch (e) {}
@@ -160,8 +166,18 @@
         var tag = this.getAttribute('data-tag');
         var idx = selectedTags.indexOf(tag);
         if (idx >= 0) { selectedTags.splice(idx, 1); }
-        else { selectedTags.length = 0; selectedTags.push(tag); }
+        else { selectedTags.push(tag); }
+        // 重绘前保存 textarea 内容，避免输入丢失
+        var textEl = document.getElementById('qr-text');
+        var savedText = textEl ? textEl.value : '';
         rerender();
+        // 恢复 textarea 内容
+        textEl = document.getElementById('qr-text');
+        if (textEl && savedText) {
+          textEl.value = savedText;
+          var submitBtn = document.getElementById('qr-submit');
+          if (submitBtn) submitBtn.disabled = false;
+        }
       });
     });
 
@@ -220,8 +236,9 @@
   function bindSuccessEvents(container) {
     var btn = document.getElementById('qr-back-card');
     if (btn) btn.addEventListener('click', function () {
-      // A5: 离开成功页时清除提交标记
+      // 清除提交标记 + 清空容器
       try { sessionStorage.removeItem(SUBMITTED_KEY); } catch (e) {}
+      if (container) container.innerHTML = '';
       window.location.hash = 'supporter-card';
     });
   }

@@ -204,7 +204,7 @@
         case 'title':
           html += '<div style="margin-bottom:14px;">';
           html += '  <label style="display:block;font-size:0.85rem;color:#555;margin-bottom:4px;font-weight:500;">标题</label>';
-          html += '  <input type="text" name="title" placeholder="请输入标题" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:0.9rem;box-sizing:border-box;" required>';
+          html += '  <input type="text" name="title" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:0.9rem;box-sizing:border-box;" required>';
           html += '</div>';
           break;
 

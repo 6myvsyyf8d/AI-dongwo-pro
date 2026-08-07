@@ -6194,8 +6194,8 @@ a:hover { text-decoration: underline; }
 .dr-step-section {
   position: relative;
   padding-left: 36px;
-  margin-bottom: 20px;
-  min-height: 48px;
+  margin-bottom: 12px;
+  min-height: 40px;
 }
 .dr-step-section:last-child { margin-bottom: 0; }
 

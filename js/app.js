@@ -694,7 +694,7 @@
       heroYouthName = yu ? yu.name : null;
     }
     if (heroNameEl) heroNameEl.textContent = heroYouthName || (user ? user.name : '未知用户');
-    if (heroMetaEl) heroMetaEl.textContent = (roleInfo ? roleInfo.label : '用户') + ' · 档案持续更新中';
+    if (heroMetaEl) heroMetaEl.textContent = (roleInfo ? roleInfo.label : '用户');
     if (heroIntroEl) heroIntroEl.textContent = '欢迎使用AI懂我，记录与理解从这里开始';
 
     // 记一笔按钮 — 插入到身份卡下方
@@ -970,9 +970,7 @@
 
     // 兜底：确保按钮 onclick 能访问当前 role
     window._quickAddRecord = function() {
-      var u = window.AppState.currentUser || DataStore.getCurrentUser();
-      if (!u) return;
-      window.RecordsPage.createAddRecordModal(u, role, 'mood');
+      window.RecordsPage.openAddRecordModal();
     };
 
     var today = getTodayString();
@@ -1041,10 +1039,10 @@
         var hidden = idx >= 3 ? ' twb-folded' : '';
         var assignee = task.assignee || '';
         var assigneeName = roleNameMap[assignee] || '';
-        html += '    <div class="twb-task-item twb-checkable' + (isDone ? ' twb-done' : '') + hidden + '" data-instance-id="' + inst.id + '" data-task-name="' + (task.name || task.title || '') + '">';
+        html += '    <div class="twb-task-item twb-checkable' + (isDone ? ' twb-done' : '') + hidden + '" data-instance-id="' + inst.id + '" data-task-name="' + (task.name || task.title || '') + '" data-assignee="' + (task.assignee || '') + '">';
         html += '      <span class="twb-task-check">' + (isDone ? '✅' : '⭕') + '</span>';
         html += '      <span class="twb-task-name">' + (task.name || task.title || '') + '</span>';
-        if (assigneeName) html += '      <span class="twb-task-assignee">' + assigneeName + '</span>';
+        if (assigneeName) html += '      <span class="twb-task-assignee">负责人：' + assigneeName + '</span>';
         html += '    </div>';
       });
       if (todayRoutine.length > 3) {
@@ -1097,8 +1095,17 @@
       item.addEventListener('click', function() {
         var instanceId = this.getAttribute('data-instance-id');
         var taskName = this.getAttribute('data-task-name') || '任务';
+        var taskAssignee = this.getAttribute('data-assignee') || '';
         var isDone = this.classList.contains('twb-done');
         var todayStr = getTodayString();
+
+        // 跨角色打卡确认：当前用户角色与任务负责人不同时，弹确认框
+        var user = window.AppState.currentUser || DataStore.getCurrentUser();
+        var currentRole = user ? user.role : '';
+        if (taskAssignee && currentRole && taskAssignee !== currentRole && !isDone) {
+          var assigneeName = (roleNameMap[taskAssignee] || taskAssignee);
+          if (!confirm('「' + taskName + '」的负责人是 ' + assigneeName + '，确定要替 TA 打卡吗？')) return;
+        }
 
         if (isDone) {
           // 撤销打卡
