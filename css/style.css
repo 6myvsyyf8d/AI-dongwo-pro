@@ -89,6 +89,8 @@
 html {
   scroll-behavior: smooth;
   font-size: 16px;
+  overflow-x: hidden;
+  overscroll-behavior-x: none;
 }
 
 body {
@@ -99,6 +101,8 @@ body {
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
   overflow-x: hidden;
+  overscroll-behavior-x: none;
+  touch-action: pan-y pinch-zoom;
 }
 
 /* --- Phone Container --- */
@@ -109,6 +113,7 @@ body {
   padding-bottom: var(--bottom-nav-height);
   position: relative;
   background: var(--bg-card);
+  overflow-x: hidden;
 }
 
 /* Mode: Login (full width, no phone frame) */
