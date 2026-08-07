@@ -318,7 +318,7 @@
       life: '我喜欢的生活',
       communication: '沟通指南',
       emotion: '情绪支持',
-      care: '照护医疗',
+      care: '照护与医疗',
       work: '工作支持',
       relations: '关系地图',
       timeline: '时间轴',
@@ -2841,9 +2841,9 @@
       },
       {
         id: 'health-safety', icon: '🏥', title: '健康与安全',
-        desc: '照护医疗、情绪行为支持',
+        desc: '照护与医疗、情绪行为支持',
         subThemes: [
-          { hash: 'care', icon: '🏥', title: '照护医疗', module: 'care' },
+          { hash: 'care', icon: '🏥', title: '照护与医疗', module: 'care' },
           { hash: 'emotion', icon: '😰', title: '情绪支持', module: 'emotion' }
         ]
       },
