@@ -160,7 +160,7 @@ body.mode-login .bottom-nav { display: none; }
   font-size: 1rem;
   font-weight: 700;
   color: var(--text-primary);
-  margin-bottom: var(--space-sm);
+  margin-bottom: var(--space-xs); /* 8px — section 标题与内容间距统一 */
   display: flex;
   align-items: center;
   gap: 8px;
@@ -583,7 +583,7 @@ a:hover { text-decoration: underline; }
   align-items: center;
   gap: 6px;
   padding: 3px 0;
-  font-size: 13px;
+  font-size: 0.875rem; /* 14px — 正文统一 */
   color: #555;
 }
 
@@ -866,7 +866,7 @@ a:hover { text-decoration: underline; }
   min-width: 140px;
   background: var(--bg-card);
   border-radius: var(--radius-sm);
-  padding: var(--space-sm);
+  padding: var(--card-padding); /* 14px — 卡片内边距统一 */
   cursor: pointer;
   transition: var(--transition);
   border: var(--card-border);
@@ -887,13 +887,13 @@ a:hover { text-decoration: underline; }
 }
 
 .archive-sub-card .sub-title {
-  font-size: 0.8rem;
+  font-size: 0.875rem; /* 14px — 正文统一 */
   font-weight: 600;
   color: var(--text-primary);
 }
 
 .archive-sub-card .sub-count {
-  font-size: 0.65rem;
+  font-size: 0.75rem; /* 12px — 辅助文字统一 */
   color: var(--color-primary);
   font-weight: 500;
 }
@@ -939,7 +939,7 @@ a:hover { text-decoration: underline; }
 }
 
 .nav-card .card-title {
-  font-size: 0.88rem;
+  font-size: 1rem; /* 16px — 卡片标题统一 */
   font-weight: 700;
   color: var(--text-primary);
   margin-bottom: 4px;
@@ -964,7 +964,7 @@ a:hover { text-decoration: underline; }
 
 .page-header .page-title {
   font-family: var(--font-display);
-  font-size: 1.15rem;
+  font-size: 1.125rem; /* 18px — 页面标题统一 */
   font-weight: 600;
   color: var(--text-primary);
 }
@@ -1215,7 +1215,7 @@ a:hover { text-decoration: underline; }
 .timeline-card {
   background: white;
   border-radius: var(--radius-md);
-  padding: var(--space-md);
+  padding: var(--card-padding); /* 14px — 卡片内边距统一 */
   box-shadow: var(--shadow-card);
   cursor: pointer;
   transition: var(--transition);
@@ -1384,7 +1384,7 @@ a:hover { text-decoration: underline; }
 }
 
 .quick-card-section .section-label {
-  font-size: 0.82rem;
+  font-size: 0.875rem; /* 14px — 正文统一 */
   font-weight: 700;
   margin-bottom: var(--space-xs);
   display: flex;
@@ -1399,7 +1399,7 @@ a:hover { text-decoration: underline; }
 
 .quick-card-section ul {
   list-style: none;
-  font-size: 0.9rem;
+  font-size: 0.875rem; /* 14px — 正文统一 */
   color: var(--text-secondary);
 }
 
@@ -1862,7 +1862,7 @@ a:hover { text-decoration: underline; }
   margin-top: 2px;
 }
 .a-metric-sub {
-  font-size: 0.7rem;
+  font-size: 0.75rem; /* 12px — 辅助文字统一 */
   color: var(--text-muted);
   margin-top: 1px;
 }
@@ -1883,7 +1883,7 @@ a:hover { text-decoration: underline; }
   margin-bottom: 12px;
 }
 .a-section-title {
-  font-size: 0.95rem;
+  font-size: 1rem; /* 16px — 卡片标题统一 */
   font-weight: 600;
   color: var(--text-primary);
   margin: 0;
@@ -2399,7 +2399,7 @@ a:hover { text-decoration: underline; }
 }
 
 .empty-state .empty-text {
-  font-size: 0.92rem;
+  font-size: 0.875rem; /* 14px — 正文统一 */
 }
 
 /* --- 登录表单 --- */
@@ -2426,8 +2426,8 @@ a:hover { text-decoration: underline; }
 .login-form .form-input {
   width: 100%;
   padding: 13px 16px;
-  border: 2px solid #e8ecf1;
-  border-radius: 12px;
+  border: 1px solid rgba(0,0,0,0.12); /* 1px — 输入框统一 */
+  border-radius: var(--btn-radius); /* 10px — 输入框圆角统一 */
   font-size: 0.95rem;
   font-family: var(--font-body);
   transition: all 0.3s ease;
@@ -2448,7 +2448,7 @@ a:hover { text-decoration: underline; }
 }
 
 .login-form .btn {
-  border-radius: 12px;
+  border-radius: var(--btn-radius); /* 10px — 按钮圆角统一 */
   padding: 14px 24px;
   font-size: 1rem;
   font-weight: 600;
@@ -2731,7 +2731,7 @@ a:hover { text-decoration: underline; }
 .activity-card {
   background: white;
   border-radius: var(--radius-md);
-  padding: var(--space-md);
+  padding: var(--card-padding); /* 14px — 卡片内边距统一 */
   box-shadow: var(--shadow-card);
   transition: var(--transition);
   cursor: pointer;
@@ -2820,7 +2820,7 @@ a:hover { text-decoration: underline; }
 .record-type-card {
   background: var(--bg-page);
   border-radius: var(--radius-md);
-  padding: var(--space-md);
+  padding: var(--card-padding); /* 14px — 卡片内边距统一 */
   text-align: center;
   cursor: pointer;
   transition: var(--transition);
@@ -2945,7 +2945,7 @@ a:hover { text-decoration: underline; }
 .record-card {
   background: white;
   border-radius: var(--radius-md);
-  padding: var(--space-md);
+  padding: var(--card-padding); /* 14px — 卡片内边距统一 */
   margin-bottom: var(--space-sm);
   box-shadow: var(--shadow-card);
   border-left: 3px solid var(--color-primary);
@@ -4737,7 +4737,7 @@ a:hover { text-decoration: underline; }
 }
 
 .new-qc-section .nqc-title {
-  font-size: 0.88rem;
+  font-size: 1rem; /* 16px — 卡片标题统一 */
   font-weight: 700;
   color: var(--text-primary);
   margin-bottom: 10px;
@@ -4759,7 +4759,7 @@ a:hover { text-decoration: underline; }
   padding: 6px 12px;
   background: #fafafa;
   border-radius: 20px;
-  font-size: 0.8rem;
+  font-size: 0.875rem; /* 14px — 正文统一 */
   color: var(--text-secondary);
   border: 1px solid rgba(0,0,0,0.06);
 }
