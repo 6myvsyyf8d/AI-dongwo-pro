@@ -89,8 +89,6 @@
 html {
   scroll-behavior: smooth;
   font-size: 16px;
-  overflow-x: hidden;
-  overscroll-behavior-x: none;
 }
 
 body {
@@ -649,6 +647,7 @@ a:hover { text-decoration: underline; }
 
 .twb-folded {
   /* display 由 JS 控制 */
+}
 
 .twb-actions {
   display: flex;
@@ -6188,7 +6187,8 @@ a:hover { text-decoration: underline; }
 .dr-step-section {
   position: relative;
   padding-left: 36px;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
+  min-height: 48px;
 }
 .dr-step-section:last-child { margin-bottom: 0; }
 
@@ -6304,4 +6304,39 @@ a:hover { text-decoration: underline; }
 @media (max-width: 400px) {
   .admin-stats-row { grid-template-columns: repeat(2, 1fr); }
   .admin-info-grid { grid-template-columns: 1fr; }
+}
+
+/* ==========================================
+   时间轴筛选标签（替代下拉菜单）
+   ========================================== */
+.filter-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  border-radius: 16px;
+  border: 1px solid #e0e0e0;
+  background: #f8f8f8;
+  font-size: 0.78rem;
+  color: #555;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  user-select: none;
+}
+.filter-chip:hover {
+  border-color: #D97757;
+  color: #D97757;
+  background: #FFF5F0;
+}
+.filter-chip.active {
+  background: #D97757;
+  color: #fff;
+  border-color: #D97757;
 }

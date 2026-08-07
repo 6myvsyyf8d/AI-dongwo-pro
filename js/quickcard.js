@@ -122,11 +122,14 @@
     var html = '';
     html += '<div class="qc-container">';
 
-    // ===== 1. Hero 身份（完整保留） =====
-    html += '<div class="new-qc-hero">';
-    html += '  <span class="qc-hero-emoji">🌻</span>';
-    html += '  <div class="qc-hero-name">' + bi.name + '</div>';
-    html += '  <div class="qc-hero-tagline">' + bi.age + '岁 · ' + bi.gender + ' · ' + (am ? am.firstPerson : bi.intro) + '</div>';
+    // ===== 1. 身份卡（统一 .qc-identity 风格） =====
+    html += '<div class="qc-identity">';
+    html += '  <div class="qc-identity-avatar">🌻</div>';
+    html += '  <div class="qc-identity-info">';
+    html += '    <div class="qc-identity-name">' + bi.name + '</div>';
+    html += '    <div class="qc-identity-meta">' + bi.age + '岁 · ' + bi.gender + '</div>';
+    html += '    <div class="qc-identity-intro">' + (am ? am.firstPerson : bi.intro) + '</div>';
+    html += '  </div>';
     html += '</div>';
 
     // ===== 2. 提示横幅 =====

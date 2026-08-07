@@ -566,6 +566,8 @@
 
 /* 底部输入区 */
 .chat-conv-input-area {
+  position: sticky;
+  bottom: 0;
   display: flex;
   align-items: flex-end;
   gap: 8px;
@@ -838,6 +840,7 @@
   border-radius: 0 var(--chat-radius-md) var(--chat-radius-md) 0;
   box-shadow: var(--chat-shadow);
   overflow: hidden;
+  padding: 0 14px 12px 14px;
   transition: all 0.2s ease;
 }
 
@@ -852,7 +855,7 @@
 .chat-review-draft-header {
   display: flex;
   align-items: center;
-  padding: 12px 14px 8px;
+  padding: 12px 0 8px;
   gap: 8px;
 }
 

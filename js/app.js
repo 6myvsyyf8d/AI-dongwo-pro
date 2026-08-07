@@ -368,12 +368,13 @@
       // 速读卡入口已由子导航 Tab 提供，顶栏不再显示
       quickEl.style.display = 'none';
     }
-    // 退出按钮：「我的」页面显示；心青年无 profile 页，在首页/档案页显示
+    // 退出按钮：profile 页/心青年首页/档案页/支持者卡片页/快速记录页显示
     var logoutEl = document.getElementById('btn-nav-logout');
     if (logoutEl) {
       var user = DataStore.getCurrentUser() || appState.currentUser;
       var isYouth = user && user.role === 'youth';
-      var showLogout = (pageName === 'profile') || (isYouth && (pageName === 'home' || pageName === 'archive'));
+      var isSupporter = user && user.role === 'temp_supporter';
+      var showLogout = (pageName === 'profile') || (isYouth && (pageName === 'home' || pageName === 'archive')) || (isSupporter && (pageName === 'supporter-card' || pageName === 'quick-record'));
       logoutEl.style.display = showLogout ? 'block' : 'none';
     }
     var topbar = document.getElementById('app-topbar');
@@ -661,6 +662,12 @@
       return;
     }
 
+    // 管理员角色：无首页概念，重定向到管理面板
+    if (role === 'admin') {
+      window.location.hash = 'profile';
+      return;
+    }
+
     // 渲染Hero区域的基本信息
     var heroNameEl = document.getElementById('hero-name');
     var heroMetaEl = document.getElementById('hero-meta');
@@ -768,14 +775,20 @@
         '<div class="alert-item info">📅 数据范围为示例演示数据</div>';
     }
 
-    // 隐藏今日工作台
+    // 隐藏今日工作台（政府不需要个人任务）
     var wbEl = document.getElementById('today-workbench');
     if (wbEl) wbEl.innerHTML = '';
 
-    // 导航卡片：政府专用 — 底部导航已覆盖全部入口，首页不重复展示卡片
-    // 隐藏待确认记录入口
-    var draftBanner = document.getElementById('pending-draft-banner');
+    // 清空导航卡片网格（政府不需要快捷入口卡片）
+    if (cardGridEl) cardGridEl.innerHTML = '';
+
+    // 隐藏待确认记录入口（政府不需要）
+    var draftBanner = document.getElementById('draft-pending-banner');
     if (draftBanner) draftBanner.style.display = 'none';
+
+    // 隐藏「记一笔」按钮
+    var heroAct = document.querySelector('.hero-actions');
+    if (heroAct) heroAct.style.display = 'none';
 
     // 渲染宏观统计卡片
     renderGovernmentStats();
@@ -881,6 +894,9 @@
    */
   function renderGovernmentProfile() {
     var contentArea = document.getElementById('profile-content');
+    // 修改页面标题 — 政府角色不是「个人中心」
+    var pageTitle = document.querySelector('#profile .page-title');
+    if (pageTitle) pageTitle.textContent = '管理面板';
     if (!contentArea) {
       // fallback: 直接写入 profile section
       var section = document.getElementById('profile');
@@ -1077,11 +1093,11 @@
     if (toggleEl) {
       toggleEl.addEventListener('click', function() {
         var folded = container.querySelectorAll('.twb-folded');
-        var isExpanded = folded.length === 0 || folded[0].style.display !== 'none';
+        var isExpanded = folded.length > 0 && folded[0].style.display !== 'none';
         folded.forEach(function(el) {
-          el.style.display = isExpanded ? '' : 'none';
+          el.style.display = isExpanded ? 'none' : '';
         });
-        this.textContent = isExpanded ? '收起' : '展开全部 ' + total + ' 项';
+        this.textContent = isExpanded ? '展开全部 ' + total + ' 项' : '收起';
       });
       // 初始状态：折叠
       container.querySelectorAll('.twb-folded').forEach(function(el) { el.style.display = 'none'; });
@@ -2863,11 +2879,15 @@
     var role = user ? user.role : 'parent';
     var html = '';
 
-    // 档案概览说明
-    var headerName = user ? user.name : '档案';
+    // 档案概览说明 — 始终显示心青年的名字
+    var youthName = '档案';
+    var allUsers = DataStore.getAllUsers ? DataStore.getAllUsers() : [];
+    var youthUser = allUsers.find(function(u) { return u.role === 'youth'; });
+    if (youthUser && youthUser.name) youthName = youthUser.name;
+    else if (window.Constants && window.Constants.basicInfo && window.Constants.basicInfo.name) youthName = window.Constants.basicInfo.name;
     html += '<div style="background:linear-gradient(135deg,#D97757,#F5A88B);border-radius:14px;padding:18px;margin-bottom:16px;color:#fff;">';
-    html += '  <div style="font-size:1.1rem;font-weight:600;margin-bottom:4px;">📋 ' + headerName + '的完整档案</div>';
-    html += '  <div style="font-size:0.8rem;opacity:0.9;">五大主题分类，全面了解' + headerName + '的 support profile</div>';
+    html += '  <div style="font-size:1.1rem;font-weight:600;margin-bottom:4px;">📋 ' + youthName + '的完整档案</div>';
+    html += '  <div style="font-size:0.8rem;opacity:0.9;">五大主题分类，全面了解' + youthName + '的支持档案</div>';
     html += '</div>';
 
     // 五大分类定义 + 原六类→新五类映射
@@ -3261,8 +3281,8 @@
 
   function renderAnalytics() {
     var user = DataStore.getCurrentUser() || appState.currentUser;
-    // 政府角色：只展示聚合统计，不展示个人数据
-    if (user && user.role === 'government') {
+    // 政府/管理员角色：只展示聚合统计，不展示个人数据
+    if (user && (user.role === 'government' || user.role === 'admin')) {
       var contentArea = Utils.dom.get('charts-content') || Utils.dom.get('analytics-content');
       if (contentArea) {
         contentArea.innerHTML = '<div class="gov-stats-section" style="padding:0 16px;">' +
@@ -3524,7 +3544,7 @@
     var s = r.statistics || {}, h = '';
     h += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">';
     h += '<button id="weekly-prev" class="btn btn-ghost" style="padding:6px 12px;font-size:0.85rem;">◀ 上一周</button>';
-    h += '<span style="font-weight:600;font-size:0.95rem;">' + r.weekStart + ' ~ ' + r.weekEnd + '</span>';
+    h += '<span style="font-weight:600;font-size:0.95rem;white-space:nowrap;">' + r.weekStart + ' ~ ' + r.weekEnd + '</span>';
     h += '<button id="weekly-next" class="btn btn-ghost" style="padding:6px 12px;font-size:0.85rem;">下一周 ▶</button></div>';
     h += '<div class="a-metrics">';
     h += '<div class="a-metric"><div class="a-metric-value">' + (s.totalRecords || 0) + '</div><div class="a-metric-label">有效记录</div><div class="a-metric-sub">日均 ' + (s.avgDailyRecords || 0) + '</div></div>';
@@ -4901,6 +4921,9 @@
 
   function bindCalendarEvents() {
     var content = document.getElementById('calendar-content');
+    // 防止重复绑定
+    if (content._calendarBound) return;
+    content._calendarBound = true;
     content.addEventListener('click', function(e) {
       if (e.target.closest('#cal-prev')) {
         calendarState.currentMonth--;
@@ -4934,7 +4957,7 @@
     overlay.className = 'modal-overlay active';
     overlay.id = 'add-event-modal';
     overlay.innerHTML = '<div class="modal-content" style="max-width:440px;">' +
-      '<div class="modal-header"><span class="modal-title">添加日程</span><button class="modal-close" onclick="document.getElementById(\'add-event-modal\').remove();document.body.style.overflow=\'\';">&times;</button></div>' +
+      '<div class="modal-header"><span class="modal-title">添加日程</span><button class="modal-close" id="add-event-close-btn">&times;</button></div>' +
       '<div class="modal-body">' +
       '<div style="margin-bottom:12px;"><label class="form-label">标题</label><input class="form-input" id="new-event-title" placeholder="例如：看医生" style="width:100%;padding:10px 14px;border:1.5px solid #ddd;border-radius:8px;"></div>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">' +
@@ -4947,6 +4970,23 @@
       '</div></div>';
     document.body.appendChild(overlay);
     document.body.style.overflow = 'hidden';
+
+    // 绑定关闭按钮事件
+    var closeBtn = document.getElementById('add-event-close-btn');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', function() {
+        overlay.remove();
+        document.body.style.overflow = '';
+      });
+    }
+    // 点击遮罩层关闭
+    overlay.addEventListener('click', function(e) {
+      if (e.target === overlay) {
+        overlay.remove();
+        document.body.style.overflow = '';
+      }
+    });
+
     document.getElementById('new-event-title').focus();
   }
 

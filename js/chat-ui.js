@@ -50,6 +50,9 @@
       if (container.querySelector('.chat-home-ready')) return;
 
       var youthName = _getYouthName();
+      var currentUser = DataStore.getCurrentUser ? DataStore.getCurrentUser() : (window.AppState && window.AppState.currentUser);
+      var isYouth = currentUser && currentUser.role === 'youth';
+      var greetingText = isYouth ? (youthName + '，今天想记录什么？') : ('今天想为' + youthName + '记录什么？');
       var pendingCount = _getPendingCount();
       var lastSessionId = localStorage.getItem(LAST_SESSION_KEY);
       var hasHistory = _getSessionSummaries().length > 0;
@@ -60,7 +63,7 @@
         // --- 问候区（紧凑居中） ---
         + '  <div class="chat-home-greeting">'
         + '    <div class="chat-home-avatar">🌻</div>'
-        + '    <h2 class="chat-home-question">' + youthName + '，今天想记录什么？</h2>'
+        + '    <h2 class="chat-home-question">' + greetingText + '</h2>'
         + '    <p class="chat-home-hint">AI 会帮你把对话整理成草稿，说到哪儿算哪儿</p>'
         + '  </div>'
         // --- 主操作 ---
@@ -147,7 +150,7 @@
         + '  <div class="chat-conv-status-bar" id="status-bar-drafts">'
         + '    <div class="chat-conv-status-avatar">✨</div>'
         + '    <div class="chat-conv-status-info">'
-        + '      <span class="chat-conv-status-title">AI 记录助手</span>'
+        + '      <span class="chat-conv-status-title">为' + youthName + '记录中</span>'
         + '      <span class="chat-conv-status-sub" id="status-draft-text">已自动保存</span>'
         + '    </div>'
         + (draftCount > 0 ? '    <button class="chat-conv-end-btn" id="btn-end-conversation">结束并整理 · ' + draftCount + ' 条草稿</button>' : '')

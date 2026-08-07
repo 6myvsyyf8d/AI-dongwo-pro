@@ -88,11 +88,10 @@
   /**
    * 创建添加记录弹窗DOM结构
    */
-  function createAddRecordModal() {
+  function createAddRecordModal(user, role, prefillType) {
     var overlay = document.createElement('div');
     overlay.id = 'add-record-modal';
     overlay.className = 'modal-overlay';
-    // 不设置内联 display，让 CSS class 控制显示/隐藏
 
     overlay.innerHTML =
       '<div class="modal-content" style="background:#fff;border-radius:16px;max-width:560px;width:90%;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;">' +
@@ -117,22 +116,38 @@
       if (e.target === overlay) closeAddRecordModal();
     });
 
+    // 如果传入了 user/role，直接渲染步骤1
+    if (user && role) {
+      renderAddRecordStep1(user, role, prefillType);
+    }
+
     return overlay;
   }
 
   /**
    * 渲染添加记录第一步 - 选择记录类型
    */
-  function renderAddRecordStep1(user, role) {
+  function renderAddRecordStep1(user, role, prefillType) {
     var bodyEl = document.getElementById('add-record-body');
     if (!bodyEl) return;
+
+    // 兼容两种传参：字符串 'parent' 或 ROLES 对象
+    var roleConfig = typeof role === 'string' ? ROLES[role] : role;
+    if (!roleConfig) return;
+
+    // 如果预选了类型，直接跳到步骤2
+    if (prefillType && roleConfig.canAdd.indexOf(prefillType) !== -1) {
+      addRecordState.selectedType = prefillType;
+      renderAddRecordStep2(user, role, prefillType);
+      return;
+    }
 
     var html = '';
     // 简洁提示
     html += '<div style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:12px;">请选择要添加的记录类型</div>';
 
     html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:8px;">';
-    role.canAdd.forEach(function (typeKey) {
+    roleConfig.canAdd.forEach(function (typeKey) {
       var type = RECORD_TYPES[typeKey];
       if (!type) return;
       html += '<div class="record-type-card" data-type="' + typeKey + '" style="background:#fff;border:1.5px solid #eee;border-radius:10px;padding:12px 8px;text-align:center;cursor:pointer;transition:all 0.15s;">';

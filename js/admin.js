@@ -223,28 +223,84 @@
     html += buildStatCard('📝', auditLog.length, '操作日志', '#9A8F88');
     html += '</div>';
 
-    // ====== 用户管理 ======
+    // ====== 用户管理（按心青年分组）======
     html += '<div class="admin-section">';
     html += '<div class="admin-section-header">';
     html += '  <span class="admin-section-title">👥 用户列表</span>';
     html += '  <span class="admin-section-badge">' + allUsers.length + '人</span>';
     html += '</div>';
 
-    html += '<div class="admin-user-list">';
-    allUsers.forEach(function (u) {
-      var roleInfo = ROLES[u.role] || { label: u.role, color: '#9A8F88' };
-      html += '<div class="admin-user-card">';
-      html += '  <div class="admin-user-avatar">' + (u.avatar || '👤') + '</div>';
-      html += '  <div class="admin-user-info">';
-      html += '    <div class="admin-user-name">' + u.name + '</div>';
-      html += '    <div class="admin-user-meta">';
-      html += '      <span class="admin-role-tag" style="background:' + roleInfo.color + ';">' + roleInfo.label + '</span>';
-      html += '      <span>注册：' + (u.createdAt || '-') + '</span>';
-      html += '    </div>';
+    // 根据 grants 按心青年分组用户
+    var youthUsers = allUsers.filter(function (u) { return u.role === 'youth'; });
+    var groupedByYouth = {}; // youthId → users[]
+    var groupedUserIds = {};
+
+    youthUsers.forEach(function (y) {
+      groupedByYouth[y.id] = [y];
+      groupedUserIds[y.id] = true;
+      // 找到该心青年的所有授权用户
+      var grants = allGrants.filter(function (g) { return g.youthId === y.id && g.status === 'active'; });
+      grants.forEach(function (g) {
+        var grantee = allUsers.find(function (u) { return u.id === g.userId; });
+        if (grantee && !groupedUserIds[grantee.id]) {
+          groupedByYouth[y.id].push(grantee);
+          groupedUserIds[grantee.id] = true;
+        }
+      });
+    });
+
+    // 系统账号（未关联任何心青年）
+    var systemUsers = allUsers.filter(function (u) {
+      return !groupedUserIds[u.id] && (u.role === 'government' || u.role === 'admin');
+    });
+
+    // 输出分组
+    var youthNames = Object.keys(groupedByYouth);
+    youthNames.forEach(function (youthId, idx) {
+      var members = groupedByYouth[youthId];
+      var youth = members.find(function (m) { return m.role === 'youth'; });
+      var groupName = (youth ? youth.name : '未命名') + ' 的团队';
+      html += '<div style="margin-bottom:16px;">';
+      if (idx > 0) html += '<div style="border-top:1px solid #f0f0f0;margin:0 0 12px;"></div>';
+      html += '  <div style="font-size:0.8rem;color:#999;margin-bottom:8px;font-weight:500;">' + groupName + ' · ' + members.length + '人</div>';
+      html += '  <div class="admin-user-list" style="gap:6px;">';
+      members.forEach(function (u) {
+        var roleInfo = ROLES[u.role] || { label: u.role, color: '#9A8F88' };
+        html += '<div class="admin-user-card">';
+        html += '  <div class="admin-user-avatar">' + (u.avatar || '👤') + '</div>';
+        html += '  <div class="admin-user-info">';
+        html += '    <div class="admin-user-name">' + u.name + '</div>';
+        html += '    <div class="admin-user-meta">';
+        html += '      <span class="admin-role-tag" style="background:' + roleInfo.color + ';">' + roleInfo.label + '</span>';
+        html += '      <span>注册：' + (u.createdAt || '-') + '</span>';
+        html += '    </div>';
+        html += '  </div>';
+        html += '</div>';
+      });
       html += '  </div>';
       html += '</div>';
     });
-    html += '</div>';
+
+    // 系统账号
+    if (systemUsers.length > 0) {
+      html += '<div style="border-top:1px solid #f0f0f0;margin:0 0 12px;"></div>';
+      html += '  <div style="font-size:0.8rem;color:#999;margin-bottom:8px;font-weight:500;">🏛️ 系统账号 · ' + systemUsers.length + '人</div>';
+      html += '  <div class="admin-user-list" style="gap:6px;">';
+      systemUsers.forEach(function (u) {
+        var roleInfo = ROLES[u.role] || { label: u.role, color: '#9A8F88' };
+        html += '<div class="admin-user-card">';
+        html += '  <div class="admin-user-avatar">' + (u.avatar || '👤') + '</div>';
+        html += '  <div class="admin-user-info">';
+        html += '    <div class="admin-user-name">' + u.name + '</div>';
+        html += '    <div class="admin-user-meta">';
+        html += '      <span class="admin-role-tag" style="background:' + roleInfo.color + ';">' + roleInfo.label + '</span>';
+        html += '      <span>注册：' + (u.createdAt || '-') + '</span>';
+        html += '    </div>';
+        html += '  </div>';
+        html += '</div>';
+      });
+      html += '  </div>';
+    }
     html += '</div>';
 
     // ====== 角色分布 ======

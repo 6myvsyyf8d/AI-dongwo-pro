@@ -44,7 +44,8 @@
   /** 时间轴筛选状态 */
   var timelineFilters = {
     role: 'all',
-    type: 'all'
+    type: 'all',
+    timeRange: 'all'
   };
 
   /** 注册暂存角色 */
