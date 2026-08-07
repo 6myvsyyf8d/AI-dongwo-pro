@@ -246,11 +246,12 @@
 
     // 顶部栏
     var topbarHTML = '<div class="youth-topbar">';
+    topbarHTML += '<button class="youth-back-btn" id="youth-back-btn" title="返回首页">←</button>';
     topbarHTML += '<div class="youth-topbar-title">';
     topbarHTML += '<div class="youth-avatar">🤖</div>';
     topbarHTML += '<span>AI聊聊</span>';
     topbarHTML += '</div>';
-    topbarHTML += '<div class="youth-topbar-actions">';
+    topbarHTML += '<div class="youth-topbar-actions" style="margin-left:auto;">';
     topbarHTML += '<button class="youth-tts-toggle on" id="youth-tts-toggle">🔊</button>';
     topbarHTML += '</div>';
     topbarHTML += '</div>';
@@ -300,6 +301,14 @@
 
   // ======== 绑定事件 ========
   function bindEvents() {
+    // 返回首页按钮
+    var backBtn = document.getElementById('youth-back-btn');
+    if (backBtn) {
+      backBtn.addEventListener('click', function () {
+        window.location.hash = 'home';
+      });
+    }
+
     // TTS 开关
     var ttsToggle = document.getElementById('youth-tts-toggle');
     if (ttsToggle) {

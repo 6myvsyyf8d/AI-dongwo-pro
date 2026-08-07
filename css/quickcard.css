@@ -17,8 +17,7 @@
 }
 
 /* ==========================================
-   1. 心青年身份卡（渐变紫）
-   沿用首页 hero-identity-card 风格
+   1. 心青年身份卡 — 使用统一暖色卡片
    ========================================== */
 .qc-identity {
   position: relative;
@@ -28,21 +27,10 @@
   gap: 14px;
   padding: 18px;
   margin-bottom: 12px;
-  border-radius: 24px;
-  color: white;
-  background: linear-gradient(135deg, #D97757, #F5E6D3 56%, #F0C9A0);
-  box-shadow: 0 10px 30px rgba(111, 74, 58, .10);
-}
-
-.qc-identity::after {
-  content: "";
-  position: absolute;
-  width: 150px;
-  height: 150px;
-  right: -60px;
-  top: -75px;
-  border-radius: 50%;
-  background: rgba(255,255,255,.13);
+  border-radius: var(--card-radius);
+  background: var(--color-primary-bg);
+  border: 1px solid rgba(217, 119, 87, 0.15);
+  box-shadow: var(--shadow-sm);
 }
 
 .qc-identity-avatar {
@@ -53,35 +41,33 @@
   place-items: center;
   border-radius: 50%;
   font-size: 34px;
-  background: rgba(255,255,255,.94);
-  box-shadow: 0 7px 20px rgba(50,34,75,.18);
-  z-index: 1;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
 }
 
 .qc-identity-info {
   flex: 1;
-  z-index: 1;
   min-width: 0;
 }
 
 .qc-identity-name {
   font-size: 23px;
   font-weight: 800;
-  letter-spacing: .5px;
-  color: white;
+  letter-spacing: 0.5px;
+  color: var(--text-primary);
 }
 
 .qc-identity-meta {
   margin-top: 5px;
   font-size: 13px;
-  opacity: .88;
+  color: var(--text-secondary);
 }
 
 .qc-identity-intro {
   margin-top: 8px;
   font-size: 14px;
   line-height: 1.5;
-  opacity: .98;
+  color: var(--text-secondary);
 }
 
 /* ==========================================
@@ -136,7 +122,7 @@
 .qc-behavior-card {
   background: linear-gradient(145deg, #fff, #FDFBF7);
   border-radius: 14px;
-  padding: 14px;
+  padding: var(--card-padding);
   box-shadow: 0 4px 16px rgba(111, 74, 58, .08);
   border: 1px solid rgba(217,119,87,0.08);
 }

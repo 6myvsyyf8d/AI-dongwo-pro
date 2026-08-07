@@ -251,11 +251,6 @@
     // 1. 人物身份卡 —— 快速认识这个人
     // ============================================
     html += '<div class="archive-id-card" style="margin-bottom:6px;">';
-    // 速读卡入口 —— 右上角
-    html += '  <button class="archive-quickcard-btn" id="archive-quickcard-btn" title="速读卡">';
-    html += '    <span class="qc-btn-icon">📋</span>';
-    html += '    <span class="qc-btn-text">速读卡</span>';
-    html += '  </button>';
     html += '  <div class="archive-avatar">';
     html += '    <div class="archive-avatar-inner">🌻</div>';
     html += '  </div>';
@@ -420,16 +415,7 @@
 
     // --- 绑定事件 ---
 
-    // 速读卡按钮
-    var qcBtn = contentArea.querySelector('#archive-quickcard-btn');
-    if (qcBtn) {
-      qcBtn.addEventListener('click', function (e) {
-        e.stopPropagation();
-        window.location.hash = 'quickcard';
-      });
-    }
-
-    // 展开更多
+    // About 卡片展开
     contentArea.querySelectorAll('.about-expand-btn').forEach(function (btn) {
       btn.addEventListener('click', function () {
         var card = this.closest('.archive-about-card');

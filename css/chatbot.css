@@ -1,35 +1,33 @@
 /* ==========================================
    AI懂我 · 对话 UI — chat-v2 样式
    Screen 1: 对话首页 / Screen 2: 对话界面 / Screen 3: 整理确认
+   使用全局 CSS 变量（定义于 style.css :root）
    ========================================== */
 
-/* --- Chat CSS Variables (Warm Redesign) --- */
-:root {
-  --chat-accent: #D97757;
-  --chat-accent-light: #FDF0E8;
-  --chat-accent-gradient: linear-gradient(135deg, #D97757, #E8A58A);
-  --chat-purple: #D97757;
-  --chat-purple-light: #FDF0E8;
+/* --- Chat 本地别名（引用全局变量，不重复定义 :root） --- */
+.chat-page-container {
+  --chat-accent: var(--color-primary);
+  --chat-accent-light: var(--color-primary-light);
+  --chat-bg: var(--bg-page);
+  --chat-card: var(--bg-card);
+  --chat-border: rgba(0, 0, 0, 0.06);
+  --chat-text: var(--text-primary);
+  --chat-text-secondary: var(--text-secondary);
+  --chat-text-muted: var(--text-muted);
+  --chat-bubble-ai: var(--color-primary-bg);
+  --chat-bubble-user: #F5E0D0;
+  --chat-radius-sm: var(--radius-sm);
+  --chat-radius-md: var(--radius-md);
+  --chat-radius-lg: var(--radius-lg);
+  --chat-radius-full: var(--radius-full);
+  --chat-shadow: var(--shadow-card);
+  --chat-shadow-lg: var(--shadow-card-hover);
+  --chat-green: var(--color-success);
+  --chat-green-light: var(--color-success-bg);
   --chat-orange: #D9A56A;
   --chat-orange-light: #FDF5E6;
-  --chat-green: #6FA789;
-  --chat-green-light: #F0F7F2;
-  --chat-bg: #FDFBF7;
-  --chat-card: #FFFFFF;
-  --chat-border: rgba(217, 119, 87, 0.08);
-  --chat-text: #2D2A26;
-  --chat-text-secondary: #6B5D4F;
-  --chat-text-muted: #8A8580;
-  --chat-white: #FFFFFF;
-  --chat-bubble-ai: #FDF5F0;
-  --chat-bubble-user: #F5E0D0;
-  --chat-radius-sm: 8px;
-  --chat-radius-md: 12px;
-  --chat-radius-lg: 16px;
-  --chat-radius-xl: 20px;
-  --chat-radius-full: 9999px;
-  --chat-shadow: 0 2px 12px rgba(45, 42, 38, 0.06);
-  --chat-shadow-lg: 0 8px 32px rgba(45, 42, 38, 0.10);
+  --chat-purple: var(--color-primary);
+  --chat-purple-light: var(--color-primary-light);
 }
 
 /* --- Chat Page Container (fills #chat-conversation / #chat-review section) --- */
@@ -105,15 +103,15 @@
   padding: 16px 0;
   border: none;
   border-radius: var(--chat-radius-lg);
-  background: linear-gradient(135deg, #D97757, #F5E6D3);
+  background: var(--color-primary);
   color: #fff;
   font-size: 17px;
   font-weight: 600;
   font-family: inherit;
   cursor: pointer;
   letter-spacing: 0.02em;
-  box-shadow: 0 4px 16px rgba(94, 106, 210, 0.3);
-  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(217, 119, 87, 0.3);
+  transition: all 0.15s ease;
 }
 
 .chat-home-btn-start-icon {
@@ -121,13 +119,13 @@
 }
 
 .chat-home-btn-start:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 24px rgba(94, 106, 210, 0.4);
+  background: var(--color-primary-hover);
+  box-shadow: 0 4px 12px rgba(217, 119, 87, 0.4);
 }
 
 .chat-home-btn-start:active {
-  transform: translateY(0);
-  box-shadow: 0 2px 8px rgba(94, 106, 210, 0.25);
+  transform: scale(0.98);
+  box-shadow: 0 1px 4px rgba(217, 119, 87, 0.25);
 }
 
 /* 快捷入口行 */

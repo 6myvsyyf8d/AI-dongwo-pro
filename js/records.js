@@ -47,6 +47,24 @@
     if (!overlay) {
       overlay = createAddRecordModal();
     }
+    // 确保关闭按钮绑定事件（静态 modal 首次打开时需要）
+    var closeBtn = document.getElementById('add-record-close-btn');
+    if (closeBtn && !closeBtn._bound) {
+      closeBtn._bound = true;
+      closeBtn.addEventListener('click', closeAddRecordModal);
+    }
+    var cancelBtn = document.getElementById('btn-cancel-record');
+    if (cancelBtn && !cancelBtn._bound) {
+      cancelBtn._bound = true;
+      cancelBtn.addEventListener('click', closeAddRecordModal);
+    }
+    // 点击遮罩层关闭
+    if (!overlay._bound) {
+      overlay._bound = true;
+      overlay.addEventListener('click', function (e) {
+        if (e.target === overlay) closeAddRecordModal();
+      });
+    }
     overlay.classList.add('active');
     document.body.style.overflow = 'hidden';
 
@@ -110,23 +128,16 @@
     if (!bodyEl) return;
 
     var html = '';
-    // 显示当前角色信息
-    html += '<div style="background:#f5f7fa;border-radius:10px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:10px;">';
-    html += '  <span style="font-size:1.5rem;">' + user.avatar + '</span>';
-    html += '  <div>';
-    html += '    <div style="font-size:0.9rem;color:#333;">我是谁：<strong>' + user.name + '</strong>（' + role.label + '）</div>';
-    html += '    <div style="font-size:0.8rem;color:#888;">请选择要添加的记录类型</div>';
-    html += '  </div>';
-    html += '</div>';
+    // 简洁提示
+    html += '<div style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:12px;">请选择要添加的记录类型</div>';
 
-    html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;">';
+    html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:8px;">';
     role.canAdd.forEach(function (typeKey) {
       var type = RECORD_TYPES[typeKey];
       if (!type) return;
-      html += '<div class="record-type-card" data-type="' + typeKey + '" style="background:#fff;border:2px solid #eee;border-radius:12px;padding:16px;text-align:center;cursor:pointer;transition:all 0.2s;">';
-      html += '  <div style="font-size:2rem;margin-bottom:6px;">' + type.icon + '</div>';
-      html += '  <div style="font-weight:600;color:#333;font-size:0.9rem;margin-bottom:2px;">' + type.label + '</div>';
-      html += '  <div style="font-size:0.75rem;color:#888;">' + type.description + '</div>';
+      html += '<div class="record-type-card" data-type="' + typeKey + '" style="background:#fff;border:1.5px solid #eee;border-radius:10px;padding:12px 8px;text-align:center;cursor:pointer;transition:all 0.15s;">';
+      html += '  <div style="font-size:1.4rem;margin-bottom:4px;">' + type.icon + '</div>';
+      html += '  <div style="font-weight:600;color:var(--text-primary);font-size:0.82rem;">' + type.label + '</div>';
       html += '</div>';
     });
     html += '</div>';
@@ -163,14 +174,11 @@
     if (!type) return;
 
     var html = '';
-    // 当前角色信息 + 返回按钮
-    html += '<div style="background:#f5f7fa;border-radius:10px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:10px;">';
-    html += '  <span style="font-size:1.5rem;">' + user.avatar + '</span>';
-    html += '  <div style="flex:1;">';
-    html += '    <div style="font-size:0.9rem;color:#333;">我是谁：<strong>' + user.name + '</strong>（' + role.label + '）</div>';
-    html += '    <div style="font-size:0.8rem;color:#888;">正在添加：' + type.icon + ' ' + type.label + '</div>';
-    html += '  </div>';
-    html += '  <button id="btn-back-to-types" style="background:none;border:none;color:#4A90D9;cursor:pointer;font-size:0.85rem;">← 返回</button>';
+    // 正在添加的类型 + 返回按钮
+    html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">';
+    html += '  <span style="font-size:1.2rem;">' + type.icon + '</span>';
+    html += '  <span style="font-weight:600;color:var(--text-primary);flex:1;">' + type.label + '</span>';
+    html += '  <button id="btn-back-to-types" style="background:none;border:none;color:var(--color-primary);cursor:pointer;font-size:0.85rem;">← 返回</button>';
     html += '</div>';
 
     html += '<form id="add-record-form">';

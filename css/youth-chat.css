@@ -10,27 +10,24 @@
  */
 
 /* ==========================================================
-   CSS 变量
+   CSS 变量 — 引用全局变量（定义于 style.css :root），心青年专属覆盖
    ========================================================== */
-:root {
+#youth-chat.page-section.active {
   --youth-bg: #FFF8F0;
   --youth-surface: #FFFFFF;
-  --youth-primary: #FF8C42;
-  --youth-primary-hover: #E67A35;
+  --youth-primary: var(--color-primary);
+  --youth-primary-hover: var(--color-primary-hover);
   --youth-primary-text: #FFFFFF;
-  --youth-accent-green: #4CAF50;
-  --youth-accent-blue: #5B9BD5;
-  --youth-accent-pink: #E87DA0;
-  --youth-text: #3D3327;
-  --youth-text-secondary: #8B7E6E;
-  --youth-bubble-ai: #FFF3E6;
-  --youth-bubble-ai-border: #FFDFB8;
-  --youth-bubble-user: #FF8C42;
+  --youth-text: var(--text-primary);
+  --youth-text-secondary: var(--text-secondary);
+  --youth-bubble-ai: var(--color-primary-bg);
+  --youth-bubble-ai-border: rgba(217, 119, 87, 0.15);
+  --youth-bubble-user: var(--color-primary);
   --youth-bubble-user-text: #FFFFFF;
-  --youth-border: #F0E6DA;
-  --youth-shadow: 0 2px 12px rgba(0,0,0,0.06);
-  --youth-radius-lg: 20px;
-  --youth-radius-md: 14px;
+  --youth-border: rgba(0, 0, 0, 0.06);
+  --youth-shadow: var(--shadow-card);
+  --youth-radius-lg: var(--radius-lg);
+  --youth-radius-md: var(--radius-md);
   --youth-font-size-base: 17px;
   --youth-font-size-lg: 19px;
   --youth-font-size-sm: 14px;
@@ -78,7 +75,8 @@ body:has(#youth-chat.page-section.active) #fab-container {
 .youth-topbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
+  gap: 12px;
   padding: 12px 16px;
   padding-top: calc(12px + env(safe-area-inset-top, 0px));
   background: var(--youth-surface);
@@ -88,6 +86,24 @@ body:has(#youth-chat.page-section.active) #fab-container {
   top: 0;
   z-index: 10;
 }
+
+.youth-back-btn {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  color: var(--youth-text);
+  cursor: pointer;
+  border: none;
+  background: none;
+  border-radius: 50%;
+  flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+.youth-back-btn:hover { background: rgba(0,0,0,0.04); }
+.youth-back-btn:active { background: rgba(0,0,0,0.08); }
 
 .youth-topbar-title {
   font-size: var(--youth-font-size-lg);

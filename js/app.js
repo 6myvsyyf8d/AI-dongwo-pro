@@ -201,12 +201,7 @@
       .filter(Boolean);
 
     var html = '';
-    var hasRecordBtn = (role === 'parent' || role === 'teacher' || role === 'caregiver');
-    var middleIndex = Math.ceil(visibleTabs.length / 2);
-    visibleTabs.forEach(function (tab, i) {
-      if (i === middleIndex && hasRecordBtn) {
-        html += '<button class="nav-record-btn" id="btn-record-center">✏️ 记一笔</button>';
-      }
+    visibleTabs.forEach(function (tab) {
       html += '<button class="nav-tab" data-route="' + tab.route + '">';
       html += '<span class="nav-tab-icon">' + tab.icon + '</span>';
       html += tab.label;
@@ -214,7 +209,7 @@
     });
 
     Utils.dom.html(navContainer, html);
-    var colCount = hasRecordBtn ? visibleTabs.length + 1 : visibleTabs.length;
+    var colCount = visibleTabs.length;
     navContainer.style.gridTemplateColumns = 'repeat(' + colCount + ', 1fr)';
 
     // 绑定 tab 点击事件
@@ -228,13 +223,7 @@
       });
     });
 
-    // 绑定「记一笔」按钮事件
-    var recordBtn = navContainer.querySelector('#btn-record-center');
-    if (recordBtn) {
-      Utils.dom.on(recordBtn, 'click', function () {
-        window.RecordsPage.openAddRecordModal();
-      });
-    }
+    // 记一笔已移至首页 hero-actions，不再在底部导航中
   }
 
   /**
@@ -376,7 +365,8 @@
     }
 
     if (quickEl) {
-      quickEl.style.display = (pageName === 'home') ? 'block' : 'none';
+      // 速读卡入口：仅速读卡页面本身显示（返回参考）。档案内由子导航 Tab 提供，首页由导航卡片提供。
+      quickEl.style.display = (pageName === 'quickcard') ? 'block' : 'none';
     }
     // 退出按钮仅「我的」页面显示
     var logoutEl = document.getElementById('btn-nav-logout');
@@ -409,9 +399,8 @@
     }
     if (quickEl) {
       Utils.dom.on(quickEl, 'click', function () {
-        // 触发打开速读卡
-        var btn = Utils.dom.get('btn-quick-card');
-        if (btn) btn.click();
+        // 直接导航到速读卡页面
+        window.location.hash = 'quickcard';
       });
     }
   }
@@ -680,6 +669,15 @@
     if (heroMetaEl) heroMetaEl.textContent = basicInfo.age + '岁 · ' + basicInfo.gender + ' · 档案持续更新中';
     if (heroIntroEl) heroIntroEl.textContent = basicInfo.intro;
 
+    // 记一笔按钮 — 插入到身份卡下方
+    var heroActionsEl = document.querySelector('.hero-actions');
+    if (heroActionsEl && (role === 'parent' || role === 'teacher' || role === 'caregiver')) {
+      heroActionsEl.innerHTML = '<button class="btn btn-primary" id="btn-record-home" style="width:100%;">✏️ 记一笔</button>';
+      heroActionsEl.style.display = 'flex';
+    } else if (heroActionsEl) {
+      heroActionsEl.style.display = 'none';
+    }
+
     // 渲染今日重点提醒 —— 根据角色定制
     if (alertBannerEl) {
       var alertHTML = getRoleAlerts(role);
@@ -729,6 +727,14 @@
             window.location.hash = target;
           }
         });
+      });
+    }
+
+    // 绑定首页记一笔按钮
+    var recordBtn = document.getElementById('btn-record-home');
+    if (recordBtn) {
+      recordBtn.addEventListener('click', function () {
+        window.RecordsPage.openAddRecordModal();
       });
     }
 
@@ -1058,17 +1064,17 @@
   }
 
   function getRoleCards(role) {
-    // 精简到 3 张核心卡片，其余入口通过底部 Tab / 模块内子导航访问
+    // 首页快捷卡片：只放底部导航里没有的子页面入口，不重复 Tab
     var roleCards = {
       parent: [
-        { hash: 'tasks', icon: '✅', title: '任务清单', desc: '今日打卡、日程安排', module: 'home' },
-        { hash: 'archive', icon: '📋', title: '档案总览', desc: '六大主题档案分类查看', module: 'archive' },
-        { hash: 'chat', icon: '💬', title: 'AI聊聊', desc: '开始记录今天的观察', module: 'chat' }
+        { hash: 'communication', icon: '💬', title: '沟通说明书', desc: '有效话术、禁忌用语', module: 'archive' },
+        { hash: 'timeline', icon: '🕐', title: '记录时间轴', desc: '按时间查看所有记录', module: 'archive' },
+        { hash: 'quickcard', icon: '📋', title: '速读卡', desc: '1分钟快速了解心青年', module: 'archive' }
       ],
       teacher: [
-        { hash: 'tasks', icon: '✅', title: '任务清单', desc: '今日活动、打卡进度', module: 'home' },
         { hash: 'communication', icon: '💬', title: '沟通说明书', desc: '有效话术、禁忌用语', module: 'archive' },
-        { hash: 'chat', icon: '💬', title: 'AI聊聊', desc: '开始记录课堂观察', module: 'chat' }
+        { hash: 'timeline', icon: '🕐', title: '记录时间轴', desc: '按时间查看所有记录', module: 'archive' },
+        { hash: 'quickcard', icon: '📋', title: '速读卡', desc: '1分钟快速了解心青年', module: 'archive' }
       ],
       caregiver: [
         { hash: 'quickcard', icon: '⚡', title: '今日速读卡', desc: '照护要点一览', module: 'archive' },
@@ -1077,8 +1083,8 @@
       ],
       youth: [
         { hash: 'mood', icon: '💭', title: '记录心情', desc: '今天心情怎么样？', action: 'add-mood', module: 'home' },
-        { hash: 'tasks', icon: '✅', title: '今日任务', desc: '今天要完成的事', module: 'home' },
-        { hash: 'youth-chat', icon: '💬', title: 'AI聊聊', desc: '和AI聊聊天', module: 'chat' }
+        { hash: 'life', icon: '🌟', title: '我喜欢的生活', desc: '兴趣爱好和日常偏好', module: 'archive' },
+        { hash: 'calendar', icon: '📆', title: '日程日历', desc: '查看近期活动安排', module: 'home' }
       ],
       government: [
         { hash: 'analytics', icon: '📈', title: '分析总览', desc: '区域数据统计分析', module: 'charts' },
@@ -2979,7 +2985,8 @@
 
   // 分析模块内部状态
   var analyticsState = {
-    activeTab: 'overview',
+    activeTab: 'daily',
+    activeSubtab: 'overview',
     trendSubTab: 'weekly',
     dailyDate: null,
     weeklyStart: null,
@@ -2987,7 +2994,8 @@
   };
 
   function resetAnalyticsState() {
-    analyticsState.activeTab = 'overview';
+    analyticsState.activeTab = 'daily';
+    analyticsState.activeSubtab = 'overview';
     analyticsState.trendSubTab = 'weekly';
     analyticsState.dailyDate = null;
     analyticsState.weeklyStart = null;
@@ -3148,16 +3156,95 @@
         analyticsState.activeTab = name;
         tabs.forEach(function (t) { t.classList.remove('active'); });
         this.classList.add('active');
-        var panels = document.querySelectorAll('#analytics-content .a-panel');
+        var panels = document.querySelectorAll('#analytics-content .a-panel, #charts-content .a-panel');
         panels.forEach(function (p) { p.style.display = 'none'; });
         var active = document.getElementById('panel-' + name);
         if (active) active.style.display = 'block';
         var dd = document.getElementById('analytics-drilldown');
         if (dd) dd.style.display = 'none';
-        if (name === 'daily') renderDailyPanel();
-        else if (name === 'trend') renderTrendPanel();
+        renderAnalyticsPanel(name, analyticsState.activeSubtab);
       });
     });
+
+    // 子 tab：数据概览 / 趋势
+    var subtabs = document.querySelectorAll('#analytics-tabs + .a-subtabs .a-subtab');
+    subtabs.forEach(function (st) {
+      st.addEventListener('click', function () {
+        var subname = this.dataset.subtab;
+        if (analyticsState.activeSubtab === subname) return;
+        analyticsState.activeSubtab = subname;
+        subtabs.forEach(function (s) { s.classList.remove('active'); });
+        this.classList.add('active');
+        renderAnalyticsPanel(analyticsState.activeTab, subname);
+      });
+    });
+  }
+
+  /**
+   * 统一渲染分析面板：period = daily/weekly/monthly, subtab = overview/trend
+   */
+  function renderAnalyticsPanel(period, subtab) {
+    // 隐藏所有面板
+    ['daily', 'weekly', 'monthly', 'trend'].forEach(function (p) {
+      var el = document.getElementById('panel-' + p);
+      if (el) el.style.display = 'none';
+    });
+    var dd = document.getElementById('analytics-drilldown');
+    if (dd) dd.style.display = 'none';
+
+    if (subtab === 'trend') {
+      var trendPanel = document.getElementById('panel-trend');
+      if (trendPanel) trendPanel.style.display = 'block';
+      renderTrendPanel();
+      return;
+    }
+    // overview: 显示对应 period 面板
+    var periodPanel = document.getElementById('panel-' + period);
+    if (periodPanel) periodPanel.style.display = 'block';
+    if (period === 'daily') renderDailyPanel();
+    else if (period === 'weekly') renderWeeklyPanel();
+    else if (period === 'monthly') renderMonthlyPanel();
+  }
+
+  function renderWeeklyPanel() {
+    var panel = document.getElementById('panel-weekly');
+    if (!panel) return;
+    var stats = getAnalyticsData();
+    // 计算最常见情绪
+    var topEmotion = '';
+    var topCount = 0;
+    var emotionLabels = { happy: '😊 开心', calm: '😌 平静', anxious: '😰 焦虑', angry: '😠 生气', sad: '😢 难过', excited: '🤩 兴奋' };
+    Object.keys(stats.emotionStats).forEach(function (k) {
+      if (stats.emotionStats[k] > topCount) { topCount = stats.emotionStats[k]; topEmotion = k; }
+    });
+    panel.innerHTML = '<div class="a-section"><div class="a-section-head"><span class="a-section-title">本周概览</span></div>' +
+      '<div class="a-metrics">' +
+      '<div class="a-metric"><div class="a-metric-value">' + stats.recentRecords + '</div><div class="a-metric-label">近30天记录</div></div>' +
+      '<div class="a-metric"><div class="a-metric-value">' + (topEmotion ? emotionLabels[topEmotion] || topEmotion : '—') + '</div><div class="a-metric-label">最常见心情</div></div>' +
+      '<div class="a-metric"><div class="a-metric-value">' + stats.avgEffectiveness + '</div><div class="a-metric-label">策略均效</div></div>' +
+      '</div></div>' +
+      '<div class="a-section"><div class="a-section-head"><span class="a-section-title">本周关键变化</span></div>' +
+      '<p style="font-size:0.85rem;color:var(--text-secondary);">点击上方「📈 趋势」查看详细趋势图表和下钻数据。</p></div>';
+  }
+
+  function renderMonthlyPanel() {
+    var panel = document.getElementById('panel-monthly');
+    if (!panel) return;
+    var stats = getAnalyticsData();
+    var topEmotion = '';
+    var topCount = 0;
+    var emotionLabels = { happy: '😊 开心', calm: '😌 平静', anxious: '😰 焦虑', angry: '😠 生气', sad: '😢 难过', excited: '🤩 兴奋' };
+    Object.keys(stats.emotionStats).forEach(function (k) {
+      if (stats.emotionStats[k] > topCount) { topCount = stats.emotionStats[k]; topEmotion = k; }
+    });
+    panel.innerHTML = '<div class="a-section"><div class="a-section-head"><span class="a-section-title">本月概览</span></div>' +
+      '<div class="a-metrics">' +
+      '<div class="a-metric"><div class="a-metric-value">' + stats.totalRecords + '</div><div class="a-metric-label">全部记录</div></div>' +
+      '<div class="a-metric"><div class="a-metric-value">' + (topEmotion ? emotionLabels[topEmotion] || topEmotion : '—') + '</div><div class="a-metric-label">最常见心情</div></div>' +
+      '<div class="a-metric"><div class="a-metric-value">' + stats.strategyRecords + '</div><div class="a-metric-label">策略记录</div></div>' +
+      '</div></div>' +
+      '<div class="a-section"><div class="a-section-head"><span class="a-section-title">本月关键变化</span></div>' +
+      '<p style="font-size:0.85rem;color:var(--text-secondary);">点击上方「📈 趋势」查看详细趋势图表和下钻数据。</p></div>';
   }
 
   function renderAnalytics() {
@@ -3181,15 +3268,19 @@
     resetAnalyticsState();
     var html = '';
     html += '<div class="a-tabs" id="analytics-tabs">';
-    html += '<button class="a-tab active" data-tab="overview">📊 数据概览</button>';
-    html += '<button class="a-tab" data-tab="daily">📋 日报</button>';
-    html += '<button class="a-tab" data-tab="trend">📈 趋势</button></div>';
-    html += '<div id="panel-overview" class="a-panel"></div>';
-    html += '<div id="panel-daily" class="a-panel" style="display:none;"></div>';
+    html += '<button class="a-tab active" data-tab="daily">📋 日报</button>';
+    html += '<button class="a-tab" data-tab="weekly">📋 周报</button>';
+    html += '<button class="a-tab" data-tab="monthly">📋 月报</button></div>';
+    html += '<div class="a-subtabs" style="margin-bottom:12px;">';
+    html += '<button class="a-subtab active" data-subtab="overview">📊 数据概览</button>';
+    html += '<button class="a-subtab" data-subtab="trend">📈 趋势</button></div>';
+    html += '<div id="panel-daily" class="a-panel"></div>';
+    html += '<div id="panel-weekly" class="a-panel" style="display:none;"></div>';
+    html += '<div id="panel-monthly" class="a-panel" style="display:none;"></div>';
     html += '<div id="panel-trend" class="a-panel" style="display:none;"></div>';
     html += '<div id="analytics-drilldown" style="display:none;"></div>';
     Utils.dom.html(contentArea, html);
-    renderOverviewPanel();
+    renderAnalyticsPanel('daily', 'overview');
     bindAnalyticsTabs();
   }
 
