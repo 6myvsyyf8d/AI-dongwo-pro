@@ -628,6 +628,13 @@ a:hover { text-decoration: underline; }
   white-space: nowrap;
 }
 
+.twb-task-assignee {
+  font-size: 0.68rem;
+  color: #aaa;
+  margin-left: 4px;
+  flex-shrink: 0;
+}
+
 .twb-task-more {
   font-size: 12px;
   color: #999;

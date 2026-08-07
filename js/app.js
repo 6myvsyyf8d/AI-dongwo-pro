@@ -677,7 +677,23 @@
 
     // 显示当前登录用户的名字，而非硬编码的 demo 数据（小雨）
     var roleInfo = ROLES[role];
-    if (heroNameEl) heroNameEl.textContent = user ? user.name : '未知用户';
+
+    // 家长/老师/影子老师：hero 显示的是心青年的名字
+    var heroYouthName = null;
+    if (role === 'parent' || role === 'teacher' || role === 'caregiver') {
+      var primaryId = user ? DataStore.getPrimaryYouth(user.id) : null;
+      var yu = primaryId ? DataStore.findUserById(primaryId) : null;
+      if (!yu) {
+        var grants = user ? DataStore.getGrantsByUser(user.id) : [];
+        if (grants.length > 0) yu = DataStore.findUserById(grants[0].youthId);
+      }
+      if (!yu) {
+        var allU = DataStore.getAllUsers();
+        yu = allU.find(function(u) { return u.role === 'youth'; });
+      }
+      heroYouthName = yu ? yu.name : null;
+    }
+    if (heroNameEl) heroNameEl.textContent = heroYouthName || (user ? user.name : '未知用户');
     if (heroMetaEl) heroMetaEl.textContent = (roleInfo ? roleInfo.label : '用户') + ' · 档案持续更新中';
     if (heroIntroEl) heroIntroEl.textContent = '欢迎使用AI懂我，记录与理解从这里开始';
 
@@ -750,8 +766,7 @@
       });
     }
 
-    // 渲染待确认草稿入口（精简到今日工作台内）
-    renderPendingDraftBanner(role);
+    // 待确认入口已集成到今日工作台（#twb-pending-review），不再重复渲染独立 banner
   }
 
   /**
@@ -953,6 +968,13 @@
     var container = document.getElementById('today-workbench');
     if (!container) return;
 
+    // 兜底：确保按钮 onclick 能访问当前 role
+    window._quickAddRecord = function() {
+      var u = window.AppState.currentUser || DataStore.getCurrentUser();
+      if (!u) return;
+      window.RecordsPage.createAddRecordModal(u, role, 'mood');
+    };
+
     var today = getTodayString();
     DataStore.generateDailyInstances(today);
     var instances = DataStore.getTaskInstances(today);
@@ -1007,14 +1029,22 @@
       html += '  <div class="twb-ring-info">';
       html += '    <div class="twb-ring-stat">' + done + ' / ' + total + ' 项已完成</div>';
       // 今日任务 — 前3项显示，其余折叠，点击可打卡
+      // 构建角色→姓名映射，用于标注任务归属
+      var allU = DataStore.getAllUsers();
+      var roleNameMap = {};
+      allU.forEach(function(u) { if (!roleNameMap[u.role]) roleNameMap[u.role] = u.name; });
+
       todayRoutine.forEach(function(item, idx) {
         var inst = item.instance;
         var task = item.task;
         var isDone = inst.status === 'done';
         var hidden = idx >= 3 ? ' twb-folded' : '';
+        var assignee = task.assignee || '';
+        var assigneeName = roleNameMap[assignee] || '';
         html += '    <div class="twb-task-item twb-checkable' + (isDone ? ' twb-done' : '') + hidden + '" data-instance-id="' + inst.id + '" data-task-name="' + (task.name || task.title || '') + '">';
         html += '      <span class="twb-task-check">' + (isDone ? '✅' : '⭕') + '</span>';
         html += '      <span class="twb-task-name">' + (task.name || task.title || '') + '</span>';
+        if (assigneeName) html += '      <span class="twb-task-assignee">' + assigneeName + '</span>';
         html += '    </div>';
       });
       if (todayRoutine.length > 3) {
@@ -1032,7 +1062,7 @@
     // ===== 快捷操作（仅 support 角色） =====
     if (isSupport) {
       html += '<div class="twb-actions">';
-      html += '  <button class="twb-action-btn" id="twb-add-record">';
+      html += '  <button class="twb-action-btn" id="twb-add-record" onclick="window._quickAddRecord()">';
       html += '    <span>➕ 快速记录</span>';
       html += '  </button>';
       if (pendingDrafts > 0) {
