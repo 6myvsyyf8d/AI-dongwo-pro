@@ -665,9 +665,11 @@
     var alertBannerEl = document.getElementById('alert-banner');
     var cardGridEl = document.getElementById('card-grid');
 
-    if (heroNameEl) heroNameEl.textContent = basicInfo.name;
-    if (heroMetaEl) heroMetaEl.textContent = basicInfo.age + '岁 · ' + basicInfo.gender + ' · 档案持续更新中';
-    if (heroIntroEl) heroIntroEl.textContent = basicInfo.intro;
+    // 显示当前登录用户的名字，而非硬编码的 demo 数据（小雨）
+    var roleInfo = ROLES[role];
+    if (heroNameEl) heroNameEl.textContent = user ? user.name : '未知用户';
+    if (heroMetaEl) heroMetaEl.textContent = (roleInfo ? roleInfo.label : '用户') + ' · 档案持续更新中';
+    if (heroIntroEl) heroIntroEl.textContent = '欢迎使用AI懂我，记录与理解从这里开始';
 
     // 记一笔按钮 — 插入到身份卡下方
     var heroActionsEl = document.querySelector('.hero-actions');
