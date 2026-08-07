@@ -990,18 +990,19 @@
       html += '  </div>';
       html += '  <div class="twb-ring-info">';
       html += '    <div class="twb-ring-stat">' + done + ' / ' + total + ' 项已完成</div>';
-      // 前 3 项今日任务 — 点击可打卡
-      todayRoutine.slice(0, 3).forEach(function(item) {
+      // 今日任务 — 前3项显示，其余折叠，点击可打卡
+      todayRoutine.forEach(function(item, idx) {
         var inst = item.instance;
         var task = item.task;
         var isDone = inst.status === 'done';
-        html += '    <div class="twb-task-item twb-checkable' + (isDone ? ' twb-done' : '') + '" data-instance-id="' + inst.id + '" data-task-name="' + (task.name || task.title || '') + '">';
+        var hidden = idx >= 3 ? ' twb-folded' : '';
+        html += '    <div class="twb-task-item twb-checkable' + (isDone ? ' twb-done' : '') + hidden + '" data-instance-id="' + inst.id + '" data-task-name="' + (task.name || task.title || '') + '">';
         html += '      <span class="twb-task-check">' + (isDone ? '✅' : '⭕') + '</span>';
         html += '      <span class="twb-task-name">' + (task.name || task.title || '') + '</span>';
         html += '    </div>';
       });
       if (todayRoutine.length > 3) {
-        html += '    <div class="twb-task-more">还有 ' + (todayRoutine.length - 3) + ' 项…</div>';
+        html += '    <div class="twb-task-more twb-expand-toggle">展开全部 ' + todayRoutine.length + ' 项</div>';
       }
       html += '  </div>';
       html += '</div>';
@@ -1070,6 +1071,21 @@
         renderTodayWorkbench(role);
       });
     });
+
+    // ===== 绑定展开/收起事件 =====
+    var toggleEl = container.querySelector('.twb-expand-toggle');
+    if (toggleEl) {
+      toggleEl.addEventListener('click', function() {
+        var folded = container.querySelectorAll('.twb-folded');
+        var isExpanded = folded.length === 0 || folded[0].style.display !== 'none';
+        folded.forEach(function(el) {
+          el.style.display = isExpanded ? '' : 'none';
+        });
+        this.textContent = isExpanded ? '收起' : '展开全部 ' + total + ' 项';
+      });
+      // 初始状态：折叠
+      container.querySelectorAll('.twb-folded').forEach(function(el) { el.style.display = 'none'; });
+    }
   }
 
   function getRoleCards(role) {
