@@ -36,10 +36,18 @@
 .chat-page-container {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 58px); /* full viewport minus global topbar */
+  height: 100dvh; /* dynamic viewport — 适配移动端键盘弹出/收起 */
   min-height: 480px;
   background: var(--chat-bg);
   position: relative;
+  padding-top: 58px; /* global topbar offset */
+  box-sizing: border-box;
+}
+@supports not (height: 100dvh) {
+  .chat-page-container {
+    height: calc(100vh - 58px);
+    padding-top: 0;
+  }
 }
 
 /* ==========================================
@@ -286,10 +294,9 @@
   display: flex;
   align-items: center;
   padding: 10px 16px;
-  background: var(--chat-purple-light);
-  border-bottom: 1px solid rgba(94, 106, 210, 0.1);
+  background: #FDF0E8;
+  border-bottom: 1px solid rgba(217, 119, 87, 0.08);
   gap: 8px;
-  cursor: pointer;
   flex-shrink: 0;
 }
 
@@ -329,6 +336,50 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* 状态栏处理中动画 */
+.chat-conv-status-sub.processing {
+  color: var(--chat-accent);
+  font-weight: 500;
+}
+.chat-conv-status-sub.processing::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--chat-accent);
+  margin-right: 6px;
+  animation: dotPulse 1.2s ease-in-out infinite;
+}
+@keyframes dotPulse {
+  0%, 100% { opacity: 0.3; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+
+/* 状态栏「结束并整理」按钮 */
+.chat-conv-end-btn {
+  padding: 6px 12px;
+  border: 1.5px solid var(--chat-accent);
+  border-radius: 18px;
+  background: var(--chat-accent);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.chat-conv-end-btn:hover {
+  background: #B55D3D;
+  border-color: #B55D3D;
+}
+.chat-conv-end-btn:active {
+  transform: scale(0.96);
 }
 
 .chat-conv-status-text {
@@ -1237,14 +1288,6 @@
 /* ==========================================
    聊天容器布局
    ========================================== */
-
-.chat-page-container {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  min-height: 600px;
-  background: var(--chat-bg);
-}
 
 .chat-page-scroll {
   flex: 1;
