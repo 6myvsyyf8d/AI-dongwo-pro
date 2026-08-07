@@ -188,6 +188,10 @@
    * 管理员仪表盘（系统管理，不开 youth 数据）
    * ========================================================== */
   function renderAdminDashboard(ct, user) {
+    // 管理员页面不是「个人中心」
+    var pageTitle = document.querySelector('#profile .page-title');
+    if (pageTitle) pageTitle.textContent = '管理面板';
+
     var allUsers = DataStore.getAllUsers();
     var allGrants = DataStore.getGrants();
     var auditLog = DataStore.getAuditLog().slice(0, 30);
@@ -223,84 +227,90 @@
     html += buildStatCard('📝', auditLog.length, '操作日志', '#9A8F88');
     html += '</div>';
 
-    // ====== 用户管理（按心青年分组）======
+    // ====== 用户管理 ======
     html += '<div class="admin-section">';
     html += '<div class="admin-section-header">';
-    html += '  <span class="admin-section-title">👥 用户列表</span>';
+    html += '  <span class="admin-section-title">👥 用户管理</span>';
     html += '  <span class="admin-section-badge">' + allUsers.length + '人</span>';
     html += '</div>';
 
-    // 根据 grants 按心青年分组用户
-    var youthUsers = allUsers.filter(function (u) { return u.role === 'youth'; });
-    var groupedByYouth = {}; // youthId → users[]
-    var groupedUserIds = {};
+    // 搜索栏
+    html += '<div style="margin-bottom:12px;">';
+    html += '  <input id="admin-user-search" type="text" placeholder="🔍 搜索姓名..." style="width:100%;padding:10px 14px;border:1px solid #e0e0e0;border-radius:10px;font-size:0.9rem;box-sizing:border-box;background:#fafafa;">';
+    html += '</div>';
 
-    youthUsers.forEach(function (y) {
-      groupedByYouth[y.id] = [y];
-      groupedUserIds[y.id] = true;
-      // 找到该心青年的所有授权用户
-      var grants = allGrants.filter(function (g) { return g.youthId === y.id && g.status === 'active'; });
-      grants.forEach(function (g) {
-        var grantee = allUsers.find(function (u) { return u.id === g.userId; });
-        if (grantee && !groupedUserIds[grantee.id]) {
-          groupedByYouth[y.id].push(grantee);
-          groupedUserIds[grantee.id] = true;
+    // 构建用户→心青年映射（优先 grants，其次 family_relations）
+    var familyRels = DataStore.getFamilyRelations();
+    var userYouthMap = {}; // userId → { youthId, youthName }
+    allGrants.forEach(function (g) {
+      if (g.status !== 'active') return;
+      var yu = allUsers.find(function (u) { return u.id === g.youthId; });
+      if (yu && !userYouthMap[g.userId]) {
+        userYouthMap[g.userId] = { youthId: g.youthId, youthName: yu.name };
+      }
+    });
+    // family_relations 作为补充
+    Object.keys(familyRels).forEach(function (youthId) {
+      var yu = allUsers.find(function (u) { return u.id === youthId; });
+      if (!yu) return;
+      (familyRels[youthId] || []).forEach(function (m) {
+        if (!userYouthMap[m.userId]) {
+          userYouthMap[m.userId] = { youthId: youthId, youthName: yu.name };
         }
       });
     });
 
-    // 系统账号（未关联任何心青年）
-    var systemUsers = allUsers.filter(function (u) {
-      return !groupedUserIds[u.id] && (u.role === 'government' || u.role === 'admin');
-    });
+    // 用户列表（非系统账号），每人一行卡片
+    html += '<div class="admin-user-list" id="admin-user-list">';
+    allUsers.forEach(function (u) {
+      if (u.role === 'government' || u.role === 'admin') return; // 系统账号另列
+      var roleInfo = ROLES[u.role] || { label: u.role, color: '#9A8F88' };
+      var youthInfo = userYouthMap[u.id];
+      var teamLabel = u.role === 'youth' ? '本人' : (youthInfo ? youthInfo.youthName + ' 的团队' : '未关联');
 
-    // 输出分组
-    var youthNames = Object.keys(groupedByYouth);
-    youthNames.forEach(function (youthId, idx) {
-      var members = groupedByYouth[youthId];
-      var youth = members.find(function (m) { return m.role === 'youth'; });
-      var groupName = (youth ? youth.name : '未命名') + ' 的团队';
-      html += '<div style="margin-bottom:16px;">';
-      if (idx > 0) html += '<div style="border-top:1px solid #f0f0f0;margin:0 0 12px;"></div>';
-      html += '  <div style="font-size:0.8rem;color:#999;margin-bottom:8px;font-weight:500;">' + groupName + ' · ' + members.length + '人</div>';
-      html += '  <div class="admin-user-list" style="gap:6px;">';
-      members.forEach(function (u) {
-        var roleInfo = ROLES[u.role] || { label: u.role, color: '#9A8F88' };
-        html += '<div class="admin-user-card">';
-        html += '  <div class="admin-user-avatar">' + (u.avatar || '👤') + '</div>';
-        html += '  <div class="admin-user-info">';
-        html += '    <div class="admin-user-name">' + u.name + '</div>';
-        html += '    <div class="admin-user-meta">';
-        html += '      <span class="admin-role-tag" style="background:' + roleInfo.color + ';">' + roleInfo.label + '</span>';
-        html += '      <span>注册：' + (u.createdAt || '-') + '</span>';
-        html += '    </div>';
-        html += '  </div>';
-        html += '</div>';
-      });
+      html += '<div class="admin-user-card" data-search="' + u.name + '" data-role="' + u.role + '">';
+      html += '  <div class="admin-user-avatar">' + (u.avatar || '👤') + '</div>';
+      html += '  <div class="admin-user-info" style="flex:1;">';
+      html += '    <div class="admin-user-name" style="display:flex;align-items:center;gap:8px;">';
+      html += '      ' + u.name;
+      html += '      <span class="admin-role-tag" style="background:' + roleInfo.color + ';">' + roleInfo.label + '</span>';
+      html += '    </div>';
+      html += '    <div class="admin-user-meta">';
+      html += '      <span>' + (youthInfo ? '🏠 ' + teamLabel : '🏛️ 系统账号') + '</span>';
+      html += '      <span>注册：' + (u.createdAt || '-') + '</span>';
+      html += '    </div>';
       html += '  </div>';
       html += '</div>';
     });
+    html += '</div>';
 
-    // 系统账号
-    if (systemUsers.length > 0) {
-      html += '<div style="border-top:1px solid #f0f0f0;margin:0 0 12px;"></div>';
-      html += '  <div style="font-size:0.8rem;color:#999;margin-bottom:8px;font-weight:500;">🏛️ 系统账号 · ' + systemUsers.length + '人</div>';
-      html += '  <div class="admin-user-list" style="gap:6px;">';
-      systemUsers.forEach(function (u) {
-        var roleInfo = ROLES[u.role] || { label: u.role, color: '#9A8F88' };
-        html += '<div class="admin-user-card">';
-        html += '  <div class="admin-user-avatar">' + (u.avatar || '👤') + '</div>';
-        html += '  <div class="admin-user-info">';
-        html += '    <div class="admin-user-name">' + u.name + '</div>';
-        html += '    <div class="admin-user-meta">';
-        html += '      <span class="admin-role-tag" style="background:' + roleInfo.color + ';">' + roleInfo.label + '</span>';
-        html += '      <span>注册：' + (u.createdAt || '-') + '</span>';
-        html += '    </div>';
-        html += '  </div>';
-        html += '</div>';
-      });
+    // 系统账号区域（可折叠）
+    html += '<div style="border-top:1px solid #f0f0f0;margin-top:12px;padding-top:12px;">';
+    html += '  <div id="system-users-toggle" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;margin-bottom:8px;">';
+    html += '    <span style="font-size:0.82rem;color:#999;font-weight:500;">🏛️ 系统账号</span>';
+    html += '    <span style="font-size:0.75rem;color:#bbb;" id="system-users-arrow">展开 ▾</span>';
+    html += '  </div>';
+    html += '  <div id="system-users-body" style="display:none;">';
+    var sysUsers = allUsers.filter(function (u) { return u.role === 'government' || u.role === 'admin'; });
+    html += '  <div class="admin-user-list" style="gap:6px;">';
+    sysUsers.forEach(function (u) {
+      var roleInfo = ROLES[u.role] || { label: u.role, color: '#9A8F88' };
+      html += '<div class="admin-user-card">';
+      html += '  <div class="admin-user-avatar">' + (u.avatar || '👤') + '</div>';
+      html += '  <div class="admin-user-info" style="flex:1;">';
+      html += '    <div class="admin-user-name" style="display:flex;align-items:center;gap:8px;">';
+      html += '      ' + u.name;
+      html += '      <span class="admin-role-tag" style="background:' + roleInfo.color + ';">' + roleInfo.label + '</span>';
+      html += '    </div>';
+      html += '    <div class="admin-user-meta">';
+      html += '      <span>注册：' + (u.createdAt || '-') + '</span>';
+      html += '    </div>';
       html += '  </div>';
-    }
+      html += '</div>';
+    });
+    html += '  </div></div>';
+    html += '</div>';
+
     html += '</div>';
 
     // ====== 角色分布 ======
@@ -674,6 +684,34 @@
         return;
       }
     });
+
+    // 用户搜索
+    var searchInput = ct.querySelector('#admin-user-search');
+    if (searchInput) {
+      searchInput.addEventListener('input', function () {
+        var q = this.value.toLowerCase();
+        ct.querySelectorAll('#admin-user-list .admin-user-card').forEach(function (card) {
+          var name = (card.getAttribute('data-search') || '').toLowerCase();
+          card.style.display = (!q || name.indexOf(q) >= 0) ? '' : 'none';
+        });
+      });
+    }
+
+    // 系统账号折叠/展开
+    var sysToggle = ct.querySelector('#system-users-toggle');
+    if (sysToggle) {
+      sysToggle.addEventListener('click', function () {
+        var body = ct.querySelector('#system-users-body');
+        var arrow = ct.querySelector('#system-users-arrow');
+        if (body.style.display === 'none' || !body.style.display) {
+          body.style.display = 'block';
+          if (arrow) arrow.textContent = '收起 ▴';
+        } else {
+          body.style.display = 'none';
+          if (arrow) arrow.textContent = '展开 ▾';
+        }
+      });
+    }
   }
 
   /* ==========================================================
