@@ -58,6 +58,20 @@
   var currentRole = window.AppState.currentRole;
   var currentQuickCardVersion = window.AppState.currentQuickCardVersion;
   var addRecordState = window.AppState.addRecordState;
+  var navHistory = []; // 导航栈，用于返回按钮回溯来源页
+
+  function _loadNavHistory() {
+    try {
+      var raw = sessionStorage.getItem('ai_dongwo_nav_history');
+      if (raw) { navHistory = JSON.parse(raw); }
+    } catch (e) { navHistory = []; }
+  }
+
+  function _saveNavHistory() {
+    try {
+      sessionStorage.setItem('ai_dongwo_nav_history', JSON.stringify(navHistory));
+    } catch (e) { /* quota exceeded, silently skip */ }
+  }
   var timelineFilters = window.AppState.timelineFilters;
   var chatState = window.AppState.chatState;
   var calendarState = window.AppState.calendarState;
@@ -315,22 +329,22 @@
       'archive-topics': '主题档案',
       'archive-status': '档案状态',
       life: '我喜欢的生活',
-      communication: '沟通说明书',
-      emotion: '情绪与行为支持',
+      communication: '沟通指南',
+      emotion: '情绪支持',
       care: '照护与医疗',
       work: '工作支持',
       relations: '关系地图',
-      timeline: '记录时间轴',
+      timeline: '时间轴',
       records: '记录列表',
       profile: '我的账号',
       charts: '趋势分析',
-      tasks: '数据范围',
+      tasks: '任务范围',
       calendar: '日程日历',
       analytics: '分析总览',
       quickcard: '速读卡',
       grants: '授权管理',
-      join: '家庭与成员',
-      approvals: '加入申请审批',
+      join: '家庭成员',
+      approvals: '加入审批',
       'archive-code': '档案码',
       welcome: '欢迎',
       'youth-chat': 'AI聊聊',
@@ -341,34 +355,37 @@
       'draft-review': '待确认记录'
     };
 
-    // 有 module sub-nav 的页面，sub-nav 标签已高亮当前页
-    // 但总览和主题详情页（life/communication 等）仍需显示标题
-    var parent = PAGE_PARENT[pageName];
-    var hasSubNav = parent ? !!MODULE_SUB_NAV[parent] : false;
-    // 主题档案/时间轴/速读卡不显示标题（sub-nav 标签已表明位置），总览例外
-    var isSubNavItem = hasSubNav && pageName !== 'archive' &&
-      MODULE_SUB_NAV[parent].some(function(item) { return item.hash === pageName; });
+    // 心青年页面自带顶栏，隐藏全局顶栏
+    var isYouthChat = (pageName === 'youth-chat');
 
+    // 标题：所有页面始终显示
     if (titleEl) {
-      titleEl.textContent = isSubNavItem ? '' : (pageTitles[pageName] || 'AI懂我');
+      titleEl.textContent = pageTitles[pageName] || 'AI懂我';
     }
-    // 对话页面自带顶栏，隐藏全局顶栏
-    var isChatPage = (pageName === 'chat' || pageName === 'chat-conversation' || pageName === 'chat-review');
+
+    // 返回按钮：所有二级页面（有父级且非一级）统一显示「← 返回」
+    // 一级页面（home/archive/analytics/profile/tasks/charts）不显示返回
     if (backEl) {
-      var backParent = PAGE_BACK_PARENT[pageName] || parent;
+      var parent = PAGE_PARENT[pageName];
       var isTopLevel = (!parent || parent === pageName);
-      backEl.style.display = (pageName === 'home' || isTopLevel || isChatPage || isSubNavItem) ? 'none' : 'block';
-      // 返回按钮写描述性文案，如"← 返回 主题档案"
-      if (backParent && backParent !== pageName && !isChatPage) {
-        backEl.textContent = '← ' + (pageTitles[backParent] || backParent);
+      var shouldShowBack = !isTopLevel && !isYouthChat;
+      backEl.style.display = shouldShowBack ? 'block' : 'none';
+      if (shouldShowBack) {
+        backEl.textContent = '← 返回';
       }
     }
+
     if (quickEl) {
       quickEl.style.display = (pageName === 'home') ? 'block' : 'none';
     }
+    // 退出按钮仅「我的」页面显示
+    var logoutEl = document.getElementById('btn-nav-logout');
+    if (logoutEl) {
+      logoutEl.style.display = (pageName === 'profile') ? 'block' : 'none';
+    }
     var topbar = document.getElementById('app-topbar');
     if (topbar) {
-      topbar.style.display = isChatPage ? 'none' : '';
+      topbar.style.display = isYouthChat ? 'none' : '';
     }
   }
 
@@ -380,12 +397,13 @@
     var quickEl = Utils.dom.get('topbar-quick');
     if (backEl) {
       Utils.dom.on(backEl, 'click', function () {
-        var backParent = PAGE_BACK_PARENT[currentPage] || PAGE_PARENT[currentPage];
-        // 如果当前页有直接父级（无论是否一级页面），回父级；否则回首页
-        if (backParent && backParent !== currentPage) {
-          window.location.hash = backParent;
+        // peek 栈顶（不提前 pop），由 navigateTo() 统一处理栈管理，避免 B↔C 往返
+        var prevPage = navHistory.length ? navHistory[navHistory.length - 1] : null;
+        if (prevPage) {
+          window.location.hash = prevPage;
         } else {
-          window.location.hash = 'home';
+          var fallback = PAGE_BACK_PARENT[currentPage] || PAGE_PARENT[currentPage] || 'archive';
+          window.location.hash = fallback;
         }
       });
     }
@@ -451,10 +469,10 @@
       }
     }
 
-    // 离开对话页面时恢复全局顶栏
-    var isLeavingChat = (currentPage === 'chat' || currentPage === 'chat-conversation' || currentPage === 'chat-review');
-    var isEnteringChat = (basePage === 'chat' || basePage === 'chat-conversation' || basePage === 'chat-review');
-    if (isLeavingChat && !isEnteringChat) {
+    // 离开 youth-chat 时恢复全局顶栏
+    var isLeavingYouth = (currentPage === 'youth-chat');
+    var isEnteringYouth = (basePage === 'youth-chat');
+    if (isLeavingYouth && !isEnteringYouth) {
       var topbar = document.getElementById('app-topbar');
       if (topbar) topbar.style.display = '';
     }
@@ -480,6 +498,16 @@
       targetSection.classList.add('active');
     }
 
+    // 记录导航历史：浏览器后退时目标已在栈顶则弹出，否则推入来源
+    if (currentPage && currentPage !== basePage) {
+      if (navHistory.length > 0 && navHistory[navHistory.length - 1] === basePage) {
+        navHistory.pop();
+      } else {
+        navHistory.push(currentPage);
+      }
+      if (navHistory.length > 20) navHistory.shift();
+      _saveNavHistory();
+    }
     currentPage = basePage;
     appState.currentPage = basePage;
 
@@ -512,8 +540,9 @@
     // 根据页面类型调用对应渲染函数（传入查询参数）
     renderPage(basePage, queryParams);
 
-    // 应用当前角色的隐私设置
-    window.Permissions.applyPrivacy(currentRole);
+    // 应用当前角色的隐私设置（始终取最新角色，避免缓存过期）
+    var activeUser = DataStore.getCurrentUser() || appState.currentUser;
+    window.Permissions.applyPrivacy(activeUser ? activeUser.role : currentRole);
 
     // FAB 可见性：主题详情页 + 档案主题列表页隐藏
     var fabHidePages = ['life', 'communication', 'emotion', 'care', 'work', 'relations'];
@@ -2793,7 +2822,7 @@
    * ========================================================== */
 
   /**
-   * 渲染完整档案页面 —— 六大主题分类入口
+   * 渲染完整档案页面 —— 五大主题分类入口，点击展开子分类
    */
   function renderArchive() {
     var contentArea = document.getElementById('archive-content');
@@ -2801,68 +2830,137 @@
 
     var user = DataStore.getCurrentUser() || appState.currentUser;
     var role = user ? user.role : 'parent';
-
     var html = '';
 
     // 档案概览说明
-    html += '<div style="background:linear-gradient(135deg,#D97757,#5B9BD5);border-radius:16px;padding:20px;margin-bottom:20px;color:#fff;">';
-    html += '  <div style="font-size:1.2rem;font-weight:600;margin-bottom:6px;">📋 小雨的完整档案</div>';
-    html += '  <div style="font-size:0.88rem;opacity:0.9;">六大主题分类，全面了解小雨的 support profile</div>';
+    html += '<div style="background:linear-gradient(135deg,#D97757,#F5A88B);border-radius:14px;padding:18px;margin-bottom:16px;color:#fff;">';
+    html += '  <div style="font-size:1.1rem;font-weight:600;margin-bottom:4px;">📋 小雨的完整档案</div>';
+    html += '  <div style="font-size:0.8rem;opacity:0.9;">五大主题分类，全面了解小雨的 support profile</div>';
     html += '</div>';
 
-    // 六大主题档案卡片（含完整度摘要）
-    var archiveThemes = [
-      { hash: 'life', icon: '❤️', title: '喜好档案', desc: '喜欢和不喜欢的事物、活动偏好', color: '#D97757', module: 'life' },
-      { hash: 'communication', icon: '💬', title: '沟通档案', desc: '沟通指南、有效话术、禁忌用语', color: '#F5E6D3', module: 'communication' },
-      { hash: 'emotion', icon: '😰', title: '情绪档案', desc: '情绪触发因素、安抚策略、预警信号', color: '#C96E68', module: 'emotion' },
-      { hash: 'care', icon: '🏥', title: '照护档案', desc: '过敏、用药、作息、医疗提醒', color: '#6FA789', module: 'care' },
-      { hash: 'work', icon: '💼', title: '支持档案', desc: '工作能力、社交关系、支持网络', color: '#E7B95E', module: 'work' },
-      { hash: 'relations', icon: '👥', title: '关系档案', desc: '核心支持圈、日常接触、避免场景', color: '#D99A4E', module: 'relations' }
+    // 五大分类定义 + 原六类→新五类映射
+    var archiveCategories = [
+      {
+        id: 'basic', icon: '📋', title: '基本信息',
+        desc: '诊断情况、年龄、基础资料',
+        subThemes: []  // 展开显示个人基础信息摘要
+      },
+      {
+        id: 'comm-support', icon: '💬', title: '沟通与支持',
+        desc: '沟通方式、工作支持、关系网络',
+        subThemes: [
+          { hash: 'communication', icon: '💬', title: '沟通指南', module: 'communication' },
+          { hash: 'work', icon: '💼', title: '工作支持', module: 'work' },
+          { hash: 'relations', icon: '👥', title: '关系地图', module: 'relations' }
+        ]
+      },
+      {
+        id: 'health-safety', icon: '🏥', title: '健康与安全',
+        desc: '照护与医疗、情绪行为支持',
+        subThemes: [
+          { hash: 'care', icon: '🏥', title: '照护与医疗', module: 'care' },
+          { hash: 'emotion', icon: '😰', title: '情绪支持', module: 'emotion' }
+        ]
+      },
+      {
+        id: 'life-growth', icon: '🌱', title: '生活与成长',
+        desc: '喜好、日常活动、成长目标',
+        subThemes: [
+          { hash: 'life', icon: '❤️', title: '我喜欢的生活', module: 'life' }
+        ]
+      },
+      {
+        id: 'more', icon: '📁', title: '更多主题',
+        desc: '其他档案分类与扩展',
+        subThemes: []
+      }
     ];
 
-    html += '<div class="card-grid">';
-    archiveThemes.forEach(function (theme) {
-      var recs = DataStore.getRecordsByModule(theme.module);
-      var count = recs.length;
-      var completeness = count >= 5 ? Math.min(100, Math.round(count / 8 * 100)) : (count === 0 ? 0 : Math.round(count / 5 * 60));
+    html += '<div class="archive-main-list">';
+    archiveCategories.forEach(function (cat) {
+      var totalRecs = 0;
+      if (cat.subThemes && cat.subThemes.length > 0) {
+        cat.subThemes.forEach(function (st) {
+          totalRecs += DataStore.getRecordsByModule(st.module).length;
+        });
+      }
 
-      html += '<div class="nav-card archive-card" data-navigate="' + theme.hash + '">';
-      html += '  <span class="card-icon" style="background:' + theme.color + '15;color:' + theme.color + ';">' + theme.icon + '</span>';
-      html += '  <div class="card-title">' + theme.title + '</div>';
-      html += '  <div class="card-desc">' + theme.desc + '</div>';
-      // 完整度条
-      html += '  <div style="display:flex;align-items:center;gap:6px;margin-top:8px;">';
-      html += '    <div style="flex:1;height:4px;background:#E8E8E8;border-radius:2px;overflow:hidden;">';
-      html += '      <div style="height:100%;width:' + completeness + '%;background:' + (completeness >= 60 ? '#6FA789' : completeness >= 30 ? '#E7B95E' : '#C96E68') + ';border-radius:2px;"></div>';
-      html += '    </div>';
-      html += '    <span style="font-size:0.7rem;color:#999;white-space:nowrap;">' + count + '条记录</span>';
+      html += '<div class="archive-main-card" data-cat="' + cat.id + '">';
+      html += '  <span class="main-icon">' + cat.icon + '</span>';
+      html += '  <div class="main-body">';
+      html += '    <div class="main-title">' + cat.title + '</div>';
+      html += '    <div class="main-desc">' + cat.desc + '</div>';
       html += '  </div>';
+      html += '  <span class="main-arrow">›</span>';
+      html += '</div>';
+
+      // 展开子区域
+      html += '<div class="archive-sub-section" id="sub-' + cat.id + '">';
+      if (cat.id === 'basic') {
+        html += '  <div style="font-size:0.78rem;color:#8A8580;padding:8px 4px;">基本信息包含诊断、年龄、紧急联系等基础资料，可在「我的账号」中编辑。</div>';
+      } else if (cat.id === 'more') {
+        html += '  <div style="font-size:0.78rem;color:#8A8580;padding:8px 4px;">更多主题即将上线，包括目标追踪、成长里程碑等。</div>';
+      } else if (cat.subThemes && cat.subThemes.length > 0) {
+        cat.subThemes.forEach(function (st) {
+          var recs = DataStore.getRecordsByModule(st.module);
+          var count = recs.length;
+          html += '<div class="archive-sub-card" data-navigate="' + st.hash + '">';
+          html += '  <span class="sub-icon">' + st.icon + '</span>';
+          html += '  <div class="sub-title">' + st.title + '</div>';
+          html += '  <div class="sub-count">' + count + ' 条记录</div>';
+          html += '</div>';
+        });
+      }
       html += '</div>';
     });
     html += '</div>';
 
-    // 快捷操作区
-    html += '<div style="margin-top:24px;">';
-    html += '  <h2 style="font-size:1rem;color:#333;margin-bottom:12px;">🔗 快捷操作</h2>';
-    html += '  <div style="display:flex;gap:12px;flex-wrap:wrap;">';
-    html += '    <button class="btn btn-outline" onclick="location.hash=\'timeline\'">📅 查看动态时间轴</button>';
-    html += '    <button class="btn btn-outline" onclick="location.hash=\'charts\'">📊 数据可视化</button>';
-    html += '    <button class="btn btn-outline" id="btn-archive-quickcard">📋 打开速读卡</button>';
-    html += '    <button class="btn btn-outline" onclick="location.hash=\'archive-status\'">📋 档案状态</button>';
-    html += '  </div>';
+    // 辅助入口：时间轴 + 全部记录（不占宫格）
+    html += '<div class="archive-aux-row">';
+    html += '  <button class="btn btn-outline" onclick="location.hash=\'timeline\'">📅 时间轴</button>';
+    html += '  <button class="btn btn-outline" onclick="location.hash=\'records\'">📋 全部记录</button>';
+    html += '</div>';
+    html += '<div style="margin-top:8px;text-align:center;">';
+    html += '  <button class="btn btn-text" id="btn-archive-quickcard">📋 速读卡</button>';
     html += '</div>';
 
     contentArea.innerHTML = html;
 
-    // 绑定档案卡片点击事件
-    contentArea.querySelectorAll('.archive-card').forEach(function (card) {
+    // 绑定五大分类：点击展开/收起子区域
+    contentArea.querySelectorAll('.archive-main-card').forEach(function (card) {
       card.addEventListener('click', function () {
+        var catId = this.getAttribute('data-cat');
+        var subEl = document.getElementById('sub-' + catId);
+        var isOpen = subEl && subEl.classList.contains('open');
+
+        // 先关闭所有
+        contentArea.querySelectorAll('.archive-sub-section.open').forEach(function (s) {
+          s.classList.remove('open');
+        });
+        contentArea.querySelectorAll('.archive-main-card.expanded').forEach(function (c) {
+          c.classList.remove('expanded');
+        });
+
+        // 如果之前未打开，则打开
+        if (!isOpen && subEl) {
+          subEl.classList.add('open');
+          this.classList.add('expanded');
+          // 滚动到可见
+          subEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      });
+    });
+
+    // 绑定子分类卡片→导航到具体主题页
+    contentArea.querySelectorAll('.archive-sub-card').forEach(function (card) {
+      card.addEventListener('click', function (e) {
+        e.stopPropagation();
         var target = this.getAttribute('data-navigate');
         if (target) window.location.hash = target;
       });
     });
 
-    // 绑定速读卡按钮
+    // 绑定速读卡
     var quickCardBtn = document.getElementById('btn-archive-quickcard');
     if (quickCardBtn) {
       quickCardBtn.addEventListener('click', function () {
@@ -4060,6 +4158,14 @@
     // 初始化数据存储
     DataStore.init();
 
+    // 恢复导航历史（持久化到 sessionStorage，刷新不丢失）
+    _loadNavHistory();
+
+    // 同步 currentPage，避免 navigateTo 首次调用时将当前页误压栈
+    var initHash = window.location.hash.replace('#', '') || 'home';
+    currentPage = initHash;
+    appState.currentPage = initHash;
+
     // 加载当前用户
     var user = DataStore.getCurrentUser();
     if (user) {
@@ -4080,15 +4186,10 @@
     // 初始化路由系统
     initRouter();
 
-    // 应用当前角色的隐私设置
-    window.Permissions.applyPrivacy(currentRole);
+    // 应用当前角色的隐私设置（取最新角色值）
+    window.Permissions.applyPrivacy(appState.currentRole);
 
-    // FAB 可见性：主题详情页 + 档案主题列表页隐藏
-    var fabHidePages = ['life', 'communication', 'emotion', 'care', 'work', 'relations'];
-    var fab = document.getElementById('fab-container');
-    if (fab) {
-      fab.style.display = fabHidePages.indexOf(basePage) !== -1 ? 'none' : '';
-    }
+    // FAB 可见性由 navigateTo() 统一控制，此处不再重复设置
   }
 
   /* ==========================================================

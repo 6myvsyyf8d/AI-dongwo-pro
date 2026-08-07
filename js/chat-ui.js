@@ -145,18 +145,13 @@
 
       container.innerHTML = ''
         + '<div class="chat-page-container chat-conv-ready">'
-        + '  <div class="chat-conv-topbar">'
-        + '    <button class="chat-conv-btn-back" id="btn-chat-back">‹</button>'
-        + '    <div class="chat-conv-title">' + youthName + ' · 本次记录</div>'
-        + '    <button class="chat-conv-btn-end" id="btn-chat-end">结束</button>'
-        + '  </div>'
         + '  <div class="chat-conv-status-bar" id="status-bar-drafts">'
         + '    <div class="chat-conv-status-avatar">✨</div>'
         + '    <div class="chat-conv-status-info">'
         + '      <span class="chat-conv-status-title">AI 记录助手</span>'
         + '      <span class="chat-conv-status-sub" id="status-draft-text">已自动保存</span>'
         + '    </div>'
-        + (draftCount > 0 ? '    <div class="chat-conv-status-arrow" id="status-draft-count">' + draftCount + ' 条草稿 ›</div>' : '')
+        + (draftCount > 0 ? '    <button class="chat-conv-end-btn" id="btn-end-conversation">结束并整理 · ' + draftCount + ' 条草稿</button>' : '')
         + '  </div>'
         + '  <div class="chat-conv-messages" id="chat-message-list">' + _renderWelcomeMessage() + '  </div>'
         + '  <div class="chat-quick-replies" id="chat-quick-replies">'
@@ -207,10 +202,6 @@
 
       var html = ''
         + '<div class="chat-page-container chat-review-ready">'
-        + '  <div class="chat-review-topbar">'
-        + '    <button class="chat-review-btn-back" id="btn-review-back">‹</button>'
-        + '    <div class="chat-review-title">本次整理</div>'
-        + '  </div>'
         + '  <div class="chat-review-info-bar">'
         + '    <span class="chat-review-info-count">共 ' + totalCount + ' 条记录</span>'
         + '    <span class="chat-review-info-legend">'
@@ -607,43 +598,43 @@
    * 事件绑定
    * ========================================================== */
 
+  var _sending = false; // 防连点锁
+
   function _bindInputEvents() {
     var editor = document.getElementById('chat-editor');
     var sendBtn = document.getElementById('btn-chat-send');
     var plusBtn = document.getElementById('btn-chat-plus');
-    var backBtn = document.getElementById('btn-chat-back');
-    var endBtn = document.getElementById('btn-chat-end');
-    var statusBar = document.getElementById('status-bar-drafts');
+    var endConvBtn = document.getElementById('btn-end-conversation');
     var toggleBtn = document.getElementById('chat-toggle-replies');
 
     if (editor && sendBtn) {
-      editor.addEventListener('input', function () { sendBtn.disabled = editor.innerText.trim().length === 0; });
+      editor.addEventListener('input', function () {
+        var text = editor.innerText.trim();
+        sendBtn.disabled = (text.length === 0) || _sending;
+      });
       editor.addEventListener('keydown', function (e) {
         if (e.key === 'Enter' && !e.shiftKey) {
           e.preventDefault();
-          var text = editor.innerText.trim();
-          if (text) { _handleSend(text); editor.innerHTML = ''; sendBtn.disabled = true; }
+          _submitMessage(editor.innerText.trim());
         }
       });
     }
     if (sendBtn) {
       sendBtn.addEventListener('click', function () {
-        if (!editor) return;
-        var text = editor.innerText.trim();
-        if (text) { _handleSend(text); editor.innerHTML = ''; sendBtn.disabled = true; }
+        _submitMessage(editor ? editor.innerText.trim() : '');
       });
     }
     if (plusBtn) { plusBtn.addEventListener('click', function () { if (editor) editor.focus(); }); }
-    if (backBtn) { backBtn.addEventListener('click', function () { window.location.hash = 'chat'; }); }
-    if (endBtn) {
-      endBtn.addEventListener('click', function () {
-        if (confirm('确定要结束当前对话吗？已生成的草稿可以在整理页面查看。')) {
-          if (_activeSession) _activeSession.endSession();
-          window.location.hash = 'chat-review';
-        }
+
+    // 结束并整理按钮 → 进入整理确认页
+    if (endConvBtn) {
+      endConvBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        if (_activeSession) _activeSession.endSession();
+        window.location.hash = 'chat-review';
       });
     }
-    if (statusBar) { statusBar.addEventListener('click', function () { window.location.hash = 'chat-review'; }); }
+
     if (toggleBtn) {
       toggleBtn.addEventListener('click', function () {
         var replies = document.getElementById('chat-quick-replies');
@@ -662,11 +653,7 @@
         if (text === '另一件事') text = '还有另一件事想记录';
         else if (text === '补充刚才') text = '我想补充一下刚才说的';
         else if (text === '记录进步' || text === '记录一个进步') text = '想记录一个进步';
-        _handleSend(text);
-        var editor = document.getElementById('chat-editor');
-        if (editor) editor.innerHTML = '';
-        var sendBtn = document.getElementById('btn-chat-send');
-        if (sendBtn) sendBtn.disabled = true;
+        _submitMessage(text);
       });
     });
   }
@@ -728,11 +715,26 @@
    * 发送消息（流式渲染核心）
    * ========================================================== */
 
-  function _handleSend(text) {
-    var session = _activeSession;
-    if (!session) return;
+  /**
+   * 统一发送入口 — 所有发送路径（回车/按钮/快捷回复/重试）都走此方法
+   * 集中处理空消息校验、_sending 锁、按钮状态、清空输入框
+   */
+  function _submitMessage(text) {
+    if (_sending) return;
+    if (!text) return;
+    _sending = true;
     var editor = document.getElementById('chat-editor');
     var sendBtn = document.getElementById('btn-chat-send');
+    if (sendBtn) sendBtn.disabled = true;
+    if (editor) editor.innerHTML = '';
+    _handleSend(text);
+  }
+
+  function _handleSend(text) {
+    var session = _activeSession;
+    var editor = document.getElementById('chat-editor');
+    var sendBtn = document.getElementById('btn-chat-send');
+    if (!session) { _sending = false; if (sendBtn) sendBtn.disabled = false; if (editor) editor.contentEditable = 'true'; return; }
     if (editor) editor.contentEditable = 'false';
     if (sendBtn) sendBtn.disabled = true;
 
@@ -815,7 +817,7 @@
       var retryText = retryBtn.getAttribute('data-retry-text');
       if (!retryText) return;
       if (bubble.parentNode) bubble.parentNode.removeChild(bubble);
-      _handleSend(retryText);
+      _submitMessage(retryText);
     });
     return bubble;
   }
@@ -829,17 +831,21 @@
       _addSystemMsg('AI检测到记录要点，已自动生成草稿');
       _updateDraftCount();
     }
+    // 幂等：同一模块未丢弃草稿已存在时不再重复生成
     if (classification && classification.module && classification.confidence >= 0.3) {
-      var modMsgs = session.messages.filter(function (m) { return m.role === 'user' && m.module === classification.module; });
-      var existing = session.drafts.filter(function (d) { return d.module === classification.module && d.status !== 'discarded'; });
-      if (modMsgs.length >= 1 && existing.length === 0 && session.messages.length >= 2) {
-        var d = session.generateDraft(classification.module);
-        if (d) { _addDraftCard(d); _updateDraftCount(); }
+      var existingDraft = session.drafts.find(function (d) { return d.module === classification.module && d.status !== 'discarded'; });
+      if (!existingDraft) {
+        var modMsgs = session.messages.filter(function (m) { return m.role === 'user' && m.module === classification.module; });
+        if (modMsgs.length >= 1 && session.messages.length >= 2) {
+          var d = session.generateDraft(classification.module);
+          if (d) { _addDraftCard(d); _updateDraftCount(); }
+        }
       }
     }
   }
 
   function _restoreInput(editor, sendBtn) {
+    _sending = false;
     if (editor) { editor.contentEditable = 'true'; editor.focus(); }
     if (sendBtn) sendBtn.disabled = editor ? editor.innerText.trim().length === 0 : true;
   }
@@ -895,18 +901,38 @@
 
   function _updateSavingStatus(text) {
     var el = document.getElementById('status-draft-text');
-    if (el) el.textContent = text;
+    if (!el) return;
+    el.textContent = text;
+    if (text.indexOf('思考') !== -1 || text.indexOf('整理') !== -1) {
+      el.classList.add('processing');
+    } else {
+      el.classList.remove('processing');
+    }
   }
 
   function _updateDraftCount() {
     var count = _getActiveDraftCount();
     var statusBar = document.getElementById('status-bar-drafts');
     if (!statusBar) return;
-    var arrow = statusBar.querySelector('.chat-conv-status-arrow');
+
+    // 动态添加/更新「结束并整理」按钮
+    var endBtn = document.getElementById('btn-end-conversation');
     if (count > 0) {
-      if (!arrow) { arrow = document.createElement('div'); arrow.className = 'chat-conv-status-arrow'; statusBar.appendChild(arrow); }
-      arrow.textContent = count + ' 条草稿 ›';
-    } else { if (arrow) arrow.remove(); }
+      if (!endBtn) {
+        endBtn = document.createElement('button');
+        endBtn.className = 'chat-conv-end-btn';
+        endBtn.id = 'btn-end-conversation';
+        endBtn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          if (_activeSession) _activeSession.endSession();
+          window.location.hash = 'chat-review';
+        });
+        statusBar.appendChild(endBtn);
+      }
+      endBtn.textContent = '结束并整理 · ' + count + ' 条草稿';
+    } else {
+      if (endBtn) endBtn.remove();
+    }
   }
 
   function _showAllRecords() { _showToast('聊天记录功能即将上线'); }

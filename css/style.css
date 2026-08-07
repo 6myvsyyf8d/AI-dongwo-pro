@@ -168,11 +168,13 @@ a:hover { text-decoration: underline; }
 }
 
 .topbar-back {
-  font-size: 30px;
+  font-size: 14px;
+  font-weight: 500;
   color: var(--color-primary);
   cursor: pointer;
-  font-family: var(--font-display);
-  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .topbar-title {
@@ -180,6 +182,10 @@ a:hover { text-decoration: underline; }
   font-weight: 700;
   font-size: 17px;
   color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0 8px;
 }
 
 .topbar-quick {
@@ -191,14 +197,19 @@ a:hover { text-decoration: underline; }
 }
 
 .topbar-logout {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
   background: none;
   border: none;
   color: var(--text-muted);
   font-size: 0.75rem;
   cursor: pointer;
-  padding: 2px 4px;
+  padding: 4px 8px;
   border-radius: 6px;
   transition: var(--transition);
+  display: none;
 }
 .topbar-logout:hover {
   color: var(--color-danger);
@@ -696,6 +707,139 @@ a:hover { text-decoration: underline; }
   overflow-x: auto;
 }
 
+/* 档案页五大分类入口（全宽卡片列表） */
+.archive-main-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0;
+}
+
+.archive-main-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #FFFFFF;
+  border-radius: 12px;
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: var(--transition);
+  box-shadow: var(--shadow-card);
+  border: 1px solid #EFE1D9;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.archive-main-card:active {
+  transform: scale(0.98);
+  background: #FFF5F0;
+  border-color: var(--color-primary);
+}
+
+.archive-main-card.expanded {
+  border-color: var(--color-primary);
+  background: #FFF5F0;
+}
+
+.archive-main-card .main-icon {
+  font-size: 1.6rem;
+  line-height: 1;
+  flex-shrink: 0;
+  width: 36px;
+  text-align: center;
+}
+
+.archive-main-card .main-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.archive-main-card .main-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.archive-main-card .main-desc {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.archive-main-card .main-arrow {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.archive-main-card.expanded .main-arrow {
+  transform: rotate(90deg);
+}
+
+/* 展开子分类区域 */
+.archive-sub-section {
+  display: none;
+  padding: 4px 4px 8px 4px;
+  margin-bottom: 4px;
+}
+
+.archive-sub-section.open {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.archive-sub-card {
+  flex: 1 1 calc(50% - 4px);
+  min-width: 140px;
+  background: #FDFBF7;
+  border-radius: 10px;
+  padding: 12px;
+  cursor: pointer;
+  transition: var(--transition);
+  border: 1px solid #EFE1D9;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.archive-sub-card:active {
+  transform: scale(0.97);
+  background: #FFF5F0;
+  border-color: var(--color-primary);
+}
+
+.archive-sub-card .sub-icon {
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.archive-sub-card .sub-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.archive-sub-card .sub-count {
+  font-size: 0.65rem;
+  color: var(--color-primary);
+  font-weight: 500;
+}
+
+/* 辅助入口按钮组 */
+.archive-aux-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.archive-aux-row .btn {
+  flex: 1;
+  justify-content: center;
+  font-size: 0.82rem;
+}
+
 .nav-card {
   background: #FFFFFF;
   border-radius: 16px;
@@ -812,13 +956,13 @@ a:hover { text-decoration: underline; }
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: 3px;
   background: #D97757;
   color: #fff;
   border: none;
   border-radius: 24px;
-  padding: 8px 16px;
-  font-size: 0.82rem;
+  padding: 6px 10px;
+  font-size: 0.78rem;
   font-weight: 600;
   font-family: var(--font-body);
   cursor: pointer;
@@ -833,6 +977,15 @@ a:hover { text-decoration: underline; }
 }
 .nav-record-btn:active {
   transform: scale(0.96);
+}
+
+/* 窄屏（≤390px）：pill 更紧凑 */
+@media (max-width: 420px) {
+  .nav-record-btn {
+    padding: 5px 7px;
+    font-size: 0.7rem;
+    gap: 2px;
+  }
 }
 
 /* --- Content Cards (通用) --- */
