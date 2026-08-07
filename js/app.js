@@ -365,8 +365,8 @@
     }
 
     if (quickEl) {
-      // 速读卡入口：仅速读卡页面本身显示（返回参考）。档案内由子导航 Tab 提供，首页由导航卡片提供。
-      quickEl.style.display = (pageName === 'quickcard') ? 'block' : 'none';
+      // 速读卡入口已由子导航 Tab 提供，顶栏不再显示
+      quickEl.style.display = 'none';
     }
     // 退出按钮：「我的」页面显示；心青年无 profile 页，在首页/档案页显示
     var logoutEl = document.getElementById('btn-nav-logout');
