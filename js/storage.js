@@ -8,6 +8,8 @@
   var STORAGE_KEY = 'ai_dongwo_data';
   var INSTANCE_KEY_PREFIX = 'ai_dongwo_task_instances_';
   var DATA_VERSION = 9;
+  // 当前登录用户用 sessionStorage，关闭标签页即清空，新访客看到登录页
+  var CURRENT_USER_KEY = 'ai_dongwo_current_user';
 
   // 协作网络存储键
   var GRANTS_KEY = 'ai_dongwo_grants';
@@ -681,11 +683,24 @@
     },
 
     getCurrentUser: function () {
-      var data = this.load();
-      return data ? data.currentUser : null;
+      // 优先从 sessionStorage 读取（关闭标签页后自动清除）
+      try {
+        var sess = sessionStorage.getItem(CURRENT_USER_KEY);
+        if (sess) return JSON.parse(sess);
+      } catch (e) {}
+      return null;
     },
 
     setCurrentUser: function (user) {
+      // 存入 sessionStorage（不持久化登录态，每次打开新标签需重新登录）
+      try {
+        if (user) {
+          sessionStorage.setItem(CURRENT_USER_KEY, JSON.stringify(user));
+        } else {
+          sessionStorage.removeItem(CURRENT_USER_KEY);
+        }
+      } catch (e) {}
+      // 同时在主数据中也记录 currentUser（兼容其他读取路径）
       var data = this.load();
       if (!data) { data = { version: DATA_VERSION, currentUser: user, users: [], records: [] }; }
       else { data.currentUser = user; }
