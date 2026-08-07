@@ -159,8 +159,8 @@
       btn.addEventListener('click', function () {
         var tag = this.getAttribute('data-tag');
         var idx = selectedTags.indexOf(tag);
-        if (idx >= 0) selectedTags.splice(idx, 1);
-        else if (selectedTags.length < 2) selectedTags.push(tag);
+        if (idx >= 0) { selectedTags.splice(idx, 1); }
+        else { selectedTags.length = 0; selectedTags.push(tag); }
         rerender();
       });
     });

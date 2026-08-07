@@ -285,10 +285,11 @@
     html += '</div>';
 
     // 系统账号区域（可折叠）
+    var sysUsers = allUsers.filter(function (u) { return u.role === 'government' || u.role === 'admin'; });
     html += '<div style="border-top:1px solid #f0f0f0;margin-top:12px;padding-top:12px;">';
     html += '  <div id="system-users-toggle" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;margin-bottom:8px;">';
     html += '    <span style="font-size:0.82rem;color:#999;font-weight:500;">🏛️ 系统账号</span>';
-    html += '    <span style="font-size:0.75rem;color:#bbb;" id="system-users-arrow">展开 ▾</span>';
+    html += '    <span style="font-size:0.75rem;color:#bbb;" id="system-users-arrow" data-count="' + sysUsers.length + '">' + sysUsers.length + '人 ▾</span>';
     html += '  </div>';
     html += '  <div id="system-users-body" style="display:none;">';
     var sysUsers = allUsers.filter(function (u) { return u.role === 'government' || u.role === 'admin'; });
@@ -708,7 +709,7 @@
           if (arrow) arrow.textContent = '收起 ▴';
         } else {
           body.style.display = 'none';
-          if (arrow) arrow.textContent = '展开 ▾';
+          if (arrow) arrow.textContent = (arrow.getAttribute('data-count') || '2') + '人 ▾';
         }
       });
     }
@@ -727,7 +728,7 @@
       } else if (e.target.closest('#admin-btn-import')) {
         handleImport();
       } else if (e.target.closest('#admin-btn-settings')) {
-        showSettingsModal(user);
+        window.location.hash = 'admin-users';
       } else if (e.target.closest('#admin-btn-reset')) {
         if (confirm('⚠️ 高风险操作：确定要重置所有数据吗？\n\n这将清除所有用户、记录、授权关系。\n此操作不可恢复，建议先导出备份。')) {
           if (confirm('再次确认：真的要重置所有数据吗？')) {
