@@ -990,13 +990,13 @@
       html += '  </div>';
       html += '  <div class="twb-ring-info">';
       html += '    <div class="twb-ring-stat">' + done + ' / ' + total + ' 项已完成</div>';
-      // 前 3 项今日任务
+      // 前 3 项今日任务 — 点击可打卡
       todayRoutine.slice(0, 3).forEach(function(item) {
         var inst = item.instance;
         var task = item.task;
         var isDone = inst.status === 'done';
-        html += '    <div class="twb-task-item' + (isDone ? ' twb-done' : '') + '">';
-        html += '      <span class="twb-task-dot" style="' + (isDone ? 'background:#5B9B6F' : 'background:#E8A547') + '"></span>';
+        html += '    <div class="twb-task-item twb-checkable' + (isDone ? ' twb-done' : '') + '" data-instance-id="' + inst.id + '" data-task-name="' + (task.name || task.title || '') + '">';
+        html += '      <span class="twb-task-check">' + (isDone ? '✅' : '⭕') + '</span>';
         html += '      <span class="twb-task-name">' + (task.name || task.title || '') + '</span>';
         html += '    </div>';
       });
@@ -1044,6 +1044,32 @@
         window.location.hash = 'chat-review';
       });
     }
+
+    // ===== 绑定任务打卡事件 =====
+    container.querySelectorAll('.twb-checkable').forEach(function(item) {
+      item.addEventListener('click', function() {
+        var instanceId = this.getAttribute('data-instance-id');
+        var taskName = this.getAttribute('data-task-name') || '任务';
+        var isDone = this.classList.contains('twb-done');
+        var todayStr = getTodayString();
+
+        if (isDone) {
+          // 撤销打卡
+          DataStore.updateTaskInstance(instanceId, todayStr, { status: 'pending' });
+          // 删除打卡记录
+          var records = DataStore.getRecords();
+          records.filter(function(r) { return r.source === 'task_checkin' && r._instanceId === instanceId; })
+            .forEach(function(r) { DataStore.deleteRecord(r.id); });
+        } else {
+          // 完成打卡
+          DataStore.updateTaskInstance(instanceId, todayStr, { status: 'done' });
+          // 生成打卡记录
+          try { logTaskCompletion(instanceId, todayStr); } catch(e) {}
+        }
+        // 重新渲染今日工作台
+        renderTodayWorkbench(role);
+      });
+    });
   }
 
   function getRoleCards(role) {

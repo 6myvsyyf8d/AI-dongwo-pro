@@ -597,6 +597,26 @@ a:hover { text-decoration: underline; }
   text-decoration: line-through;
 }
 
+/* 可打卡任务项 */
+.twb-checkable {
+  cursor: pointer;
+  user-select: none;
+  border-radius: 8px;
+  padding: 6px 8px !important;
+  margin: 0 -8px;
+  transition: background 0.15s;
+}
+.twb-checkable:hover {
+  background: rgba(0,0,0,0.04);
+}
+.twb-checkable:active {
+  background: rgba(0,0,0,0.08);
+}
+.twb-task-check {
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
 .twb-task-dot {
   width: 6px;
   height: 6px;
