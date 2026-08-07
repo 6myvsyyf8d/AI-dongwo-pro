@@ -23,24 +23,30 @@
   var _session = null;
   var _tts = null;
   var _msgCounter = 0;
+  var _origGenerateReply = null; // 保存原始 Provider.generateReply，离开时恢复
 
-  // ======== 情绪 emoji 按钮配置 ========
-  var EMOJI_BUTTONS = [
-    { id: 'happy',   emoji: '😊', label: '开心', color: '#FFB84D' },
-    { id: 'sad',     emoji: '😢', label: '难过', color: '#87CEEB' },
-    { id: 'angry',   emoji: '😠', label: '生气', color: '#E87DA0' },
-    { id: 'worried', emoji: '😰', label: '担心', color: '#C4A2E6' },
-    { id: 'calm',    emoji: '😌', label: '放松', color: '#7EC8A0' }
+  // ======== 心青年本人使用的友好问题池 ========
+  // 与 supporter 模板不同：直接问本人，不提第三者名字，不使用照护者话术
+  var YOUTH_SELF_QUESTIONS = [
+    '今天过得怎么样呀？',
+    '有没有什么开心的事想和我分享？',
+    '今天吃了什么好吃的呀？',
+    '最近有没有学到什么新东西？',
+    '有什么事情让你觉得有点难吗？',
+    '今天和别人聊天还顺利吗？',
+    '最近做了什么让你觉得特别棒的事？',
+    '你最喜欢做什么事情呀？',
+    '今天心情怎么样？用一个表情告诉我也可以~',
+    '有没有想去的地方或者想做的事？',
+    '你能告诉我更多吗？我很想听~',
+    '原来是这样呀，然后呢？'
   ];
 
-  // ======== 快捷回复配置 ========
-  var QUICK_REPLIES = [
-    { id: 'did',     text: '我今天做了...',   icon: '📝' },
-    { id: 'want',    text: '我想...',         icon: '💭' },
-    { id: 'dislike', text: '我不喜欢...',     icon: '😣' },
-    { id: 'like',    text: '我喜欢...',       icon: '❤️' },
-    { id: 'feel',    text: '我感觉...',       icon: '💬' },
-    { id: 'help',    text: '我需要帮助',      icon: '🤲' }
+  // ======== 快捷表达按钮（3 个核心表达） ========
+  var QUICK_PHRASES = [
+    { text: '我有点紧张',   emoji: '💛' },
+    { text: '今天很开心',   emoji: '😊' },
+    { text: '我需要帮助',   emoji: '🤲' }
   ];
 
   // ======== 移动端防缩放 ========
@@ -161,10 +167,10 @@
     if (!btn) return;
     if (_tts.enabled) {
       btn.className = 'youth-tts-toggle on';
-      btn.textContent = '🔊';
+      btn.textContent = '声音开 🔊';
     } else {
       btn.className = 'youth-tts-toggle off';
-      btn.textContent = '🔇';
+      btn.textContent = '声音关';
     }
   }
 
@@ -244,59 +250,56 @@
 
     section.innerHTML = '';
 
-    // 顶部栏
+    // 顶部栏 — 返回按钮（文字+44px）+ 标题 + 声音开关
     var topbarHTML = '<div class="youth-topbar">';
-    topbarHTML += '<button class="youth-back-btn" id="youth-back-btn" title="返回首页">←</button>';
+    topbarHTML += '<button class="youth-back-btn" id="youth-back-btn">← 返回</button>';
     topbarHTML += '<div class="youth-topbar-title">';
-    topbarHTML += '<div class="youth-avatar">🤖</div>';
-    topbarHTML += '<span>AI聊聊</span>';
+    topbarHTML += '<span class="youth-avatar">❤️</span>';
+    topbarHTML += '<span>和小爱说说话</span>';
     topbarHTML += '</div>';
-    topbarHTML += '<div class="youth-topbar-actions" style="margin-left:auto;">';
-    topbarHTML += '<button class="youth-tts-toggle on" id="youth-tts-toggle">🔊</button>';
+    topbarHTML += '<div class="youth-topbar-actions">';
+    topbarHTML += '<button class="youth-tts-toggle on" id="youth-tts-toggle">声音开 🔊</button>';
     topbarHTML += '</div>';
     topbarHTML += '</div>';
 
-    // 消息区域
+    // 消息区域 — 简洁欢迎语
     var messagesHTML = '<div class="youth-messages" id="youth-messages">';
     messagesHTML += '<div class="youth-welcome">';
-    messagesHTML += '<div class="youth-welcome-emoji">👋</div>';
-    messagesHTML += '<div class="youth-welcome-title">你好呀，' + escapeHtml(youthName) + '！</div>';
-    messagesHTML += '<div class="youth-welcome-sub">想说什么就告诉我吧<br>可以点下面的表情告诉我你的心情 😊</div>';
+    messagesHTML += '<div class="youth-welcome-icon">💛</div>';
+    messagesHTML += '<div class="youth-welcome-title">' + escapeHtml(youthName) + '，今天好吗？</div>';
+    messagesHTML += '<div class="youth-welcome-sub">点下面的按钮告诉我你的感受，<br>也可以自己打字说说今天的事</div>';
     messagesHTML += '</div>';
     messagesHTML += '</div>';
 
-    // 心情 emoji 按钮
-    var emojiHTML = '<div class="youth-emoji-bar" id="youth-emoji-bar">';
-    EMOJI_BUTTONS.forEach(function (btn) {
-      emojiHTML += '<button class="youth-emoji-btn ' + btn.id + '" data-mood="' + btn.id + '" data-text="我现在' + btn.label + '">';
-      emojiHTML += '<span class="emoji-icon">' + btn.emoji + '</span>';
-      emojiHTML += '<span class="emoji-label">' + btn.label + '</span>';
-      emojiHTML += '</button>';
+    // 快捷表达按钮 + 输入区 — 固定底部
+    var bottomHTML = '<div class="youth-bottom-area">';
+
+    // 快捷表达按钮（3 个核心表达，点击直接发送）
+    bottomHTML += '<div class="youth-quick-bar" id="youth-quick-bar">';
+    QUICK_PHRASES.forEach(function (qp) {
+      bottomHTML += '<button class="youth-quick-btn" data-text="' + escapeHtml(qp.text) + '">';
+      bottomHTML += '<span class="quick-emoji">' + qp.emoji + '</span>';
+      bottomHTML += '<span class="quick-text">' + escapeHtml(qp.text) + '</span>';
+      bottomHTML += '</button>';
     });
-    emojiHTML += '</div>';
+    bottomHTML += '</div>';
 
-    // 快捷回复按钮
-    var quickHTML = '<div class="youth-quick-replies" id="youth-quick-replies">';
-    QUICK_REPLIES.forEach(function (qr) {
-      quickHTML += '<button class="youth-quick-btn" data-text="' + escapeHtml(qr.text) + '">';
-      quickHTML += '<span>' + qr.icon + '</span>';
-      quickHTML += '<span>' + escapeHtml(qr.text) + '</span>';
-      quickHTML += '</button>';
-    });
-    quickHTML += '</div>';
+    // 底部输入区 — 文字输入 + 语音按钮 + 发送按钮
+    bottomHTML += '<div class="youth-input-area">';
+    bottomHTML += '<div class="youth-toast" id="youth-toast" style="display:none;"></div>';
+    bottomHTML += '<textarea class="youth-text-input" id="youth-text-input"';
+    bottomHTML += ' placeholder="想说点什么..."';
+    bottomHTML += ' rows="1"';
+    bottomHTML += ' inputmode="text"';
+    bottomHTML += ' autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"';
+    bottomHTML += '></textarea>';
+    bottomHTML += '<button class="youth-voice-btn" id="youth-voice-btn">🎤 按住说话</button>';
+    bottomHTML += '<button class="youth-send-btn" id="youth-send-btn" disabled>发送</button>';
+    bottomHTML += '</div>';
 
-    // 底部输入区
-    var inputHTML = '<div class="youth-input-area">';
-    inputHTML += '<textarea class="youth-text-input" id="youth-text-input"';
-    inputHTML += ' placeholder="在这里打字或点上面的按钮..."';
-    inputHTML += ' rows="1"';
-    inputHTML += ' inputmode="text"';
-    inputHTML += ' autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"';
-    inputHTML += '></textarea>';
-    inputHTML += '<button class="youth-send-btn" id="youth-send-btn" disabled>➤</button>';
-    inputHTML += '</div>';
+    bottomHTML += '</div>';
 
-    section.innerHTML = topbarHTML + messagesHTML + emojiHTML + quickHTML + inputHTML;
+    section.innerHTML = topbarHTML + messagesHTML + bottomHTML;
   }
 
   // ======== 绑定事件 ========
@@ -318,27 +321,10 @@
       });
     }
 
-    // Emoji 心情按钮
-    var emojiBar = document.getElementById('youth-emoji-bar');
-    if (emojiBar) {
-      emojiBar.addEventListener('click', function (e) {
-        var btn = e.target.closest('.youth-emoji-btn');
-        if (!btn) return;
-        var text = btn.getAttribute('data-text');
-        if (text) {
-          // 震动反馈（如果支持）
-          if (navigator.vibrate) {
-            navigator.vibrate(15);
-          }
-          sendMessage(text);
-        }
-      });
-    }
-
-    // 快捷回复按钮
-    var quickReplies = document.getElementById('youth-quick-replies');
-    if (quickReplies) {
-      quickReplies.addEventListener('click', function (e) {
+    // 快捷表达按钮 — 点击直接发送
+    var quickBar = document.getElementById('youth-quick-bar');
+    if (quickBar) {
+      quickBar.addEventListener('click', function (e) {
         var btn = e.target.closest('.youth-quick-btn');
         if (!btn) return;
         var text = btn.getAttribute('data-text');
@@ -346,15 +332,7 @@
           if (navigator.vibrate) {
             navigator.vibrate(15);
           }
-          // 聚焦到输入框预填文本
-          var input = document.getElementById('youth-text-input');
-          if (input) {
-            input.value = text;
-            input.focus();
-            // 将光标移到末尾
-            input.setSelectionRange(text.length, text.length);
-            updateSendButton();
-          }
+          sendMessage(text);
         }
       });
     }
@@ -390,6 +368,111 @@
         if (text) sendMessage(text);
       });
     }
+
+    // 语音输入
+    _bindVoiceInput();
+  }
+
+  // ======== Toast 提示 ========
+  function _showToast(msg, duration) {
+    var toast = document.getElementById('youth-toast');
+    if (!toast) return;
+    toast.textContent = msg;
+    toast.style.display = 'block';
+    clearTimeout(toast._timeout);
+    toast._timeout = setTimeout(function () {
+      toast.style.display = 'none';
+    }, duration || 3000);
+  }
+
+  // ======== 语音输入（Web Speech API） ========
+  function _bindVoiceInput() {
+    var voiceBtn = document.getElementById('youth-voice-btn');
+    if (!voiceBtn) return;
+
+    var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    // 浏览器不支持：按钮保留，点击提示
+    if (!SpeechRecognition) {
+      voiceBtn.addEventListener('click', function () {
+        _showToast('当前浏览器暂不支持语音输入，请使用文字输入或更换浏览器', 4000);
+      });
+      return;
+    }
+
+    var recognition = new SpeechRecognition();
+    recognition.lang = 'zh-CN';
+    recognition.interimResults = false;
+    recognition.continuous = false;
+    recognition.maxAlternatives = 1;
+
+    var isRecording = false;
+    var finalTranscript = '';
+
+    recognition.onresult = function (event) {
+      // 只取最终结果
+      for (var i = event.resultIndex; i < event.results.length; i++) {
+        if (event.results[i].isFinal) {
+          finalTranscript = event.results[i][0].transcript.trim();
+        }
+      }
+    };
+
+    recognition.onend = function () {
+      isRecording = false;
+      voiceBtn.classList.remove('recording');
+      voiceBtn.textContent = '🎤 按住说话';
+
+      // 有最终识别结果时发送
+      if (finalTranscript) {
+        var text = finalTranscript;
+        finalTranscript = '';
+        sendMessage(text);
+      }
+    };
+
+    recognition.onerror = function (event) {
+      console.warn('[YouthChat] 语音识别错误:', event.error);
+      isRecording = false;
+      voiceBtn.classList.remove('recording');
+      voiceBtn.textContent = '🎤 按住说话';
+      finalTranscript = '';
+
+      if (event.error === 'not-allowed') {
+        _showToast('需要允许使用麦克风，才能听到你说话', 4000);
+      } else if (event.error === 'aborted' || event.error === 'no-speech') {
+        _showToast('没有听清，可以再说一次，也可以打字', 3000);
+      } else {
+        _showToast('没有听清，可以再说一次，也可以打字', 3000);
+      }
+    };
+
+    function startRecord(e) {
+      e.preventDefault();
+      if (isRecording) return;
+      try {
+        recognition.start();
+        isRecording = true;
+        finalTranscript = '';
+        voiceBtn.classList.add('recording');
+        voiceBtn.textContent = '正在听…';
+      } catch (err) {
+        console.warn('[YouthChat] 启动语音识别失败:', err);
+      }
+    }
+
+    function stopRecord(e) {
+      e.preventDefault();
+      if (isRecording) {
+        try { recognition.stop(); } catch (err) {}
+      }
+    }
+
+    voiceBtn.addEventListener('mousedown', startRecord);
+    voiceBtn.addEventListener('mouseup', stopRecord);
+    voiceBtn.addEventListener('mouseleave', stopRecord);
+    voiceBtn.addEventListener('touchstart', startRecord, { passive: false });
+    voiceBtn.addEventListener('touchend', stopRecord, { passive: false });
   }
 
   function updateSendButton() {
@@ -407,6 +490,39 @@
 
     // 创建新会话
     _session = ChatBot.createSession(youthId);
+
+    // Monkey-patch Provider.generateReply：心青年本人使用时，替换为直接问本人的友好回复，
+    // 避免出现 supporter 模板的 "最近和小雨沟通的时候，你觉得什么方式最有效？" 等照护者话术
+    if (!_origGenerateReply) {
+      var Provider = window.ChatbotProviders && window.ChatbotProviders.TemplateProvider;
+      if (Provider) {
+        _origGenerateReply = Provider.generateReply;
+        Provider.generateReply = function (messages, youthProfile) {
+          var name = (youthProfile && youthProfile.name) || '小雨';
+          var userMsgs = messages.filter(function (m) { return m.role === 'user'; });
+
+          // 欢迎消息
+          if (userMsgs.length === 0) {
+            var now = new Date();
+            var hour = now.getHours();
+            var greeting = '早上好';
+            if (hour >= 12 && hour < 18) greeting = '下午好';
+            if (hour >= 18) greeting = '晚上好';
+            return greeting + '，' + name + '！今天感觉怎么样？你可以告诉我你的心情，也可以和我说说今天做了什么~';
+          }
+
+          // 对话太长时温柔结束
+          var aiMsgs = messages.filter(function (m) { return m.role === 'ai'; });
+          if (aiMsgs.length >= 5) {
+            return '和你聊天真开心！我先帮你记下来，我们下次再聊哦~';
+          }
+
+          // 轮转心青年友好问题
+          var q = YOUTH_SELF_QUESTIONS[aiMsgs.length % YOUTH_SELF_QUESTIONS.length];
+          return q;
+        };
+      }
+    }
 
     // 初始化 TTS
     if (_tts) {
@@ -493,6 +609,15 @@
     destroy: function () {
       restoreViewport();
 
+      // 恢复原始 Provider.generateReply
+      if (_origGenerateReply) {
+        var Provider = window.ChatbotProviders && window.ChatbotProviders.TemplateProvider;
+        if (Provider) {
+          Provider.generateReply = _origGenerateReply;
+        }
+        _origGenerateReply = null;
+      }
+
       // 恢复全局 UI 元素
       var topbar = document.getElementById('app-topbar');
       var bottomNav = document.getElementById('bottom-nav');
@@ -506,6 +631,7 @@
         _tts = null;
       }
       _session = null;
+      _msgCounter = 0;
     }
   };
 

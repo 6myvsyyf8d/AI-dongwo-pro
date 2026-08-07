@@ -140,7 +140,6 @@
       }
 
       var draftCount = _getActiveDraftCount();
-      var voiceSupported = _isVoiceSupported();
       var youthName = _getYouthName();
 
       container.innerHTML = ''
@@ -163,14 +162,14 @@
         + '  <div class="chat-conv-input-area">'
         + '    <button class="chat-conv-btn-plus" id="btn-chat-plus">＋</button>'
         + '    <div class="chat-conv-editor" id="chat-editor" contenteditable="true" data-placeholder="说说今天发生的事…"></div>'
-        + (voiceSupported ? '    <button class="chat-conv-btn-voice" id="btn-chat-voice" title="按住录音">🎤</button>' : '')
+        + '    <button class="chat-conv-btn-voice" id="btn-chat-voice" title="按住录音">🎤</button>'
         + '    <button class="chat-conv-btn-send" id="btn-chat-send" disabled>➤</button>'
         + '  </div>'
         + '</div>';
 
       _bindInputEvents();
       _bindQuickReplies();
-      if (voiceSupported) _bindVoiceInput();
+      _bindVoiceInput();
       _scrollToBottom();
     },
 
@@ -667,7 +666,17 @@
     if (!voiceBtn) return;
 
     var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) return;
+
+    // 浏览器不支持：按钮保留，点击提示
+    if (!SpeechRecognition) {
+      voiceBtn.style.opacity = '0.5';
+      voiceBtn.title = '当前浏览器不支持语音输入';
+      voiceBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        _showToast('当前浏览器暂不支持语音输入，请使用文字输入');
+      });
+      return;
+    }
 
     var recognition = new SpeechRecognition();
     recognition.lang = 'zh-CN';
@@ -690,7 +699,11 @@
       console.warn('语音识别错误:', event.error);
       isRecording = false;
       voiceBtn.classList.remove('recording');
-      if (event.error === 'aborted' || event.error === 'no-speech') _showToast('未识别到语音');
+      if (event.error === 'not-allowed') {
+        _showToast('需要允许使用麦克风，才能使用语音输入');
+      } else if (event.error === 'aborted' || event.error === 'no-speech') {
+        _showToast('未识别到语音');
+      }
     };
     recognition.onend = function () { isRecording = false; voiceBtn.classList.remove('recording'); };
 
