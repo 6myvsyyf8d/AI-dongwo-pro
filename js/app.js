@@ -384,8 +384,8 @@
     var quickEl = Utils.dom.get('topbar-quick');
     if (backEl) {
       Utils.dom.on(backEl, 'click', function () {
-        // 导航栈回溯，回用户实际来源页；栈空时回 PAGE_BACK_PARENT → PAGE_PARENT → archive
-        var prevPage = navHistory.pop();
+        // peek 栈顶（不提前 pop），由 navigateTo() 统一处理栈管理，避免 B↔C 往返
+        var prevPage = navHistory.length ? navHistory[navHistory.length - 1] : null;
         if (prevPage) {
           window.location.hash = prevPage;
         } else {
@@ -526,8 +526,9 @@
     // 根据页面类型调用对应渲染函数（传入查询参数）
     renderPage(basePage, queryParams);
 
-    // 应用当前角色的隐私设置
-    window.Permissions.applyPrivacy(currentRole);
+    // 应用当前角色的隐私设置（始终取最新角色，避免缓存过期）
+    var activeUser = DataStore.getCurrentUser() || appState.currentUser;
+    window.Permissions.applyPrivacy(activeUser ? activeUser.role : currentRole);
 
     // FAB 可见性：主题详情页 + 档案主题列表页隐藏
     var fabHidePages = ['life', 'communication', 'emotion', 'care', 'work', 'relations'];
@@ -4163,8 +4164,8 @@
     // 初始化路由系统
     initRouter();
 
-    // 应用当前角色的隐私设置
-    window.Permissions.applyPrivacy(currentRole);
+    // 应用当前角色的隐私设置（取最新角色值）
+    window.Permissions.applyPrivacy(appState.currentRole);
 
     // FAB 可见性：主题详情页 + 档案主题列表页隐藏
     var fabHidePages = ['life', 'communication', 'emotion', 'care', 'work', 'relations'];
