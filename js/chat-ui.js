@@ -733,9 +733,9 @@
 
   function _handleSend(text) {
     var session = _activeSession;
-    if (!session) return;
     var editor = document.getElementById('chat-editor');
     var sendBtn = document.getElementById('btn-chat-send');
+    if (!session) { _sending = false; if (sendBtn) sendBtn.disabled = false; if (editor) editor.contentEditable = 'true'; return; }
     if (editor) editor.contentEditable = 'false';
     if (sendBtn) sendBtn.disabled = true;
 

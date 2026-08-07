@@ -159,6 +159,14 @@
       window.location.hash = 'login';
       return;
     }
+    // 权限拦截：临时支持者 — 防御层（navigateTo 内也有一层）
+    if (user && user.role === 'temp_supporter') {
+      var allowedPages = ['supporter-card', 'quick-start', 'login', 'quick-record'];
+      if (allowedPages.indexOf(hash) === -1) {
+        window.location.hash = 'supporter-card';
+        return;
+      }
+    }
     // 已登录且 hash 为空时，使用角色默认落地页
     if (user && !hash) {
       hash = ROLE_DEFAULT_PAGES[user.role] || 'home';
