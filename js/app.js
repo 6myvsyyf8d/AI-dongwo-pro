@@ -59,6 +59,19 @@
   var currentQuickCardVersion = window.AppState.currentQuickCardVersion;
   var addRecordState = window.AppState.addRecordState;
   var navHistory = []; // 导航栈，用于返回按钮回溯来源页
+
+  function _loadNavHistory() {
+    try {
+      var raw = sessionStorage.getItem('ai_dongwo_nav_history');
+      if (raw) { navHistory = JSON.parse(raw); }
+    } catch (e) { navHistory = []; }
+  }
+
+  function _saveNavHistory() {
+    try {
+      sessionStorage.setItem('ai_dongwo_nav_history', JSON.stringify(navHistory));
+    } catch (e) { /* quota exceeded, silently skip */ }
+  }
   var timelineFilters = window.AppState.timelineFilters;
   var chatState = window.AppState.chatState;
   var calendarState = window.AppState.calendarState;
@@ -493,6 +506,7 @@
         navHistory.push(currentPage);
       }
       if (navHistory.length > 20) navHistory.shift();
+      _saveNavHistory();
     }
     currentPage = basePage;
     appState.currentPage = basePage;
@@ -4143,6 +4157,14 @@
   function initApp() {
     // 初始化数据存储
     DataStore.init();
+
+    // 恢复导航历史（持久化到 sessionStorage，刷新不丢失）
+    _loadNavHistory();
+
+    // 同步 currentPage，避免 navigateTo 首次调用时将当前页误压栈
+    var initHash = window.location.hash.replace('#', '') || 'home';
+    currentPage = initHash;
+    appState.currentPage = initHash;
 
     // 加载当前用户
     var user = DataStore.getCurrentUser();
