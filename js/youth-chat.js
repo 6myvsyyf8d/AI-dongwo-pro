@@ -123,7 +123,6 @@
 
   // ======== 创建流式气泡（API 实时回复用） ========
   function renderStreamBubble(id) {
-    hideTyping();
     var container = document.getElementById('youth-messages');
     if (!container) return null;
     var row = document.createElement('div');
@@ -131,10 +130,10 @@
     row.setAttribute('data-msg-id', id);
     var bubble = document.createElement('div');
     bubble.className = 'youth-bubble youth-streaming';
-    bubble.textContent = '';
+    bubble.textContent = '...';
     row.appendChild(bubble);
     container.appendChild(row);
-    scrollToBottom();
+    requestAnimationFrame(function () { scrollToBottom(); });
     return bubble;
   }
 
@@ -242,10 +241,11 @@
         _session.messages, youthProfile,
         // onChunk
         function (chunk, fullText) {
+          hideTyping();
           if (streamBubble) {
             streamBubble.textContent = fullText || chunk;
           }
-          scrollToBottom();
+          requestAnimationFrame(function () { scrollToBottom(); });
         },
         // onDone
         function (finalText) {
@@ -323,7 +323,7 @@
     topbarHTML += '<button class="youth-back-btn" id="youth-back-btn">← 返回</button>';
     topbarHTML += '<div class="youth-topbar-title">';
     topbarHTML += '<span class="youth-avatar">❤️</span>';
-    topbarHTML += '<span>和小爱说说话</span>';
+    topbarHTML += '<span>和小懂说说话</span>';
     topbarHTML += '</div>';
     topbarHTML += '<div class="youth-topbar-actions">';
     topbarHTML += '<button class="youth-tts-toggle on" id="youth-tts-toggle">声音开 🔊</button>';
@@ -335,7 +335,7 @@
     messagesHTML += '<div class="youth-welcome">';
     messagesHTML += '<div class="youth-welcome-icon">💛</div>';
     messagesHTML += '<div class="youth-welcome-title">' + escapeHtml(youthName) + '，今天好吗？</div>';
-    messagesHTML += '<div class="youth-welcome-sub">点下面的按钮告诉我你的感受，<br>也可以自己打字说说今天的事</div>';
+    messagesHTML += '<div class="youth-welcome-sub">告诉我你的感受，<br>也可以打字说说今天的事</div>';
     messagesHTML += '</div>';
     messagesHTML += '</div>';
 
@@ -576,7 +576,7 @@
             var greeting = '早上好';
             if (hour >= 12 && hour < 18) greeting = '下午好';
             if (hour >= 18) greeting = '晚上好';
-            return greeting + '，' + name + '！今天感觉怎么样？你可以告诉我你的心情，也可以和我说说今天做了什么~';
+            return greeting + '，' + name + '~';
           }
 
           // 对话太长时温柔结束
@@ -612,7 +612,7 @@
     if (hour >= 12 && hour < 18) timeGreeting = '下午好';
     if (hour >= 18) timeGreeting = '晚上好';
 
-    var welcomeText = timeGreeting + '，' + name + '！今天感觉怎么样？你可以告诉我你的心情，也可以和我说说今天做了什么~';
+    var welcomeText = timeGreeting + '，' + name + '~';
 
     var aiMsgId = msgId();
     renderBubble('ai', welcomeText, aiMsgId);

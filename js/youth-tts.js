@@ -19,8 +19,8 @@
     this.pendingQueue = [];    // 待朗读消息队列
     this.currentMsgId = null;  // 当前正在朗读的消息ID
     this.voice = null;         // 选中的中文语音
-    this.rate = 0.9;           // 语速稍慢，适合心青年
-    this.pitch = 1.0;
+    this.rate = 0.85;          // 语速稍慢，更自然
+    this.pitch = 1.05;         // 语调微升，更温暖
     this.volume = 1.0;
     this._initVoice();
   }
@@ -46,31 +46,55 @@
    */
   YouthTTS.prototype._pickChineseVoice = function () {
     var voices = synth.getVoices();
-    // 优先级：zh-CN 女性 > zh-CN > zh > 第一个
     var preferred = null;
+
+    // 优先级 1：高质量中文女声（Tingting/Xiaoxiao/Neural/Premium）
+    var neuralPatterns = ['Tingting', 'Xiaoxiao', 'Yunyang', 'Xiaoyi', 'Neural', 'Premium'];
     for (var i = 0; i < voices.length; i++) {
       var v = voices[i];
-      if (v.lang === 'zh-CN' && v.name.indexOf('Female') !== -1) {
-        preferred = v;
-        break;
+      if (v.lang.indexOf('zh') === 0) {
+        for (var p = 0; p < neuralPatterns.length; p++) {
+          if (v.name.indexOf(neuralPatterns[p]) !== -1) {
+            preferred = v;
+            break;
+          }
+        }
+        if (preferred) break;
       }
     }
+
+    // 优先级 2：zh-CN 女性
     if (!preferred) {
       for (var j = 0; j < voices.length; j++) {
-        if (voices[j].lang.indexOf('zh-CN') === 0) {
-          preferred = voices[j];
+        var v2 = voices[j];
+        if (v2.lang === 'zh-CN' && (v2.name.indexOf('Female') !== -1 || v2.name.indexOf('女') !== -1)) {
+          preferred = v2;
           break;
         }
       }
     }
+
+    // 优先级 3：任意 zh-CN
     if (!preferred) {
       for (var k = 0; k < voices.length; k++) {
-        if (voices[k].lang.indexOf('zh') === 0) {
+        if (voices[k].lang.indexOf('zh-CN') === 0) {
           preferred = voices[k];
           break;
         }
       }
     }
+
+    // 优先级 4：任意中文
+    if (!preferred) {
+      for (var m = 0; m < voices.length; m++) {
+        if (voices[m].lang.indexOf('zh') === 0) {
+          preferred = voices[m];
+          break;
+        }
+      }
+    }
+
+    // 兜底：第一个可用语音
     if (!preferred && voices.length > 0) {
       preferred = voices[0];
     }
