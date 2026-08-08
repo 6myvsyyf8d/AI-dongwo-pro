@@ -48,12 +48,14 @@
 
     /**
      * 检查 API 是否已配置
-     * 线上走 Cloudflare Functions 代理（Key 在服务器端），始终视为已配置
+     * CF Pages 上走 Functions 代理（Key 在服务端），始终视为已配置
      */
     isConfigured: function () {
       var host = window.location.hostname;
       if (host !== 'localhost' && host !== '127.0.0.1') {
-        return true; // 线上由 /api/chat 代理处理
+        if (host.indexOf('.pages.dev') !== -1) {
+          return true; // CF Pages 由 /api/chat 代理处理
+        }
       }
       return !!(this.config.apiKey && this.config.apiKey.length > 10);
     },
@@ -167,14 +169,22 @@
     },
 
     /**
-     * 获取 API 端点：线上走代理 /api/chat，本地直连智谱
+     * 获取 API 端点
+     * - 本地：直连智谱（用 localStorage 中的 Key）
+     * - Cloudflare Pages：走 /api/chat 代理（Key 在服务端环境变量）
+     * - 其他线上（GitHub Pages 等）：直连智谱（用 localStorage 中的 Key）
      */
     _getEndpoint: function () {
       var host = window.location.hostname;
       if (host === 'localhost' || host === '127.0.0.1') {
         return this.config.endpoint;
       }
-      return '/api/chat';
+      // Cloudflare Pages 部署：用 Serverless Functions 代理
+      if (host.indexOf('.pages.dev') !== -1) {
+        return '/api/chat';
+      }
+      // 其他线上环境（GitHub Pages 等）：直连
+      return this.config.endpoint;
     },
 
     /**
