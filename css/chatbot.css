@@ -777,24 +777,45 @@ select.api-settings-input {
 }
 
 .chat-conv-btn-voice {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  border: none;
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 18px;
+  border: 1.5px solid var(--chat-border);
   background: transparent;
   color: var(--chat-text-muted);
-  font-size: 20px;
+  font-size: 13px;
+  font-weight: 600;
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 4px;
   cursor: pointer;
   flex-shrink: 0;
+  white-space: nowrap;
   transition: all 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
 }
 
 .chat-conv-btn-voice:hover {
   background: rgba(0, 0, 0, 0.04);
   color: var(--chat-text);
+}
+
+.chat-conv-btn-voice:active {
+  transform: scale(0.96);
+}
+
+.chat-conv-btn-voice.recording {
+  background: var(--chat-accent-light);
+  border-color: var(--chat-accent);
+  color: var(--chat-accent);
+  animation: voicePulse 1.2s ease-in-out infinite;
+}
+
+@keyframes voicePulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
 }
 
 .chat-conv-btn-send {

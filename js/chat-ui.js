@@ -232,7 +232,7 @@
         + '    <div class="chat-conv-input-area">'
         + '      <button class="chat-conv-btn-plus" id="btn-chat-plus">＋</button>'
         + '      <div class="chat-conv-editor" id="chat-editor" contenteditable="true" data-placeholder="说说今天发生的事…"></div>'
-        + '      <button class="chat-conv-btn-voice" id="btn-chat-voice" title="按住录音">🎤</button>'
+        + '      <button class="chat-conv-btn-voice" id="btn-chat-voice" title="按住说话">🎤 按住说话</button>'
         + '      <button class="chat-conv-btn-send" id="btn-chat-send" disabled>➤</button>'
         + '    </div>'
         + '  </div>'
@@ -740,7 +740,6 @@
 
     var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-    // 浏览器不支持：按钮保留，点击提示
     if (!SpeechRecognition) {
       voiceBtn.style.opacity = '0.5';
       voiceBtn.title = '当前浏览器不支持语音输入';
@@ -753,48 +752,71 @@
 
     var recognition = new SpeechRecognition();
     recognition.lang = 'zh-CN';
-    recognition.interimResults = true;
+    recognition.interimResults = false;
     recognition.continuous = false;
     recognition.maxAlternatives = 1;
     var isRecording = false;
+    var finalTranscript = '';
 
     recognition.onresult = function (event) {
-      var transcript = '';
-      for (var i = event.resultIndex; i < event.results.length; i++) { transcript += event.results[i][0].transcript; }
-      var editor = document.getElementById('chat-editor');
-      if (editor) {
-        editor.textContent = transcript;
-        editor.focus();
-        editor.dispatchEvent(new Event('input', { bubbles: true }));
+      for (var i = event.resultIndex; i < event.results.length; i++) {
+        if (event.results[i].isFinal) {
+          finalTranscript = event.results[i][0].transcript.trim();
+        }
       }
     };
     recognition.onerror = function (event) {
       console.warn('语音识别错误:', event.error);
       isRecording = false;
       voiceBtn.classList.remove('recording');
+      voiceBtn.textContent = '🎤 按住说话';
+      finalTranscript = '';
       if (event.error === 'not-allowed') {
         _showToast('需要允许使用麦克风，才能使用语音输入');
       } else if (event.error === 'aborted' || event.error === 'no-speech') {
+        _showToast('未识别到语音，可以再试一次，也可以打字');
+      } else {
         _showToast('未识别到语音');
       }
     };
-    recognition.onend = function () { isRecording = false; voiceBtn.classList.remove('recording'); };
+    recognition.onend = function () {
+      isRecording = false;
+      voiceBtn.classList.remove('recording');
+      voiceBtn.textContent = '🎤 按住说话';
+      if (finalTranscript) {
+        var text = finalTranscript;
+        finalTranscript = '';
+        _submitMessage(text);
+      }
+    };
 
     function startRecord(e) {
       e.preventDefault();
-      if (isRecording) return;
-      try { recognition.start(); isRecording = true; voiceBtn.classList.add('recording'); } catch (err) {}
+      e.stopPropagation();
+      if (isRecording || _sending) return;
+      try {
+        recognition.start();
+        isRecording = true;
+        finalTranscript = '';
+        voiceBtn.classList.add('recording');
+        voiceBtn.textContent = '正在听…';
+      } catch (err) {
+        console.warn('启动语音识别失败:', err);
+      }
     }
     function stopRecord(e) {
       e.preventDefault();
-      if (isRecording) recognition.stop();
+      e.stopPropagation();
+      if (!isRecording) return;
+      try { recognition.stop(); } catch (err) {}
     }
 
     voiceBtn.addEventListener('mousedown', startRecord);
     voiceBtn.addEventListener('mouseup', stopRecord);
     voiceBtn.addEventListener('mouseleave', stopRecord);
-    voiceBtn.addEventListener('touchstart', startRecord);
-    voiceBtn.addEventListener('touchend', stopRecord);
+    voiceBtn.addEventListener('touchstart', startRecord, { passive: false });
+    voiceBtn.addEventListener('touchend', stopRecord, { passive: false });
+    voiceBtn.addEventListener('touchcancel', stopRecord, { passive: false });
   }
 
   /* ==========================================================
