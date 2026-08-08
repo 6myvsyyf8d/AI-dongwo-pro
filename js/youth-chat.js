@@ -18,6 +18,7 @@
   var ChatBot = window.ChatBot;
   var DataStore = window.DataStore;
   var YouthTTS = window.YouthTTS;
+  var ApiProvider = window.ChatbotProviders ? window.ChatbotProviders.ApiProvider : null;
 
   // ======== 状态 ========
   var _session = null;
@@ -108,6 +109,35 @@
       .replace(/'/g, '&#39;');
   }
 
+  // ======== 获取心青年档案 ========
+  function _getYouthProfile() {
+    var currentUser = DataStore.getCurrentUser();
+    if (!currentUser) return { name: '心青年' };
+    return {
+      name: currentUser.name || '心青年',
+      age: currentUser.age || '',
+      intro: currentUser.intro || '',
+      communication: currentUser.communication || ''
+    };
+  }
+
+  // ======== 创建流式气泡（API 实时回复用） ========
+  function renderStreamBubble(id) {
+    hideTyping();
+    var container = document.getElementById('youth-messages');
+    if (!container) return null;
+    var row = document.createElement('div');
+    row.className = 'youth-msg ai';
+    row.setAttribute('data-msg-id', id);
+    var bubble = document.createElement('div');
+    bubble.className = 'youth-bubble youth-streaming';
+    bubble.textContent = '';
+    row.appendChild(bubble);
+    container.appendChild(row);
+    scrollToBottom();
+    return bubble;
+  }
+
   // ======== 渲染消息气泡 ========
   function renderBubble(role, text, id) {
     var container = document.getElementById('youth-messages');
@@ -196,50 +226,88 @@
     // 清空输入
     if (input) input.value = '';
 
-    // 调用 chatbot 引擎
-    try {
-      var result = _session.sendMessage(text);
-      var reply = result && result.reply ? result.reply : '';
+    // 调用 AI
+    var useApi = ApiProvider && typeof ApiProvider.generateReplyStream === 'function' && ApiProvider.isConfigured();
 
-      // 短暂延迟让打字动画可见，然后显示回复
-      setTimeout(function () {
-        hideTyping();
+    if (useApi) {
+      // === 真实 AI：流式回复 ===
+      var aiMsgId = msgId();
+      var streamBubble = renderStreamBubble(aiMsgId);
 
-        if (reply) {
-          var aiMsgId = msgId();
-          renderBubble('ai', reply, aiMsgId);
+      // 添加用户消息到 session
+      _session.messages.push({ role: 'user', text: text, timestamp: new Date().toISOString() });
+      var youthProfile = _getYouthProfile();
 
+      ApiProvider.generateReplyStream(
+        _session.messages, youthProfile,
+        // onChunk
+        function (chunk, fullText) {
+          if (streamBubble) {
+            streamBubble.textContent = fullText || chunk;
+          }
+          scrollToBottom();
+        },
+        // onDone
+        function (finalText) {
+          hideTyping();
+          var reply = finalText || '';
+          if (streamBubble) {
+            streamBubble.textContent = reply;
+          }
+          _session.messages.push({ role: 'ai', text: reply, timestamp: new Date().toISOString() });
           // TTS 朗读
-          if (_tts && _tts.enabled) {
+          if (_tts && _tts.enabled && reply) {
             _tts.speak(reply, aiMsgId);
           }
-        } else {
-          // fallback
-          var fallbackId = msgId();
-          var fallbackText = '好的，我知道了~ 还有什么想和我说的吗？';
-          renderBubble('ai', fallbackText, fallbackId);
-          if (_tts && _tts.enabled) {
-            _tts.speak(fallbackText, fallbackId);
+          // 恢复输入
+          if (input) { input.disabled = false; input.focus(); }
+          if (sendBtn) sendBtn.disabled = false;
+        },
+        // onError
+        function () {
+          hideTyping();
+          if (streamBubble) {
+            streamBubble.textContent = '嗯…刚才有点走神，你能再说一次吗？';
           }
+          if (input) { input.disabled = false; input.focus(); }
+          if (sendBtn) sendBtn.disabled = false;
         }
+      );
+    } else {
+      // === 模板降级 ===
+      try {
+        var result = _session.sendMessage(text);
+        var reply = result && result.reply ? result.reply : '';
 
-        // 恢复输入
-        if (input) {
-          input.disabled = false;
-          input.focus();
-        }
+        setTimeout(function () {
+          hideTyping();
+
+          if (reply) {
+            var templateMsgId = msgId();
+            renderBubble('ai', reply, templateMsgId);
+            if (_tts && _tts.enabled) {
+              _tts.speak(reply, templateMsgId);
+            }
+          } else {
+            var fbId = msgId();
+            var fbText = '好的，我知道了~ 还有什么想和我说的吗？';
+            renderBubble('ai', fbText, fbId);
+            if (_tts && _tts.enabled) {
+              _tts.speak(fbText, fbId);
+            }
+          }
+
+          if (input) { input.disabled = false; input.focus(); }
+          if (sendBtn) sendBtn.disabled = false;
+        }, 600);
+      } catch (err) {
+        hideTyping();
+        console.error('[YouthChat] 发送失败:', err);
+        var errId = msgId();
+        renderBubble('ai', '哎呀，刚刚没听清，你再和我说一次好吗？', errId);
+        if (input) input.disabled = false;
         if (sendBtn) sendBtn.disabled = false;
-      }, 600);
-
-    } catch (err) {
-      hideTyping();
-      console.error('[YouthChat] 发送失败:', err);
-
-      var errId = msgId();
-      renderBubble('ai', '哎呀，刚刚没听清，你再和我说一次好吗？', errId);
-
-      if (input) input.disabled = false;
-      if (sendBtn) sendBtn.disabled = false;
+      }
     }
   }
 

@@ -22,8 +22,11 @@
       model: localStorage.getItem('ai_dongwo_api_model') || 'glm-4-flash'
     },
 
-    /** 系统提示词 */
+    /** 系统提示词（照护者视角） */
     SYSTEM_PROMPT: '你叫「小懂」，是一个温暖、耐心的心智障碍者支持记录助手。你的服务对象是心智障碍青年（如孤独症谱系、智力障碍、唐氏综合征等），你通过对话了解 TA 们的日常生活、情绪状态、行为表现和需求。\n\n对话原则：\n1. 每次只问一个问题，用简单、温和、口语化的中文\n2. 关心对方的感受和状态，像朋友聊天，不要审问\n3. 当用户表达情绪时，先简短共情（1-2句），再自然过渡到下一个问题\n4. 当对话已经覆盖了：发生了什么→TA的表现→做了哪些支持→效果如何，在回复末尾加上「#DRAFT」标记\n\n永远用中文对话，回复控制在2-4句话以内，简洁自然。',
+
+    /** 系统提示词（心青年本人视角） */
+    YOUTH_SYSTEM_PROMPT: '你叫「小懂」，是对方的好朋友。对面是心智障碍青年本人（如孤独症谱系、智力障碍等），他们在和你说话。你的目标是让他们感到安全、被理解、愿意开口。\n\n说话方式：\n1. 用最最简单的句子，像和朋友发微信一样\n2. 每次只说 1-2 句话，不要一次说太多\n3. 多用语气词：哦～、这样啊、真好、嗯嗯\n4. 绝对不要问「为什么」，用「发生了什么呀？」代替\n5. 对方说的是此时此刻的感受，尊重它，不要分析、不要纠正\n\n重点：\n- 表达情绪时，先共情（「听起来你今天很开心！」「嗯，那确实会让人难过」）\n- 对方不想说的时候，不追问，换个轻松的话题\n- 不引导到任何结构化方向，不生成记录\n- 就像陪在身边的人，聊到哪算哪\n\n永远用中文，短句，口语化。',
 
     /**
      * 保存 API 配置
@@ -68,6 +71,10 @@
       var name = (youthProfile && youthProfile.name) || '小雨';
       var userMsgs = messages.filter(function (m) { return m.role === 'user'; });
 
+      // 检测当前用户是否是心青年本人
+      var currentUser = (window.DataStore && window.DataStore.getCurrentUser && window.DataStore.getCurrentUser()) || (window.AppState && window.AppState.currentUser);
+      var isYouthSelf = currentUser && currentUser.role === 'youth';
+
       // 欢迎消息 → 直接返回，不调 API
       if (userMsgs.length === 0) {
         var welcome = T.WELCOME.map(function (line) {
@@ -79,20 +86,28 @@
 
       // 未配置 API → 回退
       if (!self.isConfigured()) {
-        var fallback = TemplateProvider.generateReply(messages, youthProfile);
+        var fallback = isYouthSelf
+          ? YouthTemplateProvider.generateReply(messages, youthProfile)
+          : TemplateProvider.generateReply(messages, youthProfile);
         if (onDone) onDone(fallback);
         return;
       }
 
-      // 构建 API 请求体
-      var apiMessages = self._buildApiMessages(messages, name, youthProfile);
+      // 构建 API 请求体（心青年用专属提示词，不附加服务对象档案）
+      var apiMessages = self._buildApiMessages(messages, name, isYouthSelf ? null : youthProfile, isYouthSelf);
+
+      // 心青年：短回复 + 更高随机性；照护者：正常
+      var maxTokens = isYouthSelf ? 200 : 500;
+      var temperature = isYouthSelf ? 0.9 : 0.7;
 
       // 发起流式请求
-      self._streamFetch(apiMessages, onChunk, onDone, function (err) {
+      self._streamFetch(apiMessages, maxTokens, temperature, onChunk, onDone, function (err) {
         console.warn('API 调用失败，回退到 TemplateProvider:', err);
-        var fallback = TemplateProvider.generateReply(messages, youthProfile);
-        if (onChunk) onChunk(fallback); // 非流式，直接给全文
-        if (onDone) onDone(fallback, true); // 第二个参数标记是 fallback
+        var fallback = isYouthSelf
+          ? YouthTemplateProvider.generateReply(messages, youthProfile)
+          : TemplateProvider.generateReply(messages, youthProfile);
+        if (onChunk) onChunk(fallback);
+        if (onDone) onDone(fallback, true);
       });
     },
 
@@ -117,20 +132,26 @@
 
     /**
      * 构建 API 消息数组
+     * @param {boolean} isYouthSelf - 是否为心青年本人对话
      */
-    _buildApiMessages: function (messages, name, youthProfile) {
+    _buildApiMessages: function (messages, name, youthProfile, isYouthSelf) {
       var apiMessages = [];
 
       // 系统提示
-      var sysPrompt = this.SYSTEM_PROMPT;
-      if (youthProfile) {
-        sysPrompt += '\n\n当前服务对象：\n'
-          + '姓名：' + (youthProfile.name || name) + '\n'
-          + '年龄：' + (youthProfile.age || '未知') + '\n'
-          + '特点：' + (youthProfile.intro || '心智障碍青年') + '\n'
-          + '沟通方式：' + (youthProfile.communication || '短句为主，需要耐心等待');
+      if (isYouthSelf) {
+        // 心青年本人：用专属提示词，不附加服务对象信息
+        apiMessages.push({ role: 'system', content: this.YOUTH_SYSTEM_PROMPT });
+      } else {
+        var sysPrompt = this.SYSTEM_PROMPT;
+        if (youthProfile) {
+          sysPrompt += '\n\n当前服务对象：\n'
+            + '姓名：' + (youthProfile.name || name) + '\n'
+            + '年龄：' + (youthProfile.age || '未知') + '\n'
+            + '特点：' + (youthProfile.intro || '心智障碍青年') + '\n'
+            + '沟通方式：' + (youthProfile.communication || '短句为主，需要耐心等待');
+        }
+        apiMessages.push({ role: 'system', content: sysPrompt });
       }
-      apiMessages.push({ role: 'system', content: sysPrompt });
 
       // 添加最近最多 20 条消息
       var recent = messages.slice(-20);
@@ -158,8 +179,10 @@
 
     /**
      * 流式 fetch（SSE 解析）
+     * @param {number} maxTokens - 最大 token 数
+     * @param {number} temperature - 随机性
      */
-    _streamFetch: function (apiMessages, onChunk, onDone, onError) {
+    _streamFetch: function (apiMessages, maxTokens, temperature, onChunk, onDone, onError) {
       var self = this;
       var fullText = '';
       var controller = new AbortController();
@@ -184,8 +207,8 @@
           model: self.config.model,
           messages: apiMessages,
           stream: true,
-          max_tokens: 500,
-          temperature: 0.7
+          max_tokens: maxTokens || 500,
+          temperature: temperature != null ? temperature : 0.7
         }),
         signal: controller.signal
       })
@@ -465,8 +488,32 @@
 
   };
 
+  /* ==========================================================
+   * YouthTemplateProvider — 心青年模板降级（API 不可用时）
+   * ========================================================== */
+
+  var YouthTemplateProvider = {
+    generateReply: function (messages, youthProfile) {
+      var name = (youthProfile && youthProfile.name) || '小雨';
+      var userMsgs = messages.filter(function (m) { return m.role === 'user'; });
+      if (userMsgs.length === 0) {
+        return '嗨 ' + name + '，今天过得怎么样呀？想和我聊什么都可以哦～';
+      }
+      // 简单的陪伴式回复，不引导模块化提问
+      var replies = [
+        '嗯嗯，我听懂了～',
+        '这样啊，谢谢你告诉我这些',
+        '听起来不错呢！还有什么想和我说的吗？',
+        '我能感受到你的心情。想说更多吗？',
+        '好的，我记下了。今天还有什么特别的吗？'
+      ];
+      return replies[Math.floor(Math.random() * replies.length)];
+    }
+  };
+
   window.ChatbotProviders = {
     TemplateProvider: TemplateProvider,
+    YouthTemplateProvider: YouthTemplateProvider,
     ApiProvider: ApiProvider
   };
 
