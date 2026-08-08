@@ -862,7 +862,7 @@
         function (chunk, fullText) {
           fullReply = fullText !== undefined ? fullText : chunk;
           if (streamBubble) {
-            streamBubble.innerHTML = _renderMessageContent(fullReply);
+            streamBubble.innerHTML = _renderMessageContent(fullReply.replace(/#DRAFT\s*/g, '').trim());
             if (fullText !== undefined) streamBubble.classList.add('streaming');
             else streamBubble.classList.remove('streaming');
           }
@@ -870,8 +870,9 @@
         },
         function (finalText, isFallback) {
           var reply = finalText || fullReply;
-          if (streamBubble) { streamBubble.classList.remove('streaming'); streamBubble.innerHTML = _renderMessageContent(reply); }
-          session.messages.push({ role: 'ai', text: reply, module: null, timestamp: new Date().toISOString() });
+          var displayReply = reply.replace(/#DRAFT\s*/g, '').trim();
+          if (streamBubble) { streamBubble.classList.remove('streaming'); streamBubble.innerHTML = _renderMessageContent(displayReply); }
+          session.messages.push({ role: 'ai', text: displayReply, module: null, timestamp: new Date().toISOString() });
           _saveSession();
           _afterAIResponse(session, reply, classification);
           _restoreInput(editor, sendBtn);
