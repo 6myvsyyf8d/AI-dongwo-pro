@@ -23,6 +23,7 @@
   // ======== 状态 ========
   var _session = null;
   var _tts = null;
+  var _recognition = null;  // SpeechRecognition 实例，离开时需 abort 释放
   var _msgCounter = 0;
   var _origGenerateReply = null; // 保存原始 Provider.generateReply，离开时恢复
 
@@ -455,6 +456,11 @@
 
   // ======== 语音输入（Web Speech API） ========
   function _bindVoiceInput() {
+    // 防止重复绑定（每次 render 都会调用 bindEvents）
+    if (_recognition) {
+      try { _recognition.abort(); } catch (e) {}
+    }
+
     var voiceBtn = document.getElementById('youth-voice-btn');
     if (!voiceBtn) return;
 
@@ -468,16 +474,16 @@
       return;
     }
 
-    var recognition = new SpeechRecognition();
-    recognition.lang = 'zh-CN';
-    recognition.interimResults = false;
-    recognition.continuous = false;
-    recognition.maxAlternatives = 1;
+    _recognition = new SpeechRecognition();
+    _recognition.lang = 'zh-CN';
+    _recognition.interimResults = false;
+    _recognition.continuous = false;
+    _recognition.maxAlternatives = 1;
 
     var isRecording = false;
     var finalTranscript = '';
 
-    recognition.onresult = function (event) {
+    _recognition.onresult = function (event) {
       // 只取最终结果
       for (var i = event.resultIndex; i < event.results.length; i++) {
         if (event.results[i].isFinal) {
@@ -486,7 +492,7 @@
       }
     };
 
-    recognition.onend = function () {
+    _recognition.onend = function () {
       isRecording = false;
       voiceBtn.classList.remove('recording');
       voiceBtn.textContent = '🎤 按住说话';
@@ -499,7 +505,7 @@
       }
     };
 
-    recognition.onerror = function (event) {
+    _recognition.onerror = function (event) {
       console.warn('[YouthChat] 语音识别错误:', event.error);
       isRecording = false;
       voiceBtn.classList.remove('recording');
@@ -520,7 +526,7 @@
       e.stopPropagation();
       if (isRecording) return;
       try {
-        recognition.start();
+        _recognition.start();
         isRecording = true;
         finalTranscript = '';
         voiceBtn.classList.add('recording');
@@ -534,7 +540,7 @@
       e.preventDefault();
       e.stopPropagation();
       if (!isRecording) return;
-      try { recognition.stop(); } catch (err) {}
+      try { _recognition.stop(); } catch (err) {}
     }
 
     // 同时绑定 mouse 和 touch 事件，靠 isRecording 守卫防止双重触发
@@ -583,13 +589,8 @@
             return greeting + '，' + name + '~';
           }
 
-          // 对话太长时温柔结束
-          var aiMsgs = messages.filter(function (m) { return m.role === 'ai'; });
-          if (aiMsgs.length >= 5) {
-            return '和你聊天真开心！我先帮你记下来，我们下次再聊哦~';
-          }
-
           // 轮转心青年友好问题
+          var aiMsgs = messages.filter(function (m) { return m.role === 'ai'; });
           var q = YOUTH_SELF_QUESTIONS[aiMsgs.length % YOUTH_SELF_QUESTIONS.length];
           return q;
         };
@@ -701,6 +702,11 @@
       if (_tts) {
         _tts.destroy();
         _tts = null;
+      }
+      // 释放 SpeechRecognition 实例，防止累积后 Chrome 限流
+      if (_recognition) {
+        try { _recognition.abort(); } catch (e) {}
+        _recognition = null;
       }
       _session = null;
       _msgCounter = 0;

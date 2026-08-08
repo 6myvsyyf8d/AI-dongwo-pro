@@ -232,21 +232,21 @@
     mood: { label: '心情记录', icon: '💭', color: '#D97757',
       fields: ['mood', 'content'], description: '记录今天的心情' },
     care: { label: '照护记录', icon: '🏥', color: '#6FA789',
-      fields: ['title', 'content'], description: '记录饮食、睡眠、健康等照护情况' },
+      fields: ['content'], description: '记录饮食、睡眠、健康等照护情况' },
     activity: { label: '活动记录', icon: '🎯', color: '#E7B95E',
-      fields: ['title', 'content'], description: '记录参加的课程、活动、训练' },
+      fields: ['content'], description: '记录参加的课程、活动、训练' },
     communication: { label: '沟通观察', icon: '💬', color: '#F5E6D3',
       fields: ['content'], description: '记录沟通中的观察发现' },
     emotion: { label: '情绪事件', icon: '😊', color: '#C96E68',
       fields: ['emotion_type', 'content'], description: '记录情绪波动的触发和应对' },
     note: { label: '一般备注', icon: '📝', color: '#9A8F88',
-      fields: ['title', 'content'], description: '添加其他需要记录的备注' },
+      fields: ['content'], description: '添加其他需要记录的备注' },
     strategy: { label: '策略记录', icon: '🧩', color: '#D99A4E',
-      fields: ['emotion_type', 'title', 'content', 'effectiveness'], description: '记录情绪行为策略使用及效果' },
+      fields: ['emotion_type', 'content', 'effectiveness'], description: '记录情绪行为策略使用及效果' },
     life: { label: '生活记录', icon: '❤️', color: '#D97757',
-      fields: ['title', 'content'], description: '记录兴趣、活动、日常生活偏好' },
+      fields: ['content'], description: '记录兴趣、活动、日常生活偏好' },
     social: { label: '社交记录', icon: '👥', color: '#D99A4E',
-      fields: ['title', 'content'], description: '记录社交互动、人际关系变化' }
+      fields: ['content'], description: '记录社交互动、人际关系变化' }
   };
 
   /** 心情选项 */

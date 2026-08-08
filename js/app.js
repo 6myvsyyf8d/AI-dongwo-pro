@@ -1366,7 +1366,7 @@
     var pendingBtn = container.querySelector('#twb-pending-review');
     if (pendingBtn) {
       pendingBtn.addEventListener('click', function() {
-        window.location.hash = 'chat-review';
+        window.location.hash = 'draft-review';
       });
     }
 

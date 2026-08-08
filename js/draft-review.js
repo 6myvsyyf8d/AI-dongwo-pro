@@ -104,20 +104,25 @@
   function renderDraftReview() {
     var container = document.getElementById('draft-review-content');
     if (!container) return;
-    var raw = getDrafts();
-    var needsSave = false;
-    var drafts = raw.map(function (d) {
-      if (!d.hasOwnProperty('sourceType')) { needsSave = true; return migrateDraft(d); }
-      return d;
-    });
-    if (needsSave) saveDrafts(drafts);
+    try {
+      var raw = getDrafts();
+      var needsSave = false;
+      var drafts = raw.map(function (d) {
+        if (!d.hasOwnProperty('sourceType')) { needsSave = true; return migrateDraft(d); }
+        return d;
+      });
+      if (needsSave) saveDrafts(drafts);
 
-    var pending = drafts.filter(function (d) { return d.status === 'pending'; });
-    var needsInfo = drafts.filter(function (d) { return d.status === 'needs_info'; });
-    var done = drafts.filter(function (d) { return d.status === 'confirmed' || d.status === 'discarded'; });
+      var pending = drafts.filter(function (d) { return d.status === 'pending'; });
+      var needsInfo = drafts.filter(function (d) { return d.status === 'needs_info'; });
+      var done = drafts.filter(function (d) { return d.status === 'confirmed' || d.status === 'discarded'; });
 
-    container.innerHTML = buildPage(pending, needsInfo, done);
-    bindEvents(container, drafts);
+      container.innerHTML = buildPage(pending, needsInfo, done);
+      bindEvents(container, drafts);
+    } catch (e) {
+      console.error('[draft-review] render 失败:', e);
+      container.innerHTML = '<div class="dr-empty"><div class="dr-empty-icon">⚠️</div><p>页面加载出错，请刷新重试</p></div>';
+    }
   }
 
   function buildPage(pending, needsInfo, done) {
