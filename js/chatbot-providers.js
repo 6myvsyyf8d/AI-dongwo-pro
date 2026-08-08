@@ -17,13 +17,13 @@
   var ApiProvider = {
     /** API 配置（用户自行设置） */
     config: {
-      endpoint: localStorage.getItem('ai_dongwo_api_endpoint') || 'https://api.openai.com/v1/chat/completions',
+      endpoint: localStorage.getItem('ai_dongwo_api_endpoint') || 'https://open.bigmodel.cn/api/paas/v4/chat/completions',
       apiKey: localStorage.getItem('ai_dongwo_api_key') || '',
-      model: localStorage.getItem('ai_dongwo_api_model') || 'gpt-4o-mini'
+      model: localStorage.getItem('ai_dongwo_api_model') || 'glm-4-flash'
     },
 
     /** 系统提示词 */
-    SYSTEM_PROMPT: '你是一个支持心智障碍者的记录助手，通过对话了解今天发生的事情，整理成结构化的支持记录。语气温暖简洁每次只问一个问题。收集到足够信息（情境、表现、支持方法、效果）后输出 #DRAFT 标记。',
+    SYSTEM_PROMPT: '你叫「小懂」，是一个温暖、耐心的心智障碍者支持记录助手。你的服务对象是心智障碍青年（如孤独症谱系、智力障碍、唐氏综合征等），你通过对话了解 TA 们的日常生活、情绪状态、行为表现和需求。\n\n对话原则：\n1. 每次只问一个问题，用简单、温和、口语化的中文\n2. 关心对方的感受和状态，像朋友聊天，不要审问\n3. 当用户表达情绪时，先简短共情（1-2句），再自然过渡到下一个问题\n4. 当对话已经覆盖了：发生了什么→TA的表现→做了哪些支持→效果如何，在回复末尾加上「#DRAFT」标记\n\n永远用中文对话，回复控制在2-4句话以内，简洁自然。',
 
     /**
      * 保存 API 配置
@@ -45,8 +45,13 @@
 
     /**
      * 检查 API 是否已配置
+     * 线上走 Cloudflare Functions 代理（Key 在服务器端），始终视为已配置
      */
     isConfigured: function () {
+      var host = window.location.hostname;
+      if (host !== 'localhost' && host !== '127.0.0.1') {
+        return true; // 线上由 /api/chat 代理处理
+      }
       return !!(this.config.apiKey && this.config.apiKey.length > 10);
     },
 
@@ -141,6 +146,17 @@
     },
 
     /**
+     * 获取 API 端点：线上走代理 /api/chat，本地直连智谱
+     */
+    _getEndpoint: function () {
+      var host = window.location.hostname;
+      if (host === 'localhost' || host === '127.0.0.1') {
+        return this.config.endpoint;
+      }
+      return '/api/chat';
+    },
+
+    /**
      * 流式 fetch（SSE 解析）
      */
     _streamFetch: function (apiMessages, onChunk, onDone, onError) {
@@ -152,12 +168,18 @@
         if (onError) onError(new Error('请求超时'));
       }, 30000); // 30s 超时
 
-      fetch(self.config.endpoint, {
+      // 线上走 Cloudflare Pages Functions 代理，本地直连智谱
+      var endpoint = self._getEndpoint();
+      var isProxied = endpoint.indexOf('/api/chat') !== -1;
+
+      var headers = { 'Content-Type': 'application/json' };
+      if (!isProxied) {
+        headers['Authorization'] = 'Bearer ' + self.config.apiKey;
+      }
+
+      fetch(endpoint, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + self.config.apiKey
-        },
+        headers: headers,
         body: JSON.stringify({
           model: self.config.model,
           messages: apiMessages,

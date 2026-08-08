@@ -18,7 +18,8 @@
   var SESSIONS_KEY = 'ai_dongwo_chat_sessions';
   var T = window.ChatbotTemplates;
   var Classifier = window.ChatbotClassifier;
-  var Provider = window.ChatbotProviders.TemplateProvider;
+  // 优先使用 ApiProvider（未配置 API Key 时自动回退到模板匹配）
+  var Provider = window.ChatbotProviders.ApiProvider || window.ChatbotProviders.TemplateProvider;
   var DataStore = window.DataStore;
   var Modules = window.Modules;
 

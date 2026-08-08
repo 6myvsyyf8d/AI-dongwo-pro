@@ -125,6 +125,72 @@
     },
 
     /**
+     * 打开 API 设置对话框
+     */
+    _openApiSettings: function () {
+      var currentEndpoint = localStorage.getItem('ai_dongwo_api_endpoint') || 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
+      var currentKey = localStorage.getItem('ai_dongwo_api_key') || '';
+      var currentModel = localStorage.getItem('ai_dongwo_api_model') || 'glm-4-flash';
+      var isConfigured = currentKey && currentKey.length > 10;
+
+      // 创建遮罩
+      var overlay = document.createElement('div');
+      overlay.className = 'api-settings-overlay';
+      overlay.id = 'api-settings-overlay';
+      overlay.innerHTML = '<div class="api-settings-dialog">'
+        + '<h3 class="api-settings-title">🤖 AI 模型设置</h3>'
+        + '<p class="api-settings-hint">当前使用：<b>智谱 AI · GLM-4-Flash</b>（免费额度充足，速度快）</p>'
+        + '<label class="api-settings-label">API Key' + (isConfigured ? ' <span style="color:#6FA789;font-size:0.75rem;">已配置</span>' : ' <span style="color:#D4654A;font-size:0.75rem;">未配置</span>') + '</label>'
+        + '<input type="password" class="api-settings-input" id="api-settings-key" placeholder="输入你的智谱 API Key" value="' + _escapeHtml(currentKey) + '">'
+        + '<label class="api-settings-label">模型</label>'
+        + '<select class="api-settings-input" id="api-settings-model">'
+        + '  <option value="glm-4-flash"' + (currentModel === 'glm-4-flash' ? ' selected' : '') + '>GLM-4-Flash（免费，推荐）</option>'
+        + '  <option value="glm-4"' + (currentModel === 'glm-4' ? ' selected' : '') + '>GLM-4（更强推理）</option>'
+        + '  <option value="glm-4-plus"' + (currentModel === 'glm-4-plus' ? ' selected' : '') + '>GLM-4-Plus（最强）</option>'
+        + '</select>'
+        + '<div class="api-settings-actions">'
+        + '  <button class="api-settings-btn api-settings-btn-cancel" id="api-settings-cancel">取消</button>'
+        + '  <button class="api-settings-btn api-settings-btn-save" id="api-settings-save">保存</button>'
+        + '</div>'
+        + '<p class="api-settings-footer">API Key 仅保存在本地浏览器，不会上传到任何服务器。<br>获取 Key：<a href="https://open.bigmodel.cn/" target="_blank" rel="noopener">open.bigmodel.cn</a></p>'
+        + '</div>';
+
+      document.body.appendChild(overlay);
+
+      // 事件绑定
+      document.getElementById('api-settings-cancel').addEventListener('click', function () {
+        document.body.removeChild(overlay);
+      });
+      overlay.addEventListener('click', function (e) {
+        if (e.target === overlay) document.body.removeChild(overlay);
+      });
+      document.getElementById('api-settings-save').addEventListener('click', function () {
+        var key = document.getElementById('api-settings-key').value.trim();
+        var model = document.getElementById('api-settings-model').value;
+        ChatUI._saveApiSettings(key, model);
+        document.body.removeChild(overlay);
+      });
+      document.getElementById('api-settings-key').focus();
+    },
+
+    /**
+     * 保存 API 设置
+     */
+    _saveApiSettings: function (apiKey, model) {
+      if (!apiKey || apiKey.length < 10) {
+        _showToast('请输入有效的 API Key（至少11位）');
+        return;
+      }
+      if (ApiProvider && typeof ApiProvider.saveConfig === 'function') {
+        ApiProvider.saveConfig({ apiKey: apiKey, model: model });
+      } else {
+        localStorage.setItem('ai_dongwo_api_key', apiKey);
+        localStorage.setItem('ai_dongwo_api_model', model);
+      }
+      _showToast('AI 模型设置已保存 ✓');
+    },
+
+    /**
      * 渲染对话界面（路由 #chat-conversation）
      */
     renderConversation: function () {
