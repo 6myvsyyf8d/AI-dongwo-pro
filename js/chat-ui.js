@@ -237,7 +237,6 @@
         + '    </div>'
         + '    <div class="chat-quick-replies-toggle" id="chat-toggle-replies">⌃</div>'
         + '    <div class="chat-conv-input-area">'
-        + '      <button class="chat-conv-btn-plus" id="btn-chat-plus">＋</button>'
         + '      <div class="chat-conv-editor" id="chat-editor" contenteditable="true" data-placeholder="说说今天发生的事…"></div>'
         + '      <button class="chat-conv-btn-voice" id="btn-chat-voice" title="按住说话">🎤 按住说话</button>'
         + '      <button class="chat-conv-btn-send" id="btn-chat-send" disabled>➤</button>'
@@ -696,7 +695,6 @@
   function _bindInputEvents() {
     var editor = document.getElementById('chat-editor');
     var sendBtn = document.getElementById('btn-chat-send');
-    var plusBtn = document.getElementById('btn-chat-plus');
     var endConvBtn = document.getElementById('btn-end-conversation');
     var toggleBtn = document.getElementById('chat-toggle-replies');
 
@@ -717,8 +715,6 @@
         _submitMessage(editor ? editor.innerText.trim() : '');
       });
     }
-    if (plusBtn) { plusBtn.addEventListener('click', function () { if (editor) editor.focus(); }); }
-
     // 结束并整理按钮 → 进入整理确认页
     if (endConvBtn) {
       endConvBtn.addEventListener('click', function (e) {
