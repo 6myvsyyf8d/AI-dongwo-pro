@@ -3332,8 +3332,8 @@
 
   // 分析模块内部状态
   var analyticsState = {
-    activeTab: 'daily',
-    activeSubtab: 'overview',
+    activeTab: 'overview',   // 'overview' | 'trend'
+    overviewPeriod: 'weekly', // 'daily' | 'weekly' | 'monthly'
     trendSubTab: 'weekly',
     dailyDate: null,
     weeklyStart: null,
@@ -3341,8 +3341,8 @@
   };
 
   function resetAnalyticsState() {
-    analyticsState.activeTab = 'daily';
-    analyticsState.activeSubtab = 'overview';
+    analyticsState.activeTab = 'overview';
+    analyticsState.overviewPeriod = 'weekly';
     analyticsState.trendSubTab = 'weekly';
     analyticsState.dailyDate = null;
     analyticsState.weeklyStart = null;
@@ -3495,6 +3495,7 @@
   }
 
   function bindAnalyticsTabs() {
+    // 主 Tab：数据概览 / 趋势
     var tabs = document.querySelectorAll('#analytics-tabs .a-tab');
     tabs.forEach(function (tab) {
       tab.addEventListener('click', function () {
@@ -3503,80 +3504,62 @@
         analyticsState.activeTab = name;
         tabs.forEach(function (t) { t.classList.remove('active'); });
         this.classList.add('active');
-        var panels = document.querySelectorAll('#analytics-content .a-panel, #charts-content .a-panel');
-        panels.forEach(function (p) { p.style.display = 'none'; });
-        var active = document.getElementById('panel-' + name);
-        if (active) active.style.display = 'block';
-        var dd = document.getElementById('analytics-drilldown');
-        if (dd) dd.style.display = 'none';
-        renderAnalyticsPanel(name, analyticsState.activeSubtab);
+        renderAnalyticsPanel(name, null);
       });
     });
 
-    // 子 tab：数据概览 / 趋势
-    var subtabs = document.querySelectorAll('#analytics-tabs + .a-subtabs .a-subtab');
-    subtabs.forEach(function (st) {
+    // 周期切换 pills（数据概览下）
+    var periods = document.querySelectorAll('#overview-periods .a-subtab');
+    periods.forEach(function (st) {
       st.addEventListener('click', function () {
-        var subname = this.dataset.subtab;
-        if (analyticsState.activeSubtab === subname) return;
-        analyticsState.activeSubtab = subname;
-        subtabs.forEach(function (s) { s.classList.remove('active'); });
+        var period = this.dataset.period;
+        if (analyticsState.overviewPeriod === period) return;
+        analyticsState.overviewPeriod = period;
+        periods.forEach(function (s) { s.classList.remove('active'); });
         this.classList.add('active');
-        renderAnalyticsPanel(analyticsState.activeTab, subname);
+        renderOverviewContent(period);
       });
     });
   }
 
   /**
-   * 统一渲染分析面板：period = daily/weekly/monthly, subtab = overview/trend
+   * 统一渲染分析面板：tab = 'overview' | 'trend'
    */
-  function renderAnalyticsPanel(period, subtab) {
+  function renderAnalyticsPanel(tab, unused) {
     // 隐藏所有面板
-    ['daily', 'weekly', 'monthly', 'trend'].forEach(function (p) {
+    ['daily', 'weekly', 'monthly', 'trend', 'overview'].forEach(function (p) {
       var el = document.getElementById('panel-' + p);
       if (el) el.style.display = 'none';
     });
     var dd = document.getElementById('analytics-drilldown');
     if (dd) dd.style.display = 'none';
 
-    if (subtab === 'trend') {
+    // 显示/隐藏周期选择器
+    var periods = document.getElementById('overview-periods');
+    if (periods) periods.style.display = (tab === 'overview') ? '' : 'none';
+
+    if (tab === 'trend') {
       var trendPanel = document.getElementById('panel-trend');
       if (trendPanel) trendPanel.style.display = 'block';
       renderTrendPanel();
       return;
     }
-    // overview: 显示对应 period 面板
-    var periodPanel = document.getElementById('panel-' + period);
-    if (periodPanel) periodPanel.style.display = 'block';
-    if (period === 'daily') renderDailyPanel();
-    else if (period === 'weekly') renderWeeklyPanel();
-    else if (period === 'monthly') renderMonthlyPanel();
+
+    // overview: 根据当前 overviewPeriod 渲染对应内容
+    var period = analyticsState.overviewPeriod;
+    var overviewPanel = document.getElementById('panel-overview');
+    if (overviewPanel) overviewPanel.style.display = 'block';
+    renderOverviewContent(period);
   }
 
-  function renderWeeklyPanel() {
-    var panel = document.getElementById('panel-weekly');
-    if (!panel) return;
-    var stats = getAnalyticsData();
-    // 计算最常见情绪
-    var topEmotion = '';
-    var topCount = 0;
-    var emotionLabels = { happy: '😊 开心', calm: '😌 平静', anxious: '😰 焦虑', angry: '😠 生气', sad: '😢 难过', excited: '🤩 兴奋' };
-    Object.keys(stats.emotionStats).forEach(function (k) {
-      if (stats.emotionStats[k] > topCount) { topCount = stats.emotionStats[k]; topEmotion = k; }
-    });
-    panel.innerHTML = '<div class="a-section"><div class="a-section-head"><span class="a-section-title">本周概览</span></div>' +
-      '<div class="a-metrics">' +
-      '<div class="a-metric"><div class="a-metric-value">' + stats.recentRecords + '</div><div class="a-metric-label">近30天记录</div></div>' +
-      '<div class="a-metric"><div class="a-metric-value">' + (topEmotion ? emotionLabels[topEmotion] || topEmotion : '—') + '</div><div class="a-metric-label">最常见心情</div></div>' +
-      '<div class="a-metric"><div class="a-metric-value">' + stats.avgEffectiveness + '</div><div class="a-metric-label">策略均效</div></div>' +
-      '</div></div>' +
-      '<div class="a-section"><div class="a-section-head"><span class="a-section-title">本周关键变化</span></div>' +
-      '<p style="font-size:0.85rem;color:var(--text-secondary);">点击上方「📈 趋势」查看详细趋势图表和下钻数据。</p></div>';
-  }
+  function renderWeeklyPanel() { return; }  // deprecated, use renderOverviewContent
+  function renderMonthlyPanel() { return; }  // deprecated, use renderOverviewContent
 
-  function renderMonthlyPanel() {
-    var panel = document.getElementById('panel-monthly');
+  /** 渲染数据概览内容（统一写入 panel-overview） */
+  function renderOverviewContent(period) {
+    var panel = document.getElementById('panel-overview');
     if (!panel) return;
+
     var stats = getAnalyticsData();
     var topEmotion = '';
     var topCount = 0;
@@ -3584,14 +3567,34 @@
     Object.keys(stats.emotionStats).forEach(function (k) {
       if (stats.emotionStats[k] > topCount) { topCount = stats.emotionStats[k]; topEmotion = k; }
     });
-    panel.innerHTML = '<div class="a-section"><div class="a-section-head"><span class="a-section-title">本月概览</span></div>' +
-      '<div class="a-metrics">' +
-      '<div class="a-metric"><div class="a-metric-value">' + stats.totalRecords + '</div><div class="a-metric-label">全部记录</div></div>' +
-      '<div class="a-metric"><div class="a-metric-value">' + (topEmotion ? emotionLabels[topEmotion] || topEmotion : '—') + '</div><div class="a-metric-label">最常见心情</div></div>' +
-      '<div class="a-metric"><div class="a-metric-value">' + stats.strategyRecords + '</div><div class="a-metric-label">策略记录</div></div>' +
-      '</div></div>' +
-      '<div class="a-section"><div class="a-section-head"><span class="a-section-title">本月关键变化</span></div>' +
-      '<p style="font-size:0.85rem;color:var(--text-secondary);">点击上方「📈 趋势」查看详细趋势图表和下钻数据。</p></div>';
+
+    var labelMap = { daily: '今日概览', weekly: '本周概览', monthly: '本月概览' };
+    var sectionTitle = labelMap[period] || '概览';
+
+    var metricsHTML = '';
+    if (period === 'daily') {
+      metricsHTML = '<div class="a-metrics">'
+        + '<div class="a-metric"><div class="a-metric-value">' + stats.recentRecords + '</div><div class="a-metric-label">近30天记录</div></div>'
+        + '<div class="a-metric"><div class="a-metric-value">' + (topEmotion ? emotionLabels[topEmotion] || topEmotion : '—') + '</div><div class="a-metric-label">最常见心情</div></div>'
+        + '<div class="a-metric"><div class="a-metric-value">' + stats.avgEffectiveness + '</div><div class="a-metric-label">策略均效</div></div>'
+        + '</div>';
+    } else if (period === 'weekly') {
+      metricsHTML = '<div class="a-metrics">'
+        + '<div class="a-metric"><div class="a-metric-value">' + stats.recentRecords + '</div><div class="a-metric-label">近30天记录</div></div>'
+        + '<div class="a-metric"><div class="a-metric-value">' + (topEmotion ? emotionLabels[topEmotion] || topEmotion : '—') + '</div><div class="a-metric-label">最常见心情</div></div>'
+        + '<div class="a-metric"><div class="a-metric-value">' + stats.avgEffectiveness + '</div><div class="a-metric-label">策略均效</div></div>'
+        + '</div>';
+    } else {
+      metricsHTML = '<div class="a-metrics">'
+        + '<div class="a-metric"><div class="a-metric-value">' + stats.totalRecords + '</div><div class="a-metric-label">全部记录</div></div>'
+        + '<div class="a-metric"><div class="a-metric-value">' + (topEmotion ? emotionLabels[topEmotion] || topEmotion : '—') + '</div><div class="a-metric-label">最常见心情</div></div>'
+        + '<div class="a-metric"><div class="a-metric-value">' + stats.strategyRecords + '</div><div class="a-metric-label">策略记录</div></div>'
+        + '</div>';
+    }
+
+    panel.innerHTML = '<div class="a-section"><div class="a-section-head"><span class="a-section-title">' + sectionTitle + '</span></div>'
+      + metricsHTML
+      + '</div>';
   }
 
   function renderAnalytics() {
@@ -3612,19 +3615,21 @@
     resetAnalyticsState();
     var html = '';
     html += '<div class="a-tabs" id="analytics-tabs">';
-    html += '<button class="a-tab active" data-tab="daily">📋 日报</button>';
-    html += '<button class="a-tab" data-tab="weekly">📋 周报</button>';
-    html += '<button class="a-tab" data-tab="monthly">📋 月报</button></div>';
-    html += '<div class="a-subtabs" style="margin-bottom:12px;">';
-    html += '<button class="a-subtab active" data-subtab="overview">📊 数据概览</button>';
-    html += '<button class="a-subtab" data-subtab="trend">📈 趋势</button></div>';
-    html += '<div id="panel-daily" class="a-panel"></div>';
+    html += '<button class="a-tab active" data-tab="overview">📊 数据概览</button>';
+    html += '<button class="a-tab" data-tab="trend">📈 趋势分析</button></div>';
+    // 周期切换行（数据概览下显示）
+    html += '<div class="a-subtabs" id="overview-periods" style="margin-bottom:12px;">';
+    html += '<button class="a-subtab" data-period="daily">日报</button>';
+    html += '<button class="a-subtab active" data-period="weekly">周报</button>';
+    html += '<button class="a-subtab" data-period="monthly">月报</button></div>';
+    html += '<div id="panel-overview" class="a-panel"></div>';
+    html += '<div id="panel-trend" class="a-panel" style="display:none;"></div>';
+    html += '<div id="panel-daily" class="a-panel" style="display:none;"></div>';
     html += '<div id="panel-weekly" class="a-panel" style="display:none;"></div>';
     html += '<div id="panel-monthly" class="a-panel" style="display:none;"></div>';
-    html += '<div id="panel-trend" class="a-panel" style="display:none;"></div>';
     html += '<div id="analytics-drilldown" style="display:none;"></div>';
     Utils.dom.html(contentArea, html);
-    renderAnalyticsPanel('daily', 'overview');
+    renderAnalyticsPanel('overview', null);
     bindAnalyticsTabs();
   }
 
