@@ -182,6 +182,9 @@
 
     var select = document.getElementById('login-name-select');
     if (!select) return;
+    // 按钮放在 .login-combo 外面、.form-group 里面
+    var combo = select.closest('.login-combo');
+    var insertAfter = combo || select;
 
     var btn = document.createElement('a');
     btn.id = 'login-expand-toggle';
@@ -192,7 +195,7 @@
       _folded = !_folded;
       populateLoginSelect();
     });
-    select.parentNode.insertBefore(btn, select.nextSibling);
+    insertAfter.parentNode.insertBefore(btn, insertAfter.nextSibling);
 
     // 初始状态
     var totalHidden = _countHidden(users);
