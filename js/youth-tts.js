@@ -19,8 +19,8 @@
     this.pendingQueue = [];    // 待朗读消息队列
     this.currentMsgId = null;  // 当前正在朗读的消息ID
     this.voice = null;         // 选中的中文语音
-    this.rate = 0.85;          // 语速稍慢，更自然
-    this.pitch = 1.05;         // 语调微升，更温暖
+    this.rate = 0.8;           // 语速更慢，更自然温和
+    this.pitch = 1.02;         // 微提语调，不机械
     this.volume = 1.0;
     this._initVoice();
   }
@@ -48,27 +48,43 @@
     var voices = synth.getVoices();
     var preferred = null;
 
-    // 优先级 1：高质量中文女声（Tingting/Xiaoxiao/Neural/Premium）
-    var neuralPatterns = ['Tingting', 'Xiaoxiao', 'Yunyang', 'Xiaoyi', 'Neural', 'Premium'];
+    // 优先级 0：Apple 高品质内置语音（macOS/iOS）
+    // Tingting / Ting-Ting 都是普通话女声，Li-mu 是台湾女声
+    var applePatterns = ['Tingting', 'Ting-Ting', 'Ting-ting', 'Mei-Jia', 'Sin-ji', 'Li-mu'];
     for (var i = 0; i < voices.length; i++) {
       var v = voices[i];
-      if (v.lang.indexOf('zh') === 0) {
-        for (var p = 0; p < neuralPatterns.length; p++) {
-          if (v.name.indexOf(neuralPatterns[p]) !== -1) {
-            preferred = v;
-            break;
-          }
+      for (var ap = 0; ap < applePatterns.length; ap++) {
+        if (v.name.indexOf(applePatterns[ap]) !== -1) {
+          preferred = v;
+          break;
         }
-        if (preferred) break;
+      }
+      if (preferred) break;
+    }
+
+    // 优先级 1：Google 神经语音
+    if (!preferred) {
+      var neuralPatterns = ['Xiaoxiao', 'Yunyang', 'Xiaoyi', 'Neural', 'Premium'];
+      for (var j = 0; j < voices.length; j++) {
+        var v2 = voices[j];
+        if (v2.lang.indexOf('zh') === 0) {
+          for (var p = 0; p < neuralPatterns.length; p++) {
+            if (v2.name.indexOf(neuralPatterns[p]) !== -1) {
+              preferred = v2;
+              break;
+            }
+          }
+          if (preferred) break;
+        }
       }
     }
 
     // 优先级 2：zh-CN 女性
     if (!preferred) {
-      for (var j = 0; j < voices.length; j++) {
-        var v2 = voices[j];
-        if (v2.lang === 'zh-CN' && (v2.name.indexOf('Female') !== -1 || v2.name.indexOf('女') !== -1)) {
-          preferred = v2;
+      for (var k = 0; k < voices.length; k++) {
+        var v3 = voices[k];
+        if (v3.lang === 'zh-CN' && (v3.name.indexOf('Female') !== -1 || v3.name.indexOf('女') !== -1)) {
+          preferred = v3;
           break;
         }
       }
@@ -76,9 +92,9 @@
 
     // 优先级 3：任意 zh-CN
     if (!preferred) {
-      for (var k = 0; k < voices.length; k++) {
-        if (voices[k].lang.indexOf('zh-CN') === 0) {
-          preferred = voices[k];
+      for (var m = 0; m < voices.length; m++) {
+        if (voices[m].lang.indexOf('zh-CN') === 0) {
+          preferred = voices[m];
           break;
         }
       }
@@ -86,9 +102,9 @@
 
     // 优先级 4：任意中文
     if (!preferred) {
-      for (var m = 0; m < voices.length; m++) {
-        if (voices[m].lang.indexOf('zh') === 0) {
-          preferred = voices[m];
+      for (var n = 0; n < voices.length; n++) {
+        if (voices[n].lang.indexOf('zh') === 0) {
+          preferred = voices[n];
           break;
         }
       }
@@ -98,7 +114,22 @@
     if (!preferred && voices.length > 0) {
       preferred = voices[0];
     }
+
     this.voice = preferred;
+
+    // 诊断日志：列出所有中文语音和最终选择
+    var zhVoices = [];
+    for (var di = 0; di < voices.length; di++) {
+      if (voices[di].lang.indexOf('zh') === 0) {
+        zhVoices.push(voices[di].name + ' (' + voices[di].lang + (voices[di].localService ? ',本地' : ',网络') + ')');
+      }
+    }
+    console.log('[YouthTTS] 可用中文语音 (' + zhVoices.length + '):', zhVoices.join(', '));
+    if (preferred) {
+      console.log('[YouthTTS] 选用:', preferred.name, preferred.lang, preferred.localService ? '(本地)' : '(网络)');
+    } else {
+      console.warn('[YouthTTS] 未找到中文语音，将使用系统默认');
+    }
   };
 
   /**
@@ -109,13 +140,17 @@
   YouthTTS.prototype.speak = function (text, msgId) {
     if (!this.enabled || !text) return;
 
+    // 过滤 emoji 和特殊符号，只保留可朗读内容
+    var cleanText = _stripEmoji(text);
+    if (!cleanText) return;
+
     // 如果正在朗读，加入队列
     if (this.speaking) {
-      this.pendingQueue.push({ text: text, msgId: msgId });
+      this.pendingQueue.push({ text: cleanText, msgId: msgId });
       return;
     }
 
-    this._doSpeak(text, msgId);
+    this._doSpeak(cleanText, msgId);
   };
 
   /**
@@ -127,6 +162,7 @@
 
     var utterance = new SpeechSynthesisUtterance(text);
     utterance.voice = this.voice;
+    utterance.lang = 'zh-CN';
     utterance.rate = this.rate;
     utterance.pitch = this.pitch;
     utterance.volume = this.volume;
@@ -225,6 +261,30 @@
     this.pendingQueue = [];
     this.currentMsgId = null;
   };
+
+  // ======== 工具函数 ========
+
+  /**
+   * 过滤 emoji 和装饰符号，保留可朗读的纯文本
+   */
+  function _stripEmoji(text) {
+    if (!text) return '';
+    // 移除 emoji 字符（Unicode 范围 + 变体选择符）
+    var cleaned = text
+      .replace(/[\u{1F600}-\u{1F64F}]/gu, '')  // 表情符号
+      .replace(/[\u{1F300}-\u{1F5FF}]/gu, '')  // 杂项符号和图形
+      .replace(/[\u{1F680}-\u{1F6FF}]/gu, '')  // 交通和地图
+      .replace(/[\u{1F1E0}-\u{1F1FF}]/gu, '')  // 旗帜
+      .replace(/[\u{2600}-\u{26FF}]/gu, '')    // 杂项符号
+      .replace(/[\u{2700}-\u{27BF}]/gu, '')    // 装饰符号
+      .replace(/[\u{FE00}-\u{FE0F}]/gu, '')    // 变体选择符
+      .replace(/[\u{1F900}-\u{1F9FF}]/gu, '')  // 补充符号
+      .replace(/[\u{200D}]/gu, '')             // 零宽连接符
+      .replace(/[\u{20E3}]/gu, '')             // 组合键帽
+      .replace(/\s+/g, ' ')                    // 合并多余空格
+      .trim();
+    return cleaned;
+  }
 
   // ======== 挂载全局 ========
   window.YouthTTS = YouthTTS;

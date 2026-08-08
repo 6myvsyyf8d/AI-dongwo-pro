@@ -517,6 +517,7 @@
 
     function startRecord(e) {
       e.preventDefault();
+      e.stopPropagation();
       if (isRecording) return;
       try {
         recognition.start();
@@ -531,16 +532,19 @@
 
     function stopRecord(e) {
       e.preventDefault();
-      if (isRecording) {
-        try { recognition.stop(); } catch (err) {}
-      }
+      e.stopPropagation();
+      if (!isRecording) return;
+      try { recognition.stop(); } catch (err) {}
     }
 
+    // 同时绑定 mouse 和 touch 事件，靠 isRecording 守卫防止双重触发
+    // startRecord 中的 e.preventDefault() 会阻止移动端 touch→mouse 模拟事件
     voiceBtn.addEventListener('mousedown', startRecord);
     voiceBtn.addEventListener('mouseup', stopRecord);
     voiceBtn.addEventListener('mouseleave', stopRecord);
     voiceBtn.addEventListener('touchstart', startRecord, { passive: false });
     voiceBtn.addEventListener('touchend', stopRecord, { passive: false });
+    voiceBtn.addEventListener('touchcancel', stopRecord, { passive: false });
   }
 
   function updateSendButton() {
