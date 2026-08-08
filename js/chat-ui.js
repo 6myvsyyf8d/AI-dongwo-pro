@@ -105,6 +105,13 @@
       if (pendingCard) {
         pendingCard.addEventListener('click', function () { window.location.hash = 'chat-review'; });
       }
+      var allRecordsLink = document.getElementById('link-all-records');
+      if (allRecordsLink) {
+        allRecordsLink.addEventListener('click', function (e) {
+          e.preventDefault();
+          window.location.hash = 'records';
+        });
+      }
       _bindHistoryEvents();
     },
 
@@ -263,7 +270,21 @@
       var session = _activeSession;
       var _drafts = session ? session.drafts.filter(function (d) { return d.status !== 'discarded'; }) : [];
       if (!session || _drafts.length === 0) {
-        _drafts = _getDemoDrafts();
+        // 无活跃会话或无草稿 → 显示空状态（不展示无法操作的 demo 草稿）
+        var emptyHtml = ''
+          + '<div class="chat-page-container chat-review-ready">'
+          + '  <div class="chat-review-empty" style="padding-top:60px;">'
+          + '    <div class="chat-review-empty-icon">📋</div>'
+          + '    <p>暂无待整理记录</p>'
+          + '    <p style="color:var(--text-muted);font-size:0.85rem;margin-top:8px;">在 AI 聊聊中完成对话后，AI 会帮你整理草稿</p>'
+          + '  </div>'
+          + '  <div class="chat-review-bottom-bar">'
+          + '    <button class="chat-review-btn-later" id="btn-later">返回聊聊</button>'
+          + '  </div>'
+          + '</div>';
+        container.innerHTML = emptyHtml;
+        _bindReviewEvents();
+        return;
       }
 
       var totalCount = _drafts.length;

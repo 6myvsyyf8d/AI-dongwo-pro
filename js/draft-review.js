@@ -163,33 +163,33 @@
 
   function buildDraftCard(d, type) {
     var isReadOnly = (d.status === 'confirmed' || d.status === 'discarded');
-    return '<div class="dr-card" data-draft-id="' + d.id + '" data-status="' + d.status + '">'
+    var html = '<div class="dr-card" data-draft-id="' + d.id + '" data-status="' + d.status + '">'
       + '<div class="dr-card-header">'
       + '<span class="dr-card-author">👤 ' + escapeHtml(d.authorName || '临时支持者') + '</span>'
       + '<span class="dr-card-module">📂 ' + moduleLabel(d.suggestedTheme || d.selectedTheme) + '</span>'
       + '<span class="dr-card-status ' + d.status + '">' + statusLabel(d.status) + '</span>'
-      + '</div>'
+      + '</div>';
 
-      // 三段式 Step 1: 原始表达（仅在有内容时显示）
-      if (d.originalText || '') {
-        html += '<div class="dr-step-section">'
+    // 三段式 Step 1: 原始表达（仅在有内容时显示）
+    if (d.originalText) {
+      html += '<div class="dr-step-section">'
         + '<div class="dr-step-badge">1</div>'
-        + '<div class="dr-section"><div class="dr-section-text">' + escapeHtml(d.originalText || '') + '</div></div>'
+        + '<div class="dr-section"><div class="dr-section-text">' + escapeHtml(d.originalText) + '</div></div>'
         + '</div>';
-      }
+    }
 
-      // 三段式 Step 2: AI草稿（可编辑）
-      + '<div class="dr-step-section">'
+    // 三段式 Step 2: AI草稿（可编辑）
+    html += '<div class="dr-step-section">'
       + '<div class="dr-step-badge">2</div>'
       + '<div class="dr-section"><div class="dr-section-label">AI草稿</div>'
       + (isReadOnly
           ? '<div class="dr-section-text">' + escapeHtml(d.organizedSummary || '') + '</div>'
           : '<textarea class="dr-summary-edit" data-draft-id="' + d.id + '">' + escapeHtml(d.organizedSummary || '') + '</textarea>')
       + '</div>'
-      + '</div>'
+      + '</div>';
 
-      // 三段式 Step 3: 归属
-      + '<div class="dr-step-section">'
+    // 三段式 Step 3: 归属
+    html += '<div class="dr-step-section">'
       + '<div class="dr-step-badge">3</div>'
       + '<div class="dr-section"><div class="dr-section-label">归属</div>'
       + (isReadOnly
@@ -199,23 +199,25 @@
                 return '<option value="' + m.value + '"' + ((d.selectedTheme || d.suggestedTheme) === m.value ? ' selected' : '') + '>' + m.label + '</option>';
               }).join('')
             + '</select>')
-      + '</div>'
-
-      // 操作按钮
-      + (!isReadOnly
-          ? '<div class="dr-actions">'
-            + '<button class="dr-btn-confirm" data-draft-id="' + d.id + '">确认并写入档案</button>'
-            + '<button class="dr-btn-needs-info" data-draft-id="' + d.id + '">标记为需补充</button>'
-            + '<button class="dr-btn-discard" data-draft-id="' + d.id + '">放弃这条草稿</button>'
-            + '</div>'
-          : d.status === 'confirmed'
-            ? '<div class="dr-actions">'
-              + '<button class="dr-btn-view-topic" data-topic="' + (d.selectedTheme || d.suggestedTheme) + '">📋 查看已入档记录</button>'
-              + '</div>'
-            : '<div class="dr-actions"></div>')
-      + '</div>'
-      + '<div class="dr-source">可追溯来源：临时支持者记录</div>'
       + '</div>';
+
+    // 操作按钮
+    html += (!isReadOnly
+        ? '<div class="dr-actions">'
+          + '<button class="dr-btn-confirm" data-draft-id="' + d.id + '">确认并写入档案</button>'
+          + '<button class="dr-btn-needs-info" data-draft-id="' + d.id + '">标记为需补充</button>'
+          + '<button class="dr-btn-discard" data-draft-id="' + d.id + '">放弃这条草稿</button>'
+          + '</div>'
+        : d.status === 'confirmed'
+          ? '<div class="dr-actions">'
+            + '<button class="dr-btn-view-topic" data-topic="' + (d.selectedTheme || d.suggestedTheme) + '">📋 查看已入档记录</button>'
+            + '</div>'
+          : '<div class="dr-actions"></div>');
+
+    html += '<div class="dr-source">可追溯来源：临时支持者记录</div>'
+      + '</div>';
+
+    return html;
   }
 
   function buildDoneCard(d) {
