@@ -203,14 +203,12 @@
       switch (field) {
         case 'title':
           html += '<div style="margin-bottom:14px;">';
-          html += '  <label style="display:block;font-size:0.85rem;color:#555;margin-bottom:4px;font-weight:500;">标题</label>';
-          html += '  <input type="text" name="title" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:0.9rem;box-sizing:border-box;" required>';
+          html += '  <input type="text" name="title" placeholder="标题" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:0.9rem;box-sizing:border-box;" required>';
           html += '</div>';
           break;
 
         case 'content':
           html += '<div style="margin-bottom:14px;">';
-          html += '  <label style="display:block;font-size:0.85rem;color:#555;margin-bottom:4px;font-weight:500;">内容</label>';
           html += '  <textarea name="content" placeholder="请详细描述..." rows="4" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:0.9rem;box-sizing:border-box;resize:vertical;" required></textarea>';
           html += '</div>';
           break;
@@ -246,7 +244,6 @@
 
           // 情绪事件额外字段：触发原因和应对方式
           html += '<div style="margin-bottom:14px;">';
-          html += '  <label style="display:block;font-size:0.85rem;color:#555;margin-bottom:4px;font-weight:500;">触发原因 / 具体情况</label>';
           html += '  <textarea name="content" placeholder="描述情绪事件的触发原因、经过和应对方式..." rows="4" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:0.9rem;box-sizing:border-box;resize:vertical;" required></textarea>';
           html += '</div>';
           break;
@@ -269,7 +266,6 @@
           });
           html += '  </div>';
           html += '  <div style="margin-top:8px;">';
-          html += '    <label style="display:block;font-size:0.82rem;color:#555;margin-bottom:4px;font-weight:500;">适用场景（可多选）</label>';
           html += '    <div style="display:flex;gap:6px;flex-wrap:wrap;">';
           ['学校', '就业', '社区活动', '医疗', '家庭', '临时照护'].forEach(function(sc) {
             html += '      <label style="cursor:pointer;display:flex;align-items:center;gap:4px;font-size:0.78rem;padding:4px 10px;border:1px solid #ddd;border-radius:14px;background:#fff;">';
@@ -279,7 +275,6 @@
           html += '    </div>';
           html += '  </div>';
           html += '  <div style="margin-top:8px;">';
-          html += '    <label style="display:block;font-size:0.82rem;color:#555;margin-bottom:4px;font-weight:500;">补充说明</label>';
           html += '    <textarea name="effectiveness_note" placeholder="什么情况下有效？什么情况下无效？有没有需要特别注意的地方？" rows="2" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:0.85rem;box-sizing:border-box;resize:vertical;"></textarea>';
           html += '  </div>';
           html += '</div>';

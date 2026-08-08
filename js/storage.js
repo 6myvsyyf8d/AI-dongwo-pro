@@ -7,7 +7,7 @@
 
   var STORAGE_KEY = 'ai_dongwo_data';
   var INSTANCE_KEY_PREFIX = 'ai_dongwo_task_instances_';
-  var DATA_VERSION = 9;
+  var DATA_VERSION = 10;
   // 当前登录用户用 sessionStorage，关闭标签页即清空，新访客看到登录页
   var CURRENT_USER_KEY = 'ai_dongwo_current_user';
 
@@ -25,13 +25,40 @@
   /** 生成示例用户数据 */
   function generateSampleUsers() {
     return [
-      { id: 'u_sample_youth', name: '小雨', role: 'youth', pin: '1111', avatar: '🌻', createdAt: window.getTodayString() },
+      // ====== 核心用户 ======
+      { id: 'u_sample_youth', name: '小雨', role: 'youth', pin: '1111', avatar: '🌻', createdAt: window.getTodayString(),
+        disability: '孤独症谱系', birthDate: '2002-05-12', school: '在学（特教学校）', employment: '未就业' },
       { id: 'u_sample_parent', name: '妈妈', role: 'parent', pin: '2222', avatar: '👨\u200d👩\u200d👧', createdAt: window.getTodayString() },
       { id: 'u_sample_teacher', name: '李老师', role: 'teacher', pin: '3333', avatar: '📚', createdAt: window.getTodayString() },
       { id: 'u_sample_caregiver', name: '张阿姨', role: 'caregiver', pin: '4444', avatar: '🤝', createdAt: window.getTodayString() },
       { id: 'u_sample_supporter', name: '临时支持者', role: 'temp_supporter', pin: '8888', avatar: '🤲', createdAt: window.getTodayString() },
       { id: 'u_gov_admin', name: '政府管理员', role: 'government', pin: '6666', avatar: '🏛️', createdAt: window.getTodayString() },
-      { id: 'u_sys_admin', name: '系统管理员', role: 'admin', pin: '9999', avatar: '🛡️', createdAt: window.getTodayString() }
+      { id: 'u_sys_admin', name: '系统管理员', role: 'admin', pin: '9999', avatar: '🛡️', createdAt: window.getTodayString() },
+
+      // ====== 示例心青年（用于政府看板聚合统计，演示数据） ======
+      { id: 'u_demo_y1', name: '小宇', role: 'youth', pin: '1001', avatar: '🌟', createdAt: '2025-01-10',
+        disability: '孤独症谱系', birthDate: '2010-08-22', school: '在学（普通学校）', employment: '未就业' },
+      { id: 'u_demo_y2', name: '婷婷', role: 'youth', pin: '1002', avatar: '🌸', createdAt: '2025-02-15',
+        disability: '智力障碍', birthDate: '2005-03-14', school: '在学（特教学校）', employment: '未就业' },
+      { id: 'u_demo_y3', name: '浩浩', role: 'youth', pin: '1003', avatar: '🦁', createdAt: '2024-11-20',
+        disability: '唐氏综合征', birthDate: '2000-07-30', school: '未在学', employment: '已就业' },
+      { id: 'u_demo_y4', name: '乐乐', role: 'youth', pin: '1004', avatar: '🎈', createdAt: '2025-03-05',
+        disability: '脑性麻痹', birthDate: '2015-01-18', school: '在学（普通学校）', employment: '未就业' },
+      { id: 'u_demo_y5', name: '佳佳', role: 'youth', pin: '1005', avatar: '💫', createdAt: '2024-09-12',
+        disability: '孤独症谱系', birthDate: '1998-12-05', school: '未在学', employment: '职业培训中' },
+      { id: 'u_demo_y6', name: '瑞瑞', role: 'youth', pin: '1006', avatar: '🚀', createdAt: '2024-08-28',
+        disability: '智力障碍', birthDate: '2012-06-09', school: '在学（普通学校）', employment: '未就业' },
+      { id: 'u_demo_y7', name: '萱萱', role: 'youth', pin: '1007', avatar: '🦋', createdAt: '2025-01-22',
+        disability: '发育迟缓', birthDate: '2018-04-03', school: '未在学', employment: '未就业' },
+      { id: 'u_demo_y8', name: '明明', role: 'youth', pin: '1008', avatar: '⚡', createdAt: '2024-10-15',
+        disability: '孤独症谱系', birthDate: '2008-09-11', school: '在学（特教学校）', employment: '未就业' },
+
+      // ====== 示例服务人员（增加数量用于统计） ======
+      { id: 'u_demo_t1', name: '王老师', role: 'teacher', pin: '2001', avatar: '📖', createdAt: '2024-06-10' },
+      { id: 'u_demo_t2', name: '赵老师', role: 'teacher', pin: '2002', avatar: '🎯', createdAt: '2024-07-05' },
+      { id: 'u_demo_c1', name: '志愿者小刘', role: 'temp_supporter', pin: '3001', avatar: '🤲', createdAt: '2025-02-01' },
+      { id: 'u_demo_c2', name: '志愿者阿明', role: 'temp_supporter', pin: '3002', avatar: '💪', createdAt: '2025-03-10' },
+      { id: 'u_demo_c3', name: '志愿者小陈', role: 'temp_supporter', pin: '3003', avatar: '🎒', createdAt: '2025-04-18' }
     ];
   }
 

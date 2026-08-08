@@ -170,27 +170,28 @@
       + '<span class="dr-card-status ' + d.status + '">' + statusLabel(d.status) + '</span>'
       + '</div>'
 
-      // 三段式 Step 1: 原始表达（只读）
-      + '<div class="dr-step-section">'
-      + '<div class="dr-step-badge">第一步</div>'
-      + '<div class="dr-section"><div class="dr-section-label">📝 原始表达</div>'
-      + '<div class="dr-section-text">' + escapeHtml(d.originalText || '') + '</div></div>'
-      + '</div>'
+      // 三段式 Step 1: 原始表达（仅在有内容时显示）
+      if (d.originalText || '') {
+        html += '<div class="dr-step-section">'
+        + '<div class="dr-step-badge">1</div>'
+        + '<div class="dr-section"><div class="dr-section-text">' + escapeHtml(d.originalText || '') + '</div></div>'
+        + '</div>';
+      }
 
-      // 三段式 Step 2: AI整理草稿（可编辑）
+      // 三段式 Step 2: AI草稿（可编辑）
       + '<div class="dr-step-section">'
-      + '<div class="dr-step-badge">第二步</div>'
-      + '<div class="dr-section"><div class="dr-section-label">🤖 AI整理草稿 · 演示整理，不代表专业判断</div>'
+      + '<div class="dr-step-badge">2</div>'
+      + '<div class="dr-section"><div class="dr-section-label">AI草稿</div>'
       + (isReadOnly
           ? '<div class="dr-section-text">' + escapeHtml(d.organizedSummary || '') + '</div>'
           : '<textarea class="dr-summary-edit" data-draft-id="' + d.id + '">' + escapeHtml(d.organizedSummary || '') + '</textarea>')
       + '</div>'
       + '</div>'
 
-      // 三段式 Step 3: 确认入档
+      // 三段式 Step 3: 归属
       + '<div class="dr-step-section">'
-      + '<div class="dr-step-badge">第三步</div>'
-      + '<div class="dr-section"><div class="dr-section-label">📂 归属主题 / 确认入档</div>'
+      + '<div class="dr-step-badge">3</div>'
+      + '<div class="dr-section"><div class="dr-section-label">归属</div>'
       + (isReadOnly
           ? '<div class="dr-section-text">' + moduleLabel(d.selectedTheme || d.suggestedTheme) + '</div>'
           : '<select class="dr-module-select" data-draft-id="' + d.id + '">'
@@ -199,7 +200,6 @@
               }).join('')
             + '</select>')
       + '</div>'
-      + (isReadOnly ? '' : '<div class="dr-review-hint">确认后将写入L4原始记录。记录者与审核者信息同时保留。</div>')
 
       // 操作按钮
       + (!isReadOnly
@@ -225,9 +225,9 @@
       + '<span class="dr-card-module">📂 ' + moduleLabel(d.selectedTheme || d.suggestedTheme) + '</span>'
       + '<span class="dr-card-status ' + d.status + '">' + statusLabel(d.status) + '</span>'
       + '</div>'
-      + '<div class="dr-section"><div class="dr-section-label">📝 原始记录</div>'
+      + '<div class="dr-section"><div class="dr-section-label">原始记录</div>'
       + '<div class="dr-section-text">' + escapeHtml(d.originalText || '') + '</div></div>'
-      + '<div class="dr-section"><div class="dr-section-label">🤖 整理摘要</div>'
+      + '<div class="dr-section"><div class="dr-section-label">整理摘要</div>'
       + '<div class="dr-section-text">' + escapeHtml(d.organizedSummary || '') + '</div></div>'
       + '<div class="dr-source">审核者：' + escapeHtml(d.reviewerName || '') + ' · ' + (d.reviewedAt ? formatTime(d.reviewedAt) : '') + '</div>'
       + '</div>';

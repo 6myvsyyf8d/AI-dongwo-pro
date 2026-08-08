@@ -814,58 +814,336 @@
   }
 
   /**
+   * 政府看板数据聚合函数
+   * 从 DataStore 读取所有用户，计算分布数据
+   */
+  function getGovernmentStats() {
+    var allUsers = window.DataStore.getAllUsers();
+    var youths = allUsers.filter(function(u) { return u.role === 'youth'; });
+    var totalYouth = youths.length;
+
+    // 计算年龄
+    var now = new Date();
+    function calcAge(birthDate) {
+      if (!birthDate) return -1;
+      var b = new Date(birthDate);
+      var age = now.getFullYear() - b.getFullYear();
+      var m = now.getMonth() - b.getMonth();
+      if (m < 0 || (m === 0 && now.getDate() < b.getDate())) age--;
+      return age;
+    }
+
+    // 障碍类型分布
+    var disabilityMap = {};
+    youths.forEach(function(y) {
+      var d = y.disability || '未知';
+      disabilityMap[d] = (disabilityMap[d] || 0) + 1;
+    });
+
+    // 年龄分布
+    var ageMap = { '0–6岁': 0, '7–12岁': 0, '13–17岁': 0, '18–25岁': 0, '26岁+': 0 };
+    youths.forEach(function(y) {
+      var age = calcAge(y.birthDate);
+      if (age < 0) return;
+      if (age <= 6) ageMap['0–6岁']++;
+      else if (age <= 12) ageMap['7–12岁']++;
+      else if (age <= 17) ageMap['13–17岁']++;
+      else if (age <= 25) ageMap['18–25岁']++;
+      else ageMap['26岁+']++;
+    });
+
+    // 入学分布
+    var schoolMap = {};
+    youths.forEach(function(y) {
+      var s = y.school || '未知';
+      schoolMap[s] = (schoolMap[s] || 0) + 1;
+    });
+
+    // 就业分布
+    var employmentMap = {};
+    youths.forEach(function(y) {
+      var e = y.employment || '未知';
+      employmentMap[e] = (employmentMap[e] || 0) + 1;
+    });
+
+    // 服务人员统计
+    var teachers = allUsers.filter(function(u) { return u.role === 'teacher'; }).length;
+    var caregivers = allUsers.filter(function(u) { return u.role === 'caregiver'; }).length;
+    var volunteers = allUsers.filter(function(u) { return u.role === 'temp_supporter'; }).length;
+    // 影子老师属于 caregiver 角色（根据项目定义）
+    var shadowTeachers = caregivers;
+
+    // 计算比率
+    var teacherRatio = totalYouth > 0 ? (teachers / totalYouth).toFixed(1) : '0';
+    var volunteerRatio = totalYouth > 0 ? (volunteers / totalYouth).toFixed(1) : '0';
+    var shadowCoverage = totalYouth > 0 ? Math.round(shadowTeachers / totalYouth * 1000) / 10 : 0;
+
+    return {
+      totalYouth: totalYouth,
+      disabilityMap: disabilityMap,
+      ageMap: ageMap,
+      schoolMap: schoolMap,
+      employmentMap: employmentMap,
+      teachers: teachers,
+      shadowTeachers: shadowTeachers,
+      caregivers: caregivers,
+      volunteers: volunteers,
+      teacherRatio: teacherRatio,
+      volunteerRatio: volunteerRatio,
+      shadowCoverage: shadowCoverage
+    };
+  }
+
+  /**
    * 政府角色宏观统计卡片
    */
-  function renderGovernmentStats() {
-    // 查找或创建统计区域容器
-    var container = document.getElementById('latest-activity') || document.getElementById('card-grid');
+  function renderGovernmentStats(targetContainer) {
+    var container = targetContainer || document.getElementById('latest-activity') || document.getElementById('card-grid');
     if (!container) return;
 
-    var statsHTML = '<div class="gov-stats-section" style="margin-top:16px;padding:0 16px;">';
-    statsHTML += '<h3 style="font-size:1.1rem;font-weight:600;margin-bottom:12px;color:var(--text-primary);">📊 区域服务概况</h3>';
-    statsHTML += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">';
+    var stats = getGovernmentStats();
+    var statsHTML = '';
 
-    var stats = [
-      { label: '覆盖人数', value: '1,286', sub: '心智障碍者' },
-      { label: '累计服务时长', value: '8,520h', sub: '近12个月' },
-      { label: '活跃家庭', value: '346', sub: '本月' },
-      { label: '就业支持人数', value: '89', sub: '在职' }
+    // ====== KPI 指标卡片 ======
+    statsHTML += '<div style="padding:12px 16px 0;">';
+    statsHTML += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">';
+    var employedCount = stats.employmentMap['已就业'] || 0;
+    var kpis = [
+      { label: '覆盖人数', value: stats.totalYouth, sub: '心智障碍者', color: '#D97757' },
+      { label: '服务人员', value: stats.teachers + stats.caregivers + stats.volunteers, sub: '教师/陪护/志愿者', color: '#6FA789' },
+      { label: '师生比', value: '1 : ' + stats.teacherRatio, sub: '教师 : 心青年', color: '#D99A4E' },
+      { label: '已就业', value: employedCount + '人', sub: '在职', color: '#13C2C2' }
     ];
-    stats.forEach(function (s) {
-      statsHTML += '<div style="background:var(--card-bg);border-radius:12px;padding:14px;text-align:center;">';
-      statsHTML += '<div style="font-size:1.5rem;font-weight:700;color:var(--color-primary);">' + s.value + '</div>';
-      statsHTML += '<div style="font-size:0.8rem;color:var(--text-secondary);margin-top:2px;">' + s.label + '</div>';
-      statsHTML += '<div style="font-size:0.7rem;color:var(--text-muted);">' + s.sub + '</div>';
+    kpis.forEach(function(k) {
+      statsHTML += '<div style="background:#fff;border-radius:10px;padding:14px;border-left:3px solid ' + k.color + ';box-shadow:0 1px 3px rgba(0,0,0,0.04);">';
+      statsHTML += '<div style="font-size:1.3rem;font-weight:700;color:#333;">' + k.value + '</div>';
+      statsHTML += '<div style="font-size:0.78rem;color:#888;margin-top:2px;">' + k.label + '</div>';
+      statsHTML += '<div style="font-size:0.7rem;color:#bbb;">' + k.sub + '</div>';
+      statsHTML += '</div>';
+    });
+    statsHTML += '</div></div>';
+
+    // ====== 趋势横条图 ======
+    statsHTML += '<div style="margin:0 16px 12px;background:#fff;border-radius:10px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,0.04);">';
+    statsHTML += '<div style="font-size:0.9rem;font-weight:600;color:#333;margin-bottom:10px;">📈 近 6 个月服务活跃度（演示）</div>';
+    statsHTML += '<div style="height:100px;display:flex;align-items:flex-end;gap:8px;padding:4px 0;">';
+    var bars = [40, 55, 48, 62, 58, 72];
+    var months = ['1月','2月','3月','4月','5月','6月'];
+    bars.forEach(function (h) {
+      statsHTML += '<div style="flex:1;background:#f0f0f0;border-radius:4px 4px 0 0;position:relative;height:100%;">';
+      statsHTML += '<div style="position:absolute;bottom:0;left:0;right:0;background:#D97757;border-radius:4px 4px 0 0;height:' + h + '%;opacity:0.85;"></div>';
+      statsHTML += '</div>';
+    });
+    statsHTML += '</div>';
+    statsHTML += '<div style="display:flex;justify-content:space-between;font-size:0.68rem;color:#aaa;margin-top:4px;">';
+    months.forEach(function(m){statsHTML+='<span>'+m+'</span>';});
+    statsHTML += '</div></div>';
+
+    // ====== 心智障碍类型 + 年龄 并排 ======
+    statsHTML += '<div style="margin:0 16px 12px;display:grid;grid-template-columns:1fr 1fr;gap:10px;">';
+
+    // 类型分布 - 横条（从 DataStore 聚合）
+    statsHTML += '<div style="background:#fff;border-radius:10px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,0.04);">';
+    statsHTML += '<div style="font-size:0.82rem;font-weight:600;color:#333;margin-bottom:8px;">🧩 障碍类型</div>';
+    var typeColors = ['#D97757', '#D99A4E', '#6FA789', '#13C2C2', '#9A8F88', '#bbb'];
+    var totalYouth = stats.totalYouth || 1;
+    var typeEntries = Object.entries(stats.disabilityMap).sort(function(a, b) { return b[1] - a[1]; });
+    typeEntries.forEach(function(entry, i) {
+      var pct = Math.round(entry[1] / totalYouth * 100);
+      var color = typeColors[i % typeColors.length];
+      statsHTML += '<div style="margin-bottom:5px;">';
+      statsHTML += '<div style="display:flex;justify-content:space-between;font-size:0.68rem;color:#777;margin-bottom:2px;">';
+      statsHTML += '<span>' + entry[0] + '</span><span>' + entry[1] + '</span></div>';
+      statsHTML += '<div style="height:6px;background:#f0f0f0;border-radius:3px;overflow:hidden;">';
+      statsHTML += '<div style="height:100%;width:' + pct + '%;background:' + color + ';border-radius:3px;"></div></div>';
       statsHTML += '</div>';
     });
     statsHTML += '</div>';
 
-    // 趋势占位图
-    statsHTML += '<div style="margin-top:12px;background:var(--card-bg);border-radius:12px;padding:16px;">';
-    statsHTML += '<h4 style="font-size:0.95rem;font-weight:600;margin-bottom:8px;color:var(--text-primary);">📈 近6个月服务趋势</h4>';
-    statsHTML += '<div style="height:120px;display:flex;align-items:flex-end;gap:8px;padding:4px 0;">';
-    var bars = [40, 55, 48, 62, 58, 72];
-    bars.forEach(function (h) {
-      statsHTML += '<div style="flex:1;background:linear-gradient(to top,var(--color-primary-light),var(--color-primary));border-radius:4px 4px 0 0;height:' + h + 'px;opacity:0.8;"></div>';
+    // 年龄分布（从 birthDate 计算）
+    statsHTML += '<div style="background:#fff;border-radius:10px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,0.04);">';
+    statsHTML += '<div style="font-size:0.82rem;font-weight:600;color:#333;margin-bottom:8px;">📅 年龄分布</div>';
+    var ageOrder = ['0–6岁', '7–12岁', '13–17岁', '18–25岁', '26岁+'];
+    ageOrder.forEach(function(label) {
+      var a = { label: label, value: stats.ageMap[label] || 0, pct: Math.round((stats.ageMap[label] || 0) / totalYouth * 100) };
+      statsHTML += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">';
+      statsHTML += '<span style="font-size:0.72rem;color:#555;width:56px;">' + a.label + '</span>';
+      statsHTML += '<div style="flex:1;height:6px;background:#f0f0f0;border-radius:3px;overflow:hidden;">';
+      statsHTML += '<div style="height:100%;width:' + a.pct + '%;background:#D97757;border-radius:3px;opacity:0.7;"></div></div>';
+      statsHTML += '<span style="font-size:0.7rem;color:#999;width:28px;text-align:right;">' + a.value + '</span>';
+      statsHTML += '</div>';
     });
     statsHTML += '</div>';
-    statsHTML += '<div style="display:flex;justify-content:space-between;font-size:0.7rem;color:var(--text-muted);margin-top:4px;">';
-    ['1月','2月','3月','4月','5月','6月'].forEach(function(m){statsHTML+='<span>'+m+'</span>';});
+    statsHTML += '</div>';
+
+    // ====== 入学 & 就业 ======
+    statsHTML += '<div style="margin:0 16px 12px;display:grid;grid-template-columns:1fr 1fr;gap:10px;">';
+
+    // 入学状态
+    statsHTML += '<div style="background:#fff;border-radius:10px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,0.04);">';
+    statsHTML += '<div style="font-size:0.82rem;font-weight:600;color:#333;margin-bottom:8px;">🎓 入学状态</div>';
+    var scColors = ['#6FA789','#D99A4E','#E7B95E','#D4654A','#bbb'];
+    Object.entries(stats.schoolMap).sort(function(a,b){return b[1]-a[1];}).forEach(function(e,i){
+      var p = Math.round(e[1]/totalYouth*100);
+      statsHTML += '<div style="margin-bottom:5px;"><div style="display:flex;justify-content:space-between;font-size:0.68rem;color:#777;margin-bottom:2px;"><span>'+e[0]+'</span><span>'+e[1]+'</span></div><div style="height:6px;background:#f0f0f0;border-radius:3px;overflow:hidden;"><div style="height:100%;width:'+p+'%;background:'+(scColors[i%5])+';border-radius:3px;"></div></div></div>';
+    });
+    statsHTML += '</div>';
+
+    // 就业状态
+    statsHTML += '<div style="background:#fff;border-radius:10px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,0.04);">';
+    statsHTML += '<div style="font-size:0.82rem;font-weight:600;color:#333;margin-bottom:8px;">💼 就业状态</div>';
+    var empCols = ['#13C2C2','#E7B95E','#D4654A','#6FA789','#bbb'];
+    Object.entries(stats.employmentMap).sort(function(a,b){return b[1]-a[1];}).forEach(function(e,i){
+      var p = Math.round(e[1]/totalYouth*100);
+      statsHTML += '<div style="margin-bottom:5px;"><div style="display:flex;justify-content:space-between;font-size:0.68rem;color:#777;margin-bottom:2px;"><span>'+e[0]+'</span><span>'+e[1]+'</span></div><div style="height:6px;background:#f0f0f0;border-radius:3px;overflow:hidden;"><div style="height:100%;width:'+p+'%;background:'+(empCols[i%5])+';border-radius:3px;"></div></div></div>';
+    });
+    statsHTML += '</div>';
+    statsHTML += '</div>';
+
+    // ====== 服务人员配比 ======
+    statsHTML += '<div style="margin:0 16px 12px;display:grid;grid-template-columns:1fr 1fr;gap:10px;">';
+    statsHTML += '<div style="background:#fff;border-radius:10px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,0.04);">';
+    statsHTML += '<div style="font-size:0.82rem;font-weight:600;color:#333;margin-bottom:8px;">👥 服务人员</div>';
+    var peopleData = [];
+    if (stats.teachers > 0) peopleData.push({ label: '教师', value: stats.teachers, color: '#D97757' });
+    if (stats.shadowTeachers > 0) peopleData.push({ label: '影子老师/陪护', value: stats.shadowTeachers, color: '#6FA789' });
+    if (stats.volunteers > 0) peopleData.push({ label: '志愿者', value: stats.volunteers, color: '#D99A4E' });
+    peopleData.forEach(function(p) {
+      statsHTML += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">';
+      statsHTML += '<span style="font-size:0.72rem;color:#555;width:64px;">' + p.label + '</span>';
+      statsHTML += '<div style="flex:1;height:6px;background:#f0f0f0;border-radius:3px;overflow:hidden;">';
+      statsHTML += '<div style="height:100%;width:' + Math.round(p.value/Math.max.apply(null,peopleData.map(function(x){return x.value;}))*100) + '%;background:' + p.color + ';border-radius:3px;opacity:0.7;"></div></div>';
+      statsHTML += '<span style="font-size:0.7rem;color:#999;width:28px;text-align:right;">' + p.value + '</span>';
+      statsHTML += '</div>';
+    });
+    statsHTML += '</div>';
+
+    // 人配比
+    statsHTML += '<div style="background:#fff;border-radius:10px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,0.04);">';
+    statsHTML += '<div style="font-size:0.82rem;font-weight:600;color:#333;margin-bottom:8px;">📐 人配比</div>';
+    var ratioData = [
+      { label: '师生比', value: '1 : ' + stats.teacherRatio, note: '教师 : 心青年', color: '#D97757' },
+      { label: '影子老师覆盖率', value: stats.shadowCoverage + '%', note: stats.shadowTeachers + ' / ' + stats.totalYouth, color: '#6FA789' },
+      { label: '志愿者配比', value: '1 : ' + stats.volunteerRatio, note: '志愿者 : 心青年', color: '#D99A4E' }
+    ];
+    ratioData.forEach(function(r) {
+      statsHTML += '<div style="margin-bottom:7px;border-left:3px solid ' + r.color + ';padding-left:10px;">';
+      statsHTML += '<div style="font-size:0.85rem;font-weight:700;color:#333;">' + r.value + '</div>';
+      statsHTML += '<div style="font-size:0.68rem;color:#999;margin-top:1px;">' + r.label + '</div>';
+      statsHTML += '<div style="font-size:0.65rem;color:#bbb;">' + r.note + '</div>';
+      statsHTML += '</div>';
+    });
+    statsHTML += '</div>';
+    statsHTML += '</div>';
+
+    // ====== 月度支援时长分布 ======
+    statsHTML += '<div style="margin:0 16px 12px;background:#fff;border-radius:10px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,0.04);">';
+    statsHTML += '<div style="font-size:0.82rem;font-weight:600;color:#333;margin-bottom:8px;">⏱️ 各角色月度支援时长分布（小时）（演示数据）</div>';
+
+    var monthLabels = ['1月','2月','3月','4月','5月','6月'];
+    // 每月各角色实际 vs 需求
+    var monthlyData = [
+      { m: '1月', teacher: 140, shadow: 105, volunteer: 52, medical: 72, social: 85, need: 520 },
+      { m: '2月', teacher: 128, shadow: 88, volunteer: 38, medical: 65, social: 78, need: 510 },
+      { m: '3月', teacher: 155, shadow: 110, volunteer: 48, medical: 80, social: 92, need: 540 },
+      { m: '4月', teacher: 148, shadow: 102, volunteer: 42, medical: 75, social: 88, need: 530 },
+      { m: '5月', teacher: 160, shadow: 115, volunteer: 36, medical: 68, social: 82, need: 545 },
+      { m: '6月', teacher: 135, shadow: 95, volunteer: 55, medical: 78, social: 90, need: 525 }
+    ];
+
+    // 堆叠柱状图
+    statsHTML += '<div style="display:flex;align-items:flex-end;gap:6px;height:140px;padding:4px 0 0;margin-bottom:6px;">';
+    monthlyData.forEach(function(m) {
+      var total = m.teacher + m.shadow + m.volunteer + m.medical + m.social;
+      var maxH = 560;
+      var needH = Math.round(m.need / maxH * 100);
+      statsHTML += '<div style="flex:1;display:flex;flex-direction:column;align-items:center;position:relative;height:100%;">';
+      // 需求参考线
+      statsHTML += '<div style="position:absolute;bottom:' + needH + '%;left:0;right:0;border-top:2px dashed #D4654A;z-index:1;opacity:0.7;"></div>';
+      // 堆叠柱
+      statsHTML += '<div style="width:100%;height:100%;display:flex;flex-direction:column-reverse;position:relative;z-index:0;">';
+      var segs = [
+        { v: m.teacher, c: '#D97757', pct: Math.round(m.teacher / maxH * 100) },
+        { v: m.shadow, c: '#6FA789', pct: Math.round(m.shadow / maxH * 100) },
+        { v: m.volunteer, c: '#D99A4E', pct: Math.round(m.volunteer / maxH * 100) },
+        { v: m.medical, c: '#13C2C2', pct: Math.round(m.medical / maxH * 100) },
+        { v: m.social, c: '#E7B95E', pct: Math.round(m.social / maxH * 100) }
+      ];
+      segs.forEach(function(s) {
+        statsHTML += '<div style="height:' + s.pct + '%;background:' + s.c + ';opacity:0.85;border-radius:1px;"></div>';
+      });
+      statsHTML += '</div></div>';
+    });
+    statsHTML += '</div>';
+
+    // 月份标签 + 缺口标注
+    statsHTML += '<div style="display:flex;gap:6px;">';
+    monthlyData.forEach(function(m) {
+      var total = m.teacher + m.shadow + m.volunteer + m.medical + m.social;
+      var gap = m.need - total;
+      var gapColor = gap > 80 ? '#D4654A' : (gap > 40 ? '#E7B95E' : '#6FA789');
+      statsHTML += '<div style="flex:1;text-align:center;">';
+      statsHTML += '<div style="font-size:0.65rem;color:#999;">' + m.m + '</div>';
+      statsHTML += '<div style="font-size:0.6rem;color:' + gapColor + ';">' + (gap > 0 ? '缺 ' + gap + 'h' : '充足') + '</div>';
+      statsHTML += '</div>';
+    });
+    statsHTML += '</div>';
+
+    // 图例
+    statsHTML += '<div style="display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:8px;font-size:0.65rem;color:#999;">';
+    statsHTML += '<span style="color:#D97757;">■ 教师</span>';
+    statsHTML += '<span style="color:#6FA789;">■ 影子老师</span>';
+    statsHTML += '<span style="color:#D99A4E;">■ 志愿者</span>';
+    statsHTML += '<span style="color:#13C2C2;">■ 康复师</span>';
+    statsHTML += '<span style="color:#E7B95E;">■ 社工</span>';
+    statsHTML += '<span style="color:#D4654A;">- - 需求线</span>';
+    statsHTML += '</div>';
+
+    // 缺口解读
+    statsHTML += '<div style="margin-top:8px;padding:8px 10px;background:#FFF7F0;border-radius:6px;font-size:0.65rem;color:#D4654A;line-height:1.5;">';
+    statsHTML += '📌 <b>2月、5月</b>志愿者和影子老师缺口最大（寒假/节假日效应）；<b>6月</b>志愿者回升明显（暑期招募）。建议提前 1–2 个月做人力储备。';
     statsHTML += '</div></div>';
 
-    // 数据说明
-    statsHTML += '<div style="margin-top:8px;padding:10px;background:var(--card-bg);border-radius:8px;font-size:0.75rem;color:var(--text-muted);">';
-    statsHTML += '🔒 数据范围说明：以上数据为示例演示数据，已做脱敏处理。实际数据范围取决于机构授权和数据共享协议。';
+    // ====== 支持服务缺口 ======
+    statsHTML += '<div style="margin:0 16px 12px;background:#fff;border-radius:10px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,0.04);">';
+    statsHTML += '<div style="font-size:0.82rem;font-weight:600;color:#333;margin-bottom:8px;">🤝 支持服务覆盖与缺口（演示数据）</div>';
+    var supportData = [
+      { label: '日间照护', covered: 486, needed: 520, gap: 34 },
+      { label: '就业支持', covered: 153, needed: 320, gap: 167 },
+      { label: '社区融合', covered: 341, needed: 510, gap: 169 },
+      { label: '家庭支持', covered: 278, needed: 450, gap: 172 },
+      { label: '心理咨询', covered: 92, needed: 280, gap: 188 },
+      { label: '康复训练', covered: 215, needed: 380, gap: 165 }
+    ];
+    supportData.forEach(function(s) {
+      var covPct = Math.round(s.covered / s.needed * 100);
+      var gapColor = s.gap > 150 ? '#D4654A' : '#E7B95E';
+      statsHTML += '<div style="margin-bottom:8px;">';
+      statsHTML += '<div style="display:flex;justify-content:space-between;font-size:0.72rem;color:#777;margin-bottom:2px;">';
+      statsHTML += '<span>' + s.label + '</span>';
+      statsHTML += '<span>已覆盖 <b style="color:#6FA789;">' + s.covered + '</b> / <b style="color:' + gapColor + ';">缺 ' + s.gap + '</b></span>';
+      statsHTML += '</div>';
+      statsHTML += '<div style="height:6px;background:#f0f0f0;border-radius:3px;overflow:hidden;">';
+      statsHTML += '<div style="height:100%;width:' + covPct + '%;background:#6FA789;border-radius:3px;float:left;"></div>';
+      statsHTML += '<div style="height:100%;width:' + (100-covPct) + '%;background:' + gapColor + ';border-radius:3px;float:left;opacity:0.3;"></div>';
+      statsHTML += '</div></div>';
+    });
     statsHTML += '</div>';
 
+    // ====== 数据说明 ======
+    statsHTML += '<div style="margin:0 16px 24px;padding:10px 12px;background:#fafafa;border-radius:8px;font-size:0.7rem;color:#aaa;line-height:1.5;">';
+    statsHTML += '演示数据，已脱敏处理。实际范围取决于机构授权与数据共享协议。';
     statsHTML += '</div>';
 
-    // 插入到 latest-activity 前
-    var la = document.getElementById('latest-activity');
-    if (la) {
-      la.insertAdjacentHTML('beforebegin', statsHTML);
-    } else if (container) {
-      container.insertAdjacentHTML('afterend', statsHTML);
+    if (targetContainer) {
+      targetContainer.innerHTML = statsHTML;
+    } else {
+      var la = document.getElementById('latest-activity');
+      if (la) {
+        la.insertAdjacentHTML('beforebegin', statsHTML);
+      } else if (container) {
+        container.insertAdjacentHTML('afterend', statsHTML);
+      }
     }
   }
 
@@ -1039,8 +1317,10 @@
         var hidden = idx >= 3 ? ' twb-folded' : '';
         var assignee = task.assignee || '';
         var assigneeName = roleNameMap[assignee] || '';
-        html += '    <div class="twb-task-item twb-checkable' + (isDone ? ' twb-done' : '') + hidden + '" data-instance-id="' + inst.id + '" data-task-name="' + (task.name || task.title || '') + '" data-assignee="' + (task.assignee || '') + '">';
-        html += '      <span class="twb-task-check">' + (isDone ? '✅' : '⭕') + '</span>';
+        var isForeign = assignee && role && assignee !== role;
+        var checkable = !isForeign ? ' twb-checkable' : '';
+        html += '    <div class="twb-task-item' + checkable + (isDone ? ' twb-done' : '') + (isForeign ? ' twb-foreign' : '') + hidden + '" data-instance-id="' + inst.id + '" data-task-name="' + (task.name || task.title || '') + '" data-assignee="' + (task.assignee || '') + '">';
+        html += '      <span class="twb-task-check">' + (isDone ? '✅' : (isForeign ? '🔒' : '⭕')) + '</span>';
         html += '      <span class="twb-task-name">' + (task.name || task.title || '') + '</span>';
         if (assigneeName) html += '      <span class="twb-task-assignee">负责人：' + assigneeName + '</span>';
         html += '    </div>';
@@ -1092,7 +1372,7 @@
 
     // ===== 绑定任务打卡事件 =====
     container.querySelectorAll('.twb-checkable').forEach(function(item) {
-      item.addEventListener('click', function() {
+      item.addEventListener('click', function(e) {
         var instanceId = this.getAttribute('data-instance-id');
         var taskName = this.getAttribute('data-task-name') || '任务';
         var taskAssignee = this.getAttribute('data-assignee') || '';
@@ -1104,23 +1384,21 @@
         var currentRole = user ? user.role : '';
         if (taskAssignee && currentRole && taskAssignee !== currentRole && !isDone) {
           var assigneeName = (roleNameMap[taskAssignee] || taskAssignee);
-          if (!confirm('「' + taskName + '」的负责人是 ' + assigneeName + '，确定要替 TA 打卡吗？')) return;
+          if (!confirm('「' + taskName + '」的负责人是 ' + assigneeName + '，确定要替 TA 打卡吗？')) {
+            return;
+          }
         }
 
-        if (isDone) {
-          // 撤销打卡
+        // 执行打卡/撤销
+        if (!isDone) {
+          DataStore.updateTaskInstance(instanceId, todayStr, { status: 'done' });
+          try { logTaskCompletion(instanceId, todayStr); } catch(e) {}
+        } else {
           DataStore.updateTaskInstance(instanceId, todayStr, { status: 'pending' });
-          // 删除打卡记录
           var records = DataStore.getRecords();
           records.filter(function(r) { return r.source === 'task_checkin' && r._instanceId === instanceId; })
             .forEach(function(r) { DataStore.deleteRecord(r.id); });
-        } else {
-          // 完成打卡
-          DataStore.updateTaskInstance(instanceId, todayStr, { status: 'done' });
-          // 生成打卡记录
-          try { logTaskCompletion(instanceId, todayStr); } catch(e) {}
         }
-        // 重新渲染今日工作台
         renderTodayWorkbench(role);
       });
     });
@@ -3322,11 +3600,8 @@
     if (user && (user.role === 'government' || user.role === 'admin')) {
       var contentArea = Utils.dom.get('charts-content') || Utils.dom.get('analytics-content');
       if (contentArea) {
-        contentArea.innerHTML = '<div class="gov-stats-section" style="padding:0 16px;">' +
-          '<h3 style="font-size:1.1rem;font-weight:600;margin-bottom:12px;color:var(--text-primary);">📊 区域服务概况</h3>' +
-          '<p style="color:var(--text-secondary);font-size:0.9rem;margin-bottom:16px;">以下为脱敏后的区域聚合数据，不包含个人身份信息。</p>' +
-          '</div>';
-        renderGovernmentStats();
+        contentArea.innerHTML = '';
+        renderGovernmentStats(contentArea);
       }
       return;
     }

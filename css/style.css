@@ -595,6 +595,13 @@ a:hover { text-decoration: underline; }
   text-decoration: line-through;
 }
 
+/* 非本人任务 — 灰色不可操作 */
+.twb-task-item.twb-foreign {
+  color: #c0c0c0;
+  pointer-events: none;
+  opacity: 0.5;
+}
+
 /* 可打卡任务项 */
 .twb-checkable {
   cursor: pointer;
