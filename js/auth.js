@@ -56,24 +56,25 @@
   }
 
   /**
-   * 填充登录下拉菜单
+   * 填充登录下拉菜单 — 按角色折叠，每角色默认只显示 1 人
    */
+  var _allUsersCache = null;  // 缓存全部用户，展开时使用
+  var _folded = true;         // 当前是否折叠
+
   function populateLoginSelect() {
     var select = document.getElementById('login-name-select');
     if (!select) return;
 
     var users = window.DataStore.getAllUsers();
-    // 清空现有选项（保留第一个 placeholder）
-    select.innerHTML = '<option value="">-- 选择已有账号 --</option>';
+    _allUsersCache = users;
 
-    users.forEach(function (u) {
-      var roleLabel = window.Constants.ROLES[u.role] ? window.Constants.ROLES[u.role].label : u.role;
-      var opt = document.createElement('option');
-      opt.value = u.name;
-      opt.setAttribute('data-pin', u.pin);
-      opt.textContent = u.name + '（' + roleLabel + '）';
-      select.appendChild(opt);
-    });
+    if (_folded) {
+      _renderFoldedSelect(select, users);
+      _ensureExpandToggle(users);
+    } else {
+      _renderAllSelect(select, users);
+      _ensureExpandToggle(users);
+    }
 
     // 绑定选择事件（避免重复绑定）
     if (!select.dataset.bound) {
@@ -94,6 +95,121 @@
         }
       });
     }
+  }
+
+  /** 折叠模式：每角色只显示第一人 */
+  function _renderFoldedSelect(select, users) {
+    select.innerHTML = '<option value="">-- 选择已有账号 --</option>';
+
+    var grouped = _groupByRole(users);
+    var totalHidden = 0;
+
+    Object.keys(grouped).forEach(function (roleKey) {
+      var roleUsers = grouped[roleKey];
+      if (roleUsers.length === 0) return;
+      var roleLabel = window.Constants.ROLES[roleKey] ? window.Constants.ROLES[roleKey].label : roleKey;
+      var first = roleUsers[0];
+      var opt = document.createElement('option');
+      opt.value = first.name;
+      opt.setAttribute('data-pin', first.pin);
+      opt.textContent = first.name + '（' + roleLabel + '）';
+      select.appendChild(opt);
+
+      if (roleUsers.length > 1) {
+        totalHidden += roleUsers.length - 1;
+      }
+    });
+
+    // 底部「展开全部」入口
+    if (totalHidden > 0) {
+      var expandOpt = document.createElement('option');
+      expandOpt.disabled = true;
+      expandOpt.textContent = '—— 还有 ' + totalHidden + ' 个账号 · 点击下方展开 ——';
+      expandOpt.className = 'login-expand-hint';
+      select.appendChild(expandOpt);
+    }
+  }
+
+  /** 展开模式：显示全部 */
+  function _renderAllSelect(select, users) {
+    select.innerHTML = '<option value="">-- 选择已有账号 --</option>';
+
+    var grouped = _groupByRole(users);
+
+    Object.keys(grouped).forEach(function (roleKey) {
+      var roleUsers = grouped[roleKey];
+      if (roleUsers.length === 0) return;
+      var roleLabel = window.Constants.ROLES[roleKey] ? window.Constants.ROLES[roleKey].label : roleKey;
+
+      roleUsers.forEach(function (u) {
+        var opt = document.createElement('option');
+        opt.value = u.name;
+        opt.setAttribute('data-pin', u.pin);
+        opt.textContent = u.name + '（' + roleLabel + '）';
+        select.appendChild(opt);
+      });
+    });
+  }
+
+  /** 按角色分组 */
+  function _groupByRole(users) {
+    var groups = {};
+    users.forEach(function (u) {
+      if (!groups[u.role]) groups[u.role] = [];
+      groups[u.role].push(u);
+    });
+    // 保持角色顺序
+    var order = ['youth', 'parent', 'teacher', 'shadow_teacher', 'government', 'admin'];
+    var sorted = {};
+    order.forEach(function (r) { if (groups[r]) sorted[r] = groups[r]; });
+    Object.keys(groups).forEach(function (r) { if (!sorted[r]) sorted[r] = groups[r]; });
+    return sorted;
+  }
+
+  /** 确保展开/折叠按钮存在 */
+  function _ensureExpandToggle(users) {
+    var existing = document.getElementById('login-expand-toggle');
+    if (existing) {
+      var totalHidden = _countHidden(users);
+      if (totalHidden > 0 || !_folded) {
+        existing.style.display = '';
+        existing.textContent = _folded ? ('展开全部 ' + totalHidden + ' 个账号 ▼') : '收起更多账号 ▲';
+      } else {
+        existing.style.display = 'none';
+      }
+      return;
+    }
+
+    var select = document.getElementById('login-name-select');
+    if (!select) return;
+
+    var btn = document.createElement('a');
+    btn.id = 'login-expand-toggle';
+    btn.href = '#';
+    btn.style.cssText = 'display:block;text-align:center;font-size:0.75rem;color:var(--color-primary);margin-top:6px;text-decoration:none;';
+    btn.addEventListener('click', function (e) {
+      e.preventDefault();
+      _folded = !_folded;
+      populateLoginSelect();
+    });
+    select.parentNode.insertBefore(btn, select.nextSibling);
+
+    // 初始状态
+    var totalHidden = _countHidden(users);
+    if (totalHidden > 0) {
+      btn.textContent = '展开全部 ' + totalHidden + ' 个账号 ▼';
+    } else {
+      btn.style.display = 'none';
+    }
+  }
+
+  function _countHidden(users) {
+    var grouped = _groupByRole(users);
+    var hidden = 0;
+    Object.keys(grouped).forEach(function (r) {
+      if (grouped[r].length > 1) hidden += grouped[r].length - 1;
+    });
+    return hidden;
   }
 
   /**
