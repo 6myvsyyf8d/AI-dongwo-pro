@@ -2,13 +2,13 @@
  * youth-tts.js — 心青年 TTS 语音朗读引擎
  * 挂载：window.YouthTTS
  *
- * 基于 SpeechSynthesis API，AI 回复自动朗读，支持开关切换。
+ * 基于智谱 GLM-TTS API，AI 回复自动朗读，支持开关切换。
  * 朗读时消息气泡旁显示 🔊 动画指示。
  */
 (function () {
   'use strict';
 
-  var synth = window.speechSynthesis;
+  var TTS_ENDPOINT = 'https://open.bigmodel.cn/api/paas/v4/audio/speech';
 
   /**
    * YouthTTS 构造
@@ -18,118 +18,21 @@
     this.speaking = false;     // 当前是否正在朗读
     this.pendingQueue = [];    // 待朗读消息队列
     this.currentMsgId = null;  // 当前正在朗读的消息ID
-    this.voice = null;         // 选中的中文语音
-    this.rate = 0.8;           // 语速更慢，更自然温和
-    this.pitch = 1.02;         // 微提语调，不机械
-    this.volume = 1.0;
-    this._initVoice();
+    this.voice = 'female';     // 智谱音色：彤彤（默认女声）
+    this.rate = 1.0;           // 语速 0.5~2.0
+    this.volume = 1.0;         // 音量 0.1~3.0
+    this._currentAudio = null; // 当前播放的 Audio 实例
   }
 
   /**
-   * 初始化中文语音
+   * 获取 API Key（与对话使用同一配置）
    */
-  YouthTTS.prototype._initVoice = function () {
-    var voices = synth.getVoices();
-    if (voices.length === 0) {
-      // voices 可能异步加载，监听 onvoiceschanged
-      var self = this;
-      synth.addEventListener('voiceschanged', function () {
-        self._pickChineseVoice();
-      });
-    } else {
-      this._pickChineseVoice();
-    }
-  };
-
-  /**
-   * 选择最佳中文语音
-   */
-  YouthTTS.prototype._pickChineseVoice = function () {
-    var voices = synth.getVoices();
-    var preferred = null;
-
-    // 优先级 0：Apple 高品质内置语音（macOS/iOS）
-    // Tingting / Ting-Ting 都是普通话女声，Li-mu 是台湾女声
-    var applePatterns = ['Tingting', 'Ting-Ting', 'Ting-ting', 'Mei-Jia', 'Sin-ji', 'Li-mu'];
-    for (var i = 0; i < voices.length; i++) {
-      var v = voices[i];
-      for (var ap = 0; ap < applePatterns.length; ap++) {
-        if (v.name.indexOf(applePatterns[ap]) !== -1) {
-          preferred = v;
-          break;
-        }
-      }
-      if (preferred) break;
-    }
-
-    // 优先级 1：Google 神经语音
-    if (!preferred) {
-      var neuralPatterns = ['Xiaoxiao', 'Yunyang', 'Xiaoyi', 'Neural', 'Premium'];
-      for (var j = 0; j < voices.length; j++) {
-        var v2 = voices[j];
-        if (v2.lang.indexOf('zh') === 0) {
-          for (var p = 0; p < neuralPatterns.length; p++) {
-            if (v2.name.indexOf(neuralPatterns[p]) !== -1) {
-              preferred = v2;
-              break;
-            }
-          }
-          if (preferred) break;
-        }
-      }
-    }
-
-    // 优先级 2：zh-CN 女性
-    if (!preferred) {
-      for (var k = 0; k < voices.length; k++) {
-        var v3 = voices[k];
-        if (v3.lang === 'zh-CN' && (v3.name.indexOf('Female') !== -1 || v3.name.indexOf('女') !== -1)) {
-          preferred = v3;
-          break;
-        }
-      }
-    }
-
-    // 优先级 3：任意 zh-CN
-    if (!preferred) {
-      for (var m = 0; m < voices.length; m++) {
-        if (voices[m].lang.indexOf('zh-CN') === 0) {
-          preferred = voices[m];
-          break;
-        }
-      }
-    }
-
-    // 优先级 4：任意中文
-    if (!preferred) {
-      for (var n = 0; n < voices.length; n++) {
-        if (voices[n].lang.indexOf('zh') === 0) {
-          preferred = voices[n];
-          break;
-        }
-      }
-    }
-
-    // 兜底：第一个可用语音
-    if (!preferred && voices.length > 0) {
-      preferred = voices[0];
-    }
-
-    this.voice = preferred;
-
-    // 诊断日志：列出所有中文语音和最终选择
-    var zhVoices = [];
-    for (var di = 0; di < voices.length; di++) {
-      if (voices[di].lang.indexOf('zh') === 0) {
-        zhVoices.push(voices[di].name + ' (' + voices[di].lang + (voices[di].localService ? ',本地' : ',网络') + ')');
-      }
-    }
-    console.log('[YouthTTS] 可用中文语音 (' + zhVoices.length + '):', zhVoices.join(', '));
-    if (preferred) {
-      console.log('[YouthTTS] 选用:', preferred.name, preferred.lang, preferred.localService ? '(本地)' : '(网络)');
-    } else {
-      console.warn('[YouthTTS] 未找到中文语音，将使用系统默认');
-    }
+  YouthTTS.prototype._getApiKey = function () {
+    try {
+      var key = localStorage.getItem('ai_dongwo_api_key');
+      if (key && key.length > 10) return key;
+    } catch (e) {}
+    return null;
   };
 
   /**
@@ -154,52 +57,102 @@
   };
 
   /**
-   * 执行朗读
+   * 调用智谱 TTS API 并播放音频
    */
   YouthTTS.prototype._doSpeak = function (text, msgId) {
     var self = this;
-    synth.cancel(); // 先取消之前的
+    var apiKey = this._getApiKey();
 
-    var utterance = new SpeechSynthesisUtterance(text);
-    utterance.voice = this.voice;
-    utterance.lang = 'zh-CN';
-    utterance.rate = this.rate;
-    utterance.pitch = this.pitch;
-    utterance.volume = this.volume;
+    if (!apiKey) {
+      console.warn('[YouthTTS] 未配置智谱 API Key，语音朗读不可用');
+      // 跳过当前，尝试播放下一条
+      self._handleSpeakEnd(msgId);
+      return;
+    }
 
-    // 标注事件
-    utterance.addEventListener('start', function () {
-      self.speaking = true;
-      self.currentMsgId = msgId;
-      self._showIndicator(msgId, true);
+    // 先取消当前播放
+    if (this._currentAudio) {
+      this._currentAudio.pause();
+      this._currentAudio = null;
+    }
+
+    this.speaking = true;
+    this.currentMsgId = msgId;
+    this._showIndicator(msgId, true);
+
+    var payload = JSON.stringify({
+      model: 'glm-tts',
+      input: text,
+      voice: this.voice,
+      speed: this.rate,
+      volume: this.volume,
+      response_format: 'wav'
     });
 
-    utterance.addEventListener('end', function () {
-      self.speaking = false;
-      self._showIndicator(msgId, false);
-      self.currentMsgId = null;
-      // 处理队列中的下一条
-      if (self.pendingQueue.length > 0) {
-        var next = self.pendingQueue.shift();
-        self._doSpeak(next.text, next.msgId);
+    fetch(TTS_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + apiKey,
+        'Content-Type': 'application/json'
+      },
+      body: payload
+    })
+    .then(function (response) {
+      if (!response.ok) {
+        return response.json().then(function (err) {
+          throw new Error(err.error ? err.error.message || JSON.stringify(err.error) : 'HTTP ' + response.status);
+        });
       }
-    });
+      return response.blob();
+    })
+    .then(function (audioBlob) {
+      if (!self.speaking || self.currentMsgId !== msgId) return; // 已被 stop/toggle 取消
 
-    utterance.addEventListener('error', function (e) {
-      // 忽略用户主动取消的错误
-      if (e.error !== 'canceled' && e.error !== 'interrupted') {
-        console.warn('[YouthTTS] 朗读错误:', e.error);
-      }
-      self.speaking = false;
-      self._showIndicator(msgId, false);
-      self.currentMsgId = null;
-      if (self.pendingQueue.length > 0) {
-        var next = self.pendingQueue.shift();
-        self._doSpeak(next.text, next.msgId);
-      }
-    });
+      var audioUrl = URL.createObjectURL(audioBlob);
+      var audio = new Audio(audioUrl);
+      audio.volume = self.volume;
+      self._currentAudio = audio;
 
-    synth.speak(utterance);
+      audio.addEventListener('ended', function () {
+        URL.revokeObjectURL(audioUrl);
+        self._currentAudio = null;
+        self._handleSpeakEnd(msgId);
+      });
+
+      audio.addEventListener('error', function (e) {
+        console.warn('[YouthTTS] 音频播放失败:', e);
+        URL.revokeObjectURL(audioUrl);
+        self._currentAudio = null;
+        self._handleSpeakEnd(msgId);
+      });
+
+      audio.play().catch(function (e) {
+        // 浏览器可能阻止自动播放
+        console.warn('[YouthTTS] 自动播放被阻止:', e.message);
+        URL.revokeObjectURL(audioUrl);
+        self._currentAudio = null;
+        self._handleSpeakEnd(msgId);
+      });
+    })
+    .catch(function (err) {
+      console.warn('[YouthTTS] TTS API 调用失败:', err.message || err);
+      self._handleSpeakEnd(msgId);
+    });
+  };
+
+  /**
+   * 朗读结束后的清理和队列处理
+   */
+  YouthTTS.prototype._handleSpeakEnd = function (msgId) {
+    this.speaking = false;
+    this._showIndicator(msgId, false);
+    this.currentMsgId = null;
+
+    // 处理队列中的下一条
+    if (this.pendingQueue.length > 0) {
+      var next = this.pendingQueue.shift();
+      this._doSpeak(next.text, next.msgId);
+    }
   };
 
   /**
@@ -224,20 +177,19 @@
   YouthTTS.prototype.toggle = function () {
     this.enabled = !this.enabled;
     if (!this.enabled) {
-      synth.cancel();
-      this.speaking = false;
-      this.pendingQueue = [];
-      this._showIndicator(this.currentMsgId, false);
-      this.currentMsgId = null;
+      this.stop();
     }
     return this.enabled;
   };
 
   /**
-   * 停止当前朗读
+   * 停止当前朗读并清空队列
    */
   YouthTTS.prototype.stop = function () {
-    synth.cancel();
+    if (this._currentAudio) {
+      this._currentAudio.pause();
+      this._currentAudio = null;
+    }
     this.speaking = false;
     this.pendingQueue = [];
     this._showIndicator(this.currentMsgId, false);
@@ -253,13 +205,22 @@
   };
 
   /**
+   * 设置音色
+   * @param {string} voice - 智谱音色标识
+   *   可选: female(彤彤), xiaochen(小陈), chuichui(锤锤), jam, kazi, douji, luodo
+   */
+  YouthTTS.prototype.setVoice = function (voice) {
+    var validVoices = ['female', 'xiaochen', 'chuichui', 'jam', 'kazi', 'douji', 'luodo'];
+    if (validVoices.indexOf(voice) !== -1) {
+      this.voice = voice;
+    }
+  };
+
+  /**
    * 销毁实例
    */
   YouthTTS.prototype.destroy = function () {
-    synth.cancel();
-    this.speaking = false;
-    this.pendingQueue = [];
-    this.currentMsgId = null;
+    this.stop();
   };
 
   // ======== 工具函数 ========
@@ -269,7 +230,6 @@
    */
   function _stripEmoji(text) {
     if (!text) return '';
-    // 移除 emoji 字符（Unicode 范围 + 变体选择符）
     var cleaned = text
       .replace(/[\u{1F600}-\u{1F64F}]/gu, '')  // 表情符号
       .replace(/[\u{1F300}-\u{1F5FF}]/gu, '')  // 杂项符号和图形

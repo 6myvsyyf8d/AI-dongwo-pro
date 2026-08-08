@@ -201,12 +201,6 @@
     // 根据字段配置渲染表单
     type.fields.forEach(function (field) {
       switch (field) {
-        case 'title':
-          html += '<div style="margin-bottom:14px;">';
-          html += '  <input type="text" name="title" placeholder="标题" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:0.9rem;box-sizing:border-box;" required>';
-          html += '</div>';
-          break;
-
         case 'content':
           html += '<div style="margin-bottom:14px;">';
           html += '  <textarea name="content" placeholder="请详细描述..." rows="4" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:0.9rem;box-sizing:border-box;resize:vertical;" required></textarea>';
@@ -241,18 +235,13 @@
           });
           html += '  </div>';
           html += '</div>';
-
-          // 情绪事件额外字段：触发原因和应对方式
-          html += '<div style="margin-bottom:14px;">';
-          html += '  <textarea name="content" placeholder="描述情绪事件的触发原因、经过和应对方式..." rows="4" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:0.9rem;box-sizing:border-box;resize:vertical;" required></textarea>';
-          html += '</div>';
           break;
 
         case 'effectiveness':
           html += '<div style="margin-bottom:14px;">';
           html += '  <label style="display:block;font-size:0.85rem;color:#555;margin-bottom:8px;font-weight:500;">策略效果评价</label>';
           html += '  <div class="effectiveness-bar">';
-          var effLevels = C.EFFECTIVENESS_LEVELS || [
+          var effLevels = window.Constants.EFFECTIVENESS_LEVELS || [
             { value: 'effective', label: '有效', icon: '✅', color: '#52C41A' },
             { value: 'partial', label: '部分有效', icon: '🔶', color: '#FAAD14' },
             { value: 'none', label: '无明显效果', icon: '⚪', color: '#999' },
@@ -359,7 +348,6 @@
     record.privacy = 'B';
     record.tags = [];
 
-    if (formData.get('title')) record.title = formData.get('title');
     if (formData.get('mood')) record.mood = formData.get('mood');
     if (formData.get('emotion_type')) record.emotion_type = formData.get('emotion_type');
     if (formData.get('effectiveness')) record.effectiveness = formData.get('effectiveness');
@@ -373,10 +361,6 @@
     var typeInfo = RECORD_TYPES[type];
     if (typeInfo.fields.indexOf('content') !== -1 && !record.content.trim()) {
       alert('请填写内容');
-      return;
-    }
-    if (typeInfo.fields.indexOf('title') !== -1 && !record.title) {
-      alert('请填写标题');
       return;
     }
     if (type === 'mood' && !record.mood) {

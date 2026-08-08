@@ -341,12 +341,10 @@
 
         if (isConfirmed) {
           html += '    <div class="chat-review-step-content">'
-            + '      <div class="chat-review-draft-field-label">' + _escapeHtml(draft.title || '') + '</div>'
             + '      <div class="chat-review-draft-field-value">' + _escapeHtml(draft.content || '') + '</div>'
             + '    </div>';
         } else {
           html += '    <div class="chat-review-step-content">'
-            + '      <input class="chat-review-draft-field-input" value="' + _escapeHtml(draft.title || '') + '" placeholder="标题" data-field="title" data-draft-id="' + draft.id + '">'
             + '      <textarea class="chat-review-draft-field-input" rows="2" placeholder="内容摘要" data-field="content" data-draft-id="' + draft.id + '">' + _escapeHtml(draft.content || '') + '</textarea>'
             + '    </div>';
         }
