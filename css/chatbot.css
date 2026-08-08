@@ -703,8 +703,9 @@ select.api-settings-input {
 .chat-conv-bottom-bar {
   position: fixed;
   bottom: 0;
-  left: 0;
-  right: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(100%, 430px);
   z-index: 50;
   background: #FFFFFF;
   border-top: 1px solid rgba(217, 119, 87, 0.06);
@@ -755,9 +756,13 @@ select.api-settings-input {
   background: #FDFBF7;
   color: var(--chat-text);
   overflow-y: auto;
+  scrollbar-width: none;
   word-break: break-word;
   font-family: inherit;
   transition: border-color 0.2s ease;
+}
+.chat-conv-editor::-webkit-scrollbar {
+  display: none;
 }
 
 .chat-conv-editor:focus {
